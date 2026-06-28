@@ -21,16 +21,12 @@ import Store from './store.js';
 import Router from './utils/router.js';
 import Animations from './utils/animations.js';
 
-// Imports des composants (chargés dynamiquement si disponibles)
-// Ces imports échoueront silencieusement si les fichiers n'existent pas encore
-let Hero, RSVP, MapComponent, Carpool, GuestProfile, AdminDashboard;
-
-try { Hero = (await import('./components/hero.js')).default; } catch (e) { console.warn('[App] Composant Hero non disponible :', e.message); }
-try { RSVP = (await import('./components/rsvp.js')).default; } catch (e) { console.warn('[App] Composant RSVP non disponible :', e.message); }
-try { MapComponent = (await import('./components/map.js')).default; } catch (e) { console.warn('[App] Composant Map non disponible :', e.message); }
-try { Carpool = (await import('./components/carpool.js')).default; } catch (e) { console.warn('[App] Composant Carpool non disponible :', e.message); }
-try { GuestProfile = (await import('./components/guestProfile.js')).default; } catch (e) { console.warn('[App] Composant GuestProfile non disponible :', e.message); }
-try { AdminDashboard = (await import('./components/adminDashboard.js')).default; } catch (e) { console.warn('[App] Composant AdminDashboard non disponible :', e.message); }
+import Hero from './components/hero.js';
+import RSVP from './components/rsvp.js';
+import MapComponent from './components/map.js';
+import Carpool from './components/carpool.js';
+import GuestProfile from './components/guestProfile.js';
+import AdminDashboard from './components/adminDashboard.js';
 
 // ──────────────────────────────────────────────
 // Définition des routes de l'application
