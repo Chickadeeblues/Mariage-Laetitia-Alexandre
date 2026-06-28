@@ -43,10 +43,10 @@ const GuestProfile = {
     return `
       <div class="card form-steps-card">
         <h3 class="text-center">Retrouvez vos réponses</h3>
-        <p class="text-center text-muted mb-4">Entrez l'adresse email utilisée lors de votre inscription pour retrouver vos réponses.</p>
+        <p class="text-center text-muted mb-4">Entrez le numéro de téléphone utilisé lors de votre inscription pour retrouver vos réponses.</p>
         <div class="form-group">
-          <label>Adresse Email</label>
-          <input type="email" id="login-email" required>
+          <label>Numéro de téléphone</label>
+          <input type="tel" id="login-phone" placeholder="ex: 0612345678" required>
         </div>
         <div class="text-center mt-4">
           <button type="button" class="btn btn--primary" id="login-btn">Rechercher</button>
@@ -139,18 +139,18 @@ const GuestProfile = {
     const loginBtn = this.container.querySelector('#login-btn');
     if (loginBtn) {
       loginBtn.addEventListener('click', () => {
-        const email = this.container.querySelector('#login-email').value.trim();
-        if (!email) {
-          Animations.showToast('Veuillez entrer une adresse email.', 'error');
+        const phone = this.container.querySelector('#login-phone').value.trim();
+        if (!phone) {
+          Animations.showToast('Veuillez entrer un numéro de téléphone.', 'error');
           return;
         }
         
-        const guest = Store.getGuestByEmail(email);
+        const guest = Store.getGuestByPhone(phone);
         if (guest) {
           Store.setCurrentGuest(guest.id);
           Animations.showToast('Profil trouvé avec succès !', 'success');
         } else {
-           Animations.showToast('Aucune réponse trouvée avec cet email.', 'error');
+           Animations.showToast('Aucune réponse trouvée avec ce numéro.', 'error');
         }
       });
     }

@@ -90,12 +90,18 @@ const RSVP = {
           <input type="text" id="guest-lastname" value="${this.guestData.lastName}" required>
         </div>
         <div class="form-group">
-          <label>Email *</label>
-          <input type="email" id="guest-email" value="${this.guestData.email}" required>
+          <label>Téléphone * <small>(pour être inscrit sur la boucle Whatsapp)</small></label>
+          <input type="tel" id="guest-phone" value="${this.guestData.phone}" required>
         </div>
-        <div class="form-group">
-          <label>Téléphone</label>
-          <input type="tel" id="guest-phone" value="${this.guestData.phone}">
+        <div class="form-group mt-3">
+          <label class="checkbox-label" style="font-size: 0.9em; font-weight: normal;">
+            <input type="checkbox" id="email-opt-in" ${this.guestData.email ? 'checked' : ''}>
+            Je préfère être contacté(e) par mail
+          </label>
+        </div>
+        <div class="form-group ${this.guestData.email ? '' : 'hidden'}" id="email-group">
+          <label>Email *</label>
+          <input type="email" id="guest-email" value="${this.guestData.email}">
         </div>
         <div class="text-center mt-4">
           <button type="button" class="btn btn--primary next-btn">Suivant</button>
@@ -110,15 +116,16 @@ const RSVP = {
       <div class="form-step ${isVisible ? 'active' : 'hidden'}" id="step-2">
         <h3 class="text-center">Serez-vous présent(e) ?</h3>
         <div class="form-group text-center">
-          <button type="button" class="btn ${this.guestData.attending === true ? 'btn--primary' : 'btn--secondary'} attendance-btn" data-val="true">Oui, avec joie</button>
-          <button type="button" class="btn ${this.guestData.attending === false ? 'btn--primary' : 'btn--secondary'} attendance-btn" data-val="false">Non, malheureusement</button>
+          <button type="button" class="btn ${this.guestData.attending === true ? 'btn--primary' : 'btn--secondary'} attendance-btn" data-val="true">Je serai là, avec joie</button>
+          <button type="button" class="btn ${this.guestData.attending === false ? 'btn--primary' : 'btn--secondary'} attendance-btn" data-val="false" style="margin-top: 10px;">Malheureusement, je ne pourrai pas venir</button>
         </div>
+        ${this.guestData.attending === false ? '<p class="text-center text-muted mt-3" style="font-style: italic;">Merci pour ta réponse !</p>' : ''}
         
         <div id="companions-section" class="${this.guestData.attending === true ? '' : 'hidden'}">
           <div class="form-group mt-4">
             <label>Nombre d'accompagnants</label>
             <select id="guest-companions-count">
-              ${[0,1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${this.guestData.companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
+              ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${this.guestData.companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
             </select>
           </div>
           <div id="companions-list">
@@ -337,6 +344,20 @@ const RSVP = {
       if(driverSec) driverSec.classList.toggle('hidden', e.target.value !== 'driver');
       if(passSec) passSec.classList.toggle('hidden', e.target.value !== 'passenger');
     }));
+
+    // Email opt-in checkbox
+    const emailOptIn = this.container.querySelector('#email-opt-in');
+    if (emailOptIn) {
+      emailOptIn.addEventListener('change', (e) => {
+        const emailGroup = this.container.querySelector('#email-group');
+        if (e.target.checked) {
+          emailGroup.classList.remove('hidden');
+        } else {
+          emailGroup.classList.add('hidden');
+          this.guestData.email = ''; // clear it
+        }
+      });
+    }
   },
 
   saveCurrentStepData() {
@@ -385,8 +406,13 @@ const RSVP = {
 
   validateStep() {
     if (this.currentStep === 1) {
-      if (!this.guestData.firstName || !this.guestData.lastName || !this.guestData.email) {
+      if (!this.guestData.firstName || !this.guestData.lastName || !this.guestData.phone) {
         Animations.showToast("Veuillez remplir les champs obligatoires (*)", "error");
+        return false;
+      }
+      const emailOptIn = this.container.querySelector('#email-opt-in');
+      if (emailOptIn && emailOptIn.checked && !this.guestData.email) {
+        Animations.showToast("Veuillez renseigner votre email", "error");
         return false;
       }
     }
@@ -417,9 +443,9 @@ const RSVP = {
     }
 
     if (this.currentStep < this.totalSteps) {
-      // Check if email already exists on step 1 to pre-fill
+      // Check if phone already exists on step 1 to pre-fill
       if (this.currentStep === 1) {
-         const existing = Store.getGuestByEmail(this.guestData.email);
+         const existing = Store.getGuestByPhone(this.guestData.phone);
          if (existing && existing.id !== this.guestData.id) {
            this.guestData = { ...existing };
            Animations.showToast("Nous avons retrouvé votre profil !", "success");

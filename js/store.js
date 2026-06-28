@@ -25,7 +25,7 @@ const STORAGE_KEYS = {
 };
 
 // Mot de passe administrateur (mariés)
-const ADMIN_PASSWORD = 'laetitia-alexandre-2027';
+const ADMIN_PASSWORD = 'ChatRenard';
 
 // ──────────────────────────────────────────────
 // Données initiales des hébergements
@@ -37,7 +37,7 @@ const DEFAULT_ACCOMMODATIONS = [
     lat: 45.4113,
     lng: 4.5889,
     capacity: 'Variable',
-    description: 'Hébergement sur le lieu même de la réception. Contactez les mariés pour les disponibilités.',
+    description: 'Hébergement sur le lieu de réception. Contactez les mariés pour les disponibilités. Tarif sur demande.',
     bookingUrl: '',
     distance: 'Sur place',
     icon: 'venue'
@@ -48,54 +48,54 @@ const DEFAULT_ACCOMMODATIONS = [
     lat: 45.418,
     lng: 4.605,
     capacity: '6 personnes',
-    description: 'Gîte de 100m² à 920m d\'altitude. 3 chambres, mezzanine, vue panoramique sur le Pilat.',
-    bookingUrl: 'https://www.pilat-tourisme.fr',
+    description: 'Gîte de 100m² avec vue panoramique. ~100€/nuit.',
+    bookingUrl: 'https://www.gites-de-france.com',
     distance: '~3 km',
     icon: 'gite'
   },
   {
     id: 'acc-3',
-    name: 'L\'Atelier',
-    lat: 45.406,
-    lng: 4.575,
-    capacity: '4 personnes',
-    description: 'Gîte indépendant de 50m² dans une ancienne bâtisse en pierre rénovée. Charme et confort.',
-    bookingUrl: 'https://www.gites-de-france-loire.com',
-    distance: '~5 km',
-    icon: 'gite'
+    name: 'Chez Delphine (Chambre d\'hôtes)',
+    lat: 45.415,
+    lng: 4.595,
+    capacity: '2 à 4 pers.',
+    description: 'Chambre d\'hôtes dans un cadre paisible. ~85€/nuit.',
+    bookingUrl: 'https://www.escapade-chezdelphine.fr',
+    distance: '~3 km',
+    icon: 'chambre'
   },
   {
     id: 'acc-4',
-    name: 'Gîte La Bergerie',
-    lat: 45.422,
-    lng: 4.570,
-    capacity: '14 personnes',
-    description: 'Grand gîte au lieu-dit Le Maupas, idéal pour les groupes et familles nombreuses.',
-    bookingUrl: 'https://www.pilat-tourisme.fr',
+    name: 'Hôtel Restaurant Éclosion',
+    lat: 45.415,
+    lng: 4.575,
+    capacity: 'Variable',
+    description: 'Chambres tout confort. À partir de ~120€/nuit.',
+    bookingUrl: 'https://eclosion-restaurant.fr',
     distance: '~4 km',
-    icon: 'gite'
+    icon: 'chambre'
   },
   {
     id: 'acc-5',
-    name: 'Gîte de l\'Auberge du Collet',
-    lat: 45.430,
-    lng: 4.555,
-    capacity: '14 personnes',
-    description: '7 chambres doubles équipées. Cadre montagnard authentique.',
-    bookingUrl: 'https://www.petitfute.com',
-    distance: '~6 km',
+    name: 'Camping Le Bessat / Croix de Chaubouret',
+    lat: 45.378,
+    lng: 4.515,
+    capacity: 'Tentes & Chalets',
+    description: 'Camping nature pour petits budgets. À partir de ~20€/nuit.',
+    bookingUrl: 'https://www.pilat-tourisme.fr',
+    distance: '~12 km',
     icon: 'gite'
   },
   {
     id: 'acc-6',
-    name: 'Chez Delphine',
-    lat: 45.415,
-    lng: 4.595,
-    capacity: '~4 personnes',
-    description: 'Chambre d\'hôtes dans un cadre paisible. Accueil chaleureux.',
-    bookingUrl: 'https://www.escapade-chezdelphine.fr',
-    distance: '~3 km',
-    icon: 'chambre'
+    name: 'Options Airbnb (Parc du Pilat)',
+    lat: 45.395,
+    lng: 4.550,
+    capacity: 'Variable',
+    description: 'Recherchez des gîtes ou chambres sur Airbnb dans un rayon de 20 km. Tarifs variables.',
+    bookingUrl: 'https://www.airbnb.fr/s/Doizieux--France',
+    distance: '< 20 km',
+    icon: 'gite'
   }
 ];
 
@@ -247,15 +247,14 @@ const Store = {
   },
 
   /**
-   * Retourne un invité par son adresse email (insensible à la casse)
-   * @param {string} email — Adresse email à rechercher
+   * Retourne un invité par numéro de téléphone
    * @returns {Object|undefined} L'invité trouvé ou undefined
    */
-  getGuestByEmail(email) {
-    if (!email) return undefined;
+  getGuestByPhone(phone) {
+    if (!phone) return undefined;
     const guests = this.getGuests();
-    const emailLower = email.toLowerCase().trim();
-    return guests.find((g) => g.email && g.email.toLowerCase().trim() === emailLower);
+    const cleanPhone = phone.replace(/[\s\-\.]/g, '');
+    return guests.find((g) => g.phone && g.phone.replace(/[\s\-\.]/g, '') === cleanPhone);
   },
 
   /**
