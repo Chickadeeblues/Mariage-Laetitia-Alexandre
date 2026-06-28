@@ -3,14 +3,6 @@
  * 
  * Gère toute la persistance via localStorage pour l'application
  * de mariage Laetitia & Alexandre.
- * 
- * Expose un objet Store avec des méthodes CRUD pour :
- *  - Invités (guests)
- *  - Covoiturages (carpools)
- *  - Hébergements (accommodations)
- *  - Session invité courant
- *  - Authentification admin
- *  - Statistiques
  */
 
 // ──────────────────────────────────────────────
@@ -24,21 +16,16 @@ const STORAGE_KEYS = {
   ADMIN_AUTH: 'wedding_admin_auth'
 };
 
-// Mot de passe administrateur (mariés)
-const ADMIN_PASSWORD_HASH = '2efdd4eeac99f6be0f0e0bea27dbbbbcb91e00c998f783a223afd7d24ad57a52'; 
+// Hash SHA-256 du mot de passe administrateur
+const ADMIN_PASSWORD_HASH = '2efdd4eeac99f6be0f0e0bea27dbbbbcb91e00c998f783a223afd7d24ad57a52';
 
-async adminLogin(password) {
-  const hash = await hashPassword(password);
-  if (hash === ADMIN_PASSWORD_HASH) {
-    this._setData(STORAGE_KEYS.ADMIN_AUTH, {
-      authenticated: true,
-      timestamp: new Date().toISOString()
-    });
-    this._emit('auth-changed');
-    return true;
-  }
-  return false;
-},
+// Fonction de hachage utilisant l'API Web Crypto native
+async function hashPassword(password) {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // ──────────────────────────────────────────────
 // Données initiales des hébergements
@@ -126,10 +113,6 @@ const Store = {
   // Utilitaires internes
   // ════════════════════════════════════════════
 
-  /**
-   * Génère un identifiant unique simple (UUID v4-like)
-   * @returns {string} Un identifiant unique
-   */
   _generateId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
@@ -138,11 +121,6 @@ const Store = {
     });
   },
 
-  /**
-   * Lit et parse les données JSON depuis localStorage
-   * @param {string} key — Clé localStorage
-   * @returns {*} Données parsées ou null
-   */
   _getData(key) {
     try {
       const raw = localStorage.getItem(key);
@@ -153,11 +131,6 @@ const Store = {
     }
   },
 
-  /**
-   * Sérialise et sauvegarde les données dans localStorage
-   * @param {string} key — Clé localStorage
-   * @param {*} data — Données à sauvegarder
-   */
   _setData(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
@@ -166,10 +139,6 @@ const Store = {
     }
   },
 
-  /**
-   * Déclenche tous les callbacks enregistrés pour un événement
-   * @param {string} event — Nom de l'événement
-   */
   _emit(event) {
     if (_listeners[event]) {
       _listeners[event].forEach((callback) => {
@@ -186,11 +155,6 @@ const Store = {
   // Système d'événements
   // ════════════════════════════════════════════
 
-  /**
-   * Enregistre un callback pour un événement donné
-   * @param {string} event — Nom de l'événement ('guests-changed', 'carpools-changed', etc.)
-   * @param {Function} callback — Fonction à appeler
-   */
   on(event, callback) {
     if (!_listeners[event]) {
       _listeners[event] = [];
@@ -198,11 +162,6 @@ const Store = {
     _listeners[event].push(callback);
   },
 
-  /**
-   * Supprime un callback pour un événement donné
-   * @param {string} event — Nom de l'événement
-   * @param {Function} callback — Référence exacte du callback à retirer
-   */
   off(event, callback) {
     if (_listeners[event]) {
       _listeners[event] = _listeners[event].filter((cb) => cb !== callback);
@@ -213,27 +172,16 @@ const Store = {
   // Initialisation
   // ════════════════════════════════════════════
 
-  /**
-   * Initialise les données par défaut dans localStorage
-   * si elles ne sont pas déjà présentes.
-   * À appeler au démarrage de l'application.
-   */
   init() {
-    // Initialiser la liste des invités si absente
     if (!this._getData(STORAGE_KEYS.GUESTS)) {
       this._setData(STORAGE_KEYS.GUESTS, []);
     }
-
-    // Initialiser les covoiturages si absents
     if (!this._getData(STORAGE_KEYS.CARPOOLS)) {
       this._setData(STORAGE_KEYS.CARPOOLS, []);
     }
-
-    // Pré-charger les hébergements par défaut si absents
     if (!this._getData(STORAGE_KEYS.ACCOMMODATIONS)) {
       this._setData(STORAGE_KEYS.ACCOMMODATIONS, DEFAULT_ACCOMMODATIONS);
     }
-
     console.log('[Store] Initialisation terminée.');
   },
 
@@ -241,28 +189,15 @@ const Store = {
   // Gestion des invités (Guests)
   // ════════════════════════════════════════════
 
-  /**
-   * Retourne le tableau de tous les invités
-   * @returns {Array} Liste des invités
-   */
   getGuests() {
     return this._getData(STORAGE_KEYS.GUESTS) || [];
   },
 
-  /**
-   * Retourne un invité par son identifiant
-   * @param {string} id — Identifiant de l'invité
-   * @returns {Object|undefined} L'invité trouvé ou undefined
-   */
   getGuest(id) {
     const guests = this.getGuests();
     return guests.find((g) => g.id === id);
   },
 
-  /**
-   * Retourne un invité par numéro de téléphone
-   * @returns {Object|undefined} L'invité trouvé ou undefined
-   */
   getGuestByPhone(phone) {
     if (!phone) return undefined;
     const guests = this.getGuests();
@@ -270,11 +205,6 @@ const Store = {
     return guests.find((g) => g.phone && g.phone.replace(/[\s\-\.]/g, '') === cleanPhone);
   },
 
-  /**
-   * Crée un nouvel invité avec ID auto-généré et timestamps
-   * @param {Object} data — Données de l'invité (sans id ni timestamps)
-   * @returns {Object} L'invité nouvellement créé
-   */
   saveGuest(data) {
     const guests = this.getGuests();
     const now = new Date().toISOString();
@@ -310,12 +240,6 @@ const Store = {
     return newGuest;
   },
 
-  /**
-   * Met à jour un invité existant par son ID
-   * @param {string} id — Identifiant de l'invité
-   * @param {Object} data — Données partielles à mettre à jour
-   * @returns {Object|null} L'invité mis à jour ou null si introuvable
-   */
   updateGuest(id, data) {
     const guests = this.getGuests();
     const index = guests.findIndex((g) => g.id === id);
@@ -325,12 +249,11 @@ const Store = {
       return null;
     }
 
-    // Fusionner les données en préservant l'existant
     guests[index] = {
       ...guests[index],
       ...data,
-      id: guests[index].id,               // L'ID ne change jamais
-      createdAt: guests[index].createdAt,  // La date de création est immuable
+      id: guests[index].id,
+      createdAt: guests[index].createdAt,
       updatedAt: new Date().toISOString()
     };
 
@@ -341,10 +264,6 @@ const Store = {
     return guests[index];
   },
 
-  /**
-   * Supprime un invité par son ID
-   * @param {string} id — Identifiant de l'invité à supprimer
-   */
   deleteGuest(id) {
     let guests = this.getGuests();
     const guest = guests.find((g) => g.id === id);
@@ -355,7 +274,6 @@ const Store = {
       this._emit('guests-changed');
       console.log(`[Store] Invité supprimé : ${guest.firstName} ${guest.lastName}`);
 
-      // Si l'invité supprimé est l'invité courant, effacer la session
       if (this._getData(STORAGE_KEYS.CURRENT_GUEST) === id) {
         this.clearCurrentGuest();
       }
@@ -366,29 +284,18 @@ const Store = {
   // Session invité courant
   // ════════════════════════════════════════════
 
-  /**
-   * Retourne l'invité actuellement connecté, ou null
-   * @returns {Object|null} L'invité courant ou null
-   */
   getCurrentGuest() {
     const guestId = this._getData(STORAGE_KEYS.CURRENT_GUEST);
     if (!guestId) return null;
     return this.getGuest(guestId) || null;
   },
 
-  /**
-   * Stocke l'ID de l'invité courant dans localStorage
-   * @param {string} guestId — Identifiant de l'invité
-   */
   setCurrentGuest(guestId) {
     this._setData(STORAGE_KEYS.CURRENT_GUEST, guestId);
     this._emit('auth-changed');
     console.log(`[Store] Invité courant défini : ${guestId}`);
   },
 
-  /**
-   * Efface la session de l'invité courant
-   */
   clearCurrentGuest() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_GUEST);
     this._emit('auth-changed');
@@ -399,37 +306,18 @@ const Store = {
   // Gestion des covoiturages (Carpools)
   // ════════════════════════════════════════════
 
-  /**
-   * Retourne tous les covoiturages
-   * @returns {Array} Liste des covoiturages
-   */
   getCarpools() {
     return this._getData(STORAGE_KEYS.CARPOOLS) || [];
   },
 
-  /**
-   * Filtre les covoiturages par type ('offer' ou 'request')
-   * @param {string} type — 'offer' ou 'request'
-   * @returns {Array} Covoiturages filtrés
-   */
   getCarpoolsByType(type) {
     return this.getCarpools().filter((c) => c.type === type);
   },
 
-  /**
-   * Filtre les covoiturages par invité
-   * @param {string} guestId — Identifiant de l'invité
-   * @returns {Array} Covoiturages de l'invité
-   */
   getCarpoolsByGuestId(guestId) {
     return this.getCarpools().filter((c) => c.guestId === guestId);
   },
 
-  /**
-   * Crée un nouveau covoiturage
-   * @param {Object} data — Données du covoiturage
-   * @returns {Object} Le covoiturage créé
-   */
   saveCarpool(data) {
     const carpools = this.getCarpools();
     const now = new Date().toISOString();
@@ -449,12 +337,6 @@ const Store = {
     return newCarpool;
   },
 
-  /**
-   * Met à jour un covoiturage existant
-   * @param {string} id — Identifiant du covoiturage
-   * @param {Object} data — Données partielles à mettre à jour
-   * @returns {Object|null} Le covoiturage mis à jour ou null
-   */
   updateCarpool(id, data) {
     const carpools = this.getCarpools();
     const index = carpools.findIndex((c) => c.id === id);
@@ -479,10 +361,6 @@ const Store = {
     return carpools[index];
   },
 
-  /**
-   * Supprime un covoiturage par son ID
-   * @param {string} id — Identifiant du covoiturage
-   */
   deleteCarpool(id) {
     let carpools = this.getCarpools();
     carpools = carpools.filter((c) => c.id !== id);
@@ -495,19 +373,10 @@ const Store = {
   // Gestion des hébergements (Accommodations)
   // ════════════════════════════════════════════
 
-  /**
-   * Retourne tous les hébergements
-   * @returns {Array} Liste des hébergements
-   */
   getAccommodations() {
     return this._getData(STORAGE_KEYS.ACCOMMODATIONS) || [];
   },
 
-  /**
-   * Crée un nouvel hébergement
-   * @param {Object} data — Données de l'hébergement
-   * @returns {Object} L'hébergement créé
-   */
   saveAccommodation(data) {
     const accommodations = this.getAccommodations();
 
@@ -525,12 +394,6 @@ const Store = {
     return newAccommodation;
   },
 
-  /**
-   * Met à jour un hébergement existant
-   * @param {string} id — Identifiant de l'hébergement
-   * @param {Object} data — Données partielles à mettre à jour
-   * @returns {Object|null} L'hébergement mis à jour ou null
-   */
   updateAccommodation(id, data) {
     const accommodations = this.getAccommodations();
     const index = accommodations.findIndex((a) => a.id === id);
@@ -553,10 +416,6 @@ const Store = {
     return accommodations[index];
   },
 
-  /**
-   * Supprime un hébergement par son ID
-   * @param {string} id — Identifiant de l'hébergement
-   */
   deleteAccommodation(id) {
     let accommodations = this.getAccommodations();
     accommodations = accommodations.filter((a) => a.id !== id);
@@ -569,14 +428,13 @@ const Store = {
   // Administration
   // ════════════════════════════════════════════
 
-  /**
-   * Vérifie le mot de passe admin et enregistre l'authentification
-   * @param {string} password — Mot de passe à vérifier
-   * @returns {boolean} true si authentification réussie
-   */
-  adminLogin(password) {
-    if (password === ADMIN_PASSWORD) {
-      this._setData(STORAGE_KEYS.ADMIN_AUTH, { authenticated: true, timestamp: new Date().toISOString() });
+  async adminLogin(password) {
+    const hash = await hashPassword(password);
+    if (hash === ADMIN_PASSWORD_HASH) {
+      this._setData(STORAGE_KEYS.ADMIN_AUTH, {
+        authenticated: true,
+        timestamp: new Date().toISOString()
+      });
       this._emit('auth-changed');
       console.log('[Store] Connexion admin réussie.');
       return true;
@@ -585,19 +443,12 @@ const Store = {
     return false;
   },
 
-  /**
-   * Déconnecte l'administrateur
-   */
   adminLogout() {
     localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
     this._emit('auth-changed');
     console.log('[Store] Déconnexion admin.');
   },
 
-  /**
-   * Vérifie si un administrateur est actuellement connecté
-   * @returns {boolean} true si admin connecté
-   */
   isAdmin() {
     const auth = this._getData(STORAGE_KEYS.ADMIN_AUTH);
     return auth !== null && auth.authenticated === true;
@@ -607,52 +458,33 @@ const Store = {
   // Statistiques
   // ════════════════════════════════════════════
 
-  /**
-   * Calcule et retourne les statistiques globales du mariage
-   * @returns {Object} Objet contenant toutes les statistiques
-   */
   getStats() {
     const guests = this.getGuests();
     const carpools = this.getCarpools();
 
-    // — Compteurs invités —
     const totalGuests = guests.length;
 
-    // Nombre total de personnes (invité + accompagnants)
     const totalPeople = guests.reduce((sum, g) => {
       return sum + 1 + (g.companions ? g.companions.length : 0);
     }, 0);
 
-    // Invités ayant confirmé leur présence
     const confirmedGuests = guests.filter((g) => g.attending === true);
     const confirmed = confirmedGuests.length;
 
-    // Nombre total de personnes confirmées (invité + accompagnants)
     const confirmedPeople = confirmedGuests.reduce((sum, g) => {
       return sum + 1 + (g.companions ? g.companions.length : 0);
     }, 0);
 
-    // Invités ayant décliné
     const declined = guests.filter((g) => g.attending === false).length;
-
-    // Invités en attente de réponse
     const pending = guests.filter((g) => g.attending === null || g.attending === undefined).length;
 
-    // — Régimes alimentaires —
     let vegetarian = 0;
     let vegan = 0;
     let noAlcohol = 0;
     const allergies = [];
 
-    /**
-     * Compte les régimes pour une personne (invité ou accompagnant)
-     * @param {Array} dietArray — Tableau des régimes
-     * @param {string} name — Nom de la personne
-     * @param {string} allergyDetails — Détails des allergies
-     */
     const countDiets = (dietArray, name, allergyDetails) => {
       if (!dietArray || !Array.isArray(dietArray)) return;
-
       if (dietArray.includes('vegetarian')) vegetarian++;
       if (dietArray.includes('vegan')) vegan++;
       if (dietArray.includes('no-alcohol')) noAlcohol++;
@@ -661,7 +493,6 @@ const Store = {
       }
     };
 
-    // Parcourir tous les invités confirmés et leurs accompagnants
     confirmedGuests.forEach((guest) => {
       const guestName = `${guest.firstName} ${guest.lastName}`.trim();
       countDiets(guest.diet, guestName, guest.allergyDetails);
@@ -673,7 +504,6 @@ const Store = {
       }
     });
 
-    // — Transport / covoiturage —
     const offers = carpools.filter((c) => c.type === 'offer');
     const requests = carpools.filter((c) => c.type === 'request');
 
@@ -689,18 +519,8 @@ const Store = {
       confirmedPeople,
       declined,
       pending,
-      diets: {
-        vegetarian,
-        vegan,
-        noAlcohol,
-        allergies
-      },
-      transport: {
-        drivers,
-        seatsAvailable,
-        needRide,
-        seatsNeeded
-      }
+      diets: { vegetarian, vegan, noAlcohol, allergies },
+      transport: { drivers, seatsAvailable, needRide, seatsNeeded }
     };
   }
 };
