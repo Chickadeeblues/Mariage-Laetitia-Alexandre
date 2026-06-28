@@ -10,16 +10,17 @@ const AdminDashboard = {
     // Événements login
     this.loginBtn = document.getElementById('admin-login-btn');
     if (this.loginBtn) {
-      this.loginBtn.addEventListener('click', () => {
+      this.loginBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
         const password = document.getElementById('admin-password').value;
         const errDiv = document.getElementById('admin-error');
         if (await Store.adminLogin(password)) {
-          if(errDiv) errDiv.style.display = 'none';
+          if (errDiv) errDiv.style.display = 'none';
           document.getElementById('admin-password').value = '';
           Animations.showToast("Connexion réussie", "success");
           Router.navigate('#/admin/dashboard');
         } else {
-          if(errDiv) {
+          if (errDiv) {
             errDiv.textContent = "Mot de passe incorrect";
             errDiv.style.display = 'block';
             errDiv.style.color = 'red';
@@ -50,7 +51,7 @@ const AdminDashboard = {
     Store.on('guests-changed', refreshIfActive);
     Store.on('carpools-changed', refreshIfActive);
     Store.on('accommodations-changed', refreshIfActive);
-    
+
     // Si on navigue sur le dashboard, rendre les données
     window.addEventListener('route-changed', (e) => {
       if (e.detail.route === '#/admin/dashboard') {
@@ -73,7 +74,7 @@ const AdminDashboard = {
 
   renderStats() {
     const stats = Store.getStats();
-    
+
     const setStat = (id, number, label) => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = `<div class="stat-card__number">${number}</div><div class="stat-card__label">${label}</div>`;
@@ -170,7 +171,7 @@ const AdminDashboard = {
     html += `</tbody></table></div>`;
     container.innerHTML = html;
 
-    // Attach delete events
+    // Attacher les événements de suppression
     container.querySelectorAll('.delete-guest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         if (confirm("Êtes-vous sûr de vouloir supprimer cet invité et toutes ses données associées (covoiturage) ?")) {
@@ -185,7 +186,7 @@ const AdminDashboard = {
     const container = document.getElementById('admin-carpools');
     if (!container) return;
     const stats = Store.getStats();
-    
+
     let html = `
       <div class="admin-grid mb-4">
         <div class="card" style="border-left: 4px solid var(--sage);">
@@ -199,7 +200,7 @@ const AdminDashboard = {
       </div>
       <p class="text-center mt-2"><a href="#/covoiturage" class="btn btn--secondary">Gérer les covoiturages sur la page publique</a></p>
     `;
-    
+
     container.innerHTML = html;
   },
 
@@ -238,9 +239,9 @@ const AdminDashboard = {
         const lat = prompt("Latitude (ex: 45.42) :");
         const lng = prompt("Longitude (ex: 4.59) :");
         const capacity = prompt("Capacité (ex: 4 personnes) :");
-        
+
         Store.saveAccommodation({
-          name, lat: parseFloat(lat) || 45.411, lng: parseFloat(lng) || 4.588, capacity, 
+          name, lat: parseFloat(lat) || 45.411, lng: parseFloat(lng) || 4.588, capacity,
           description: "", distance: "", bookingUrl: ""
         });
         Animations.showToast("Hébergement ajouté", "success");
