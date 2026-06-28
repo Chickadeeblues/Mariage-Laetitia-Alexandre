@@ -13,7 +13,7 @@ const AdminDashboard = {
       this.loginBtn.addEventListener('click', () => {
         const password = document.getElementById('admin-password').value;
         const errDiv = document.getElementById('admin-error');
-        if (Store.adminLogin(password)) {
+        if (await Store.adminLogin(password)) {
           if(errDiv) errDiv.style.display = 'none';
           document.getElementById('admin-password').value = '';
           Animations.showToast("Connexion réussie", "success");

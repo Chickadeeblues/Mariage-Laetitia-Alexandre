@@ -25,7 +25,20 @@ const STORAGE_KEYS = {
 };
 
 // Mot de passe administrateur (mariés)
-const ADMIN_PASSWORD = 'ChatRenard';
+const ADMIN_PASSWORD_HASH = '2efdd4eeac99f6be0f0e0bea27dbbbbcb91e00c998f783a223afd7d24ad57a52'; 
+
+async adminLogin(password) {
+  const hash = await hashPassword(password);
+  if (hash === ADMIN_PASSWORD_HASH) {
+    this._setData(STORAGE_KEYS.ADMIN_AUTH, {
+      authenticated: true,
+      timestamp: new Date().toISOString()
+    });
+    this._emit('auth-changed');
+    return true;
+  }
+  return false;
+},
 
 // ──────────────────────────────────────────────
 // Données initiales des hébergements
