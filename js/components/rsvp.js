@@ -58,7 +58,71 @@ const RSVP = {
     this.container.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
-  getHTML() {
+getHTML() {
+    return `
+      <style>
+        /* Correction globale des débordements */
+        .form-steps-card { padding: 20px; overflow-x: hidden; }
+        .form-actions { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 2rem; }
+        .btn { padding: 12px 20px; font-size: 14px; }
+        
+        /* Alignement gauche pour les options */
+        .transport-sub-options { text-align: left; margin-left: 20px; margin-top: 10px; }
+        .compact-input { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+      </style>
+      <div class="card form-steps-card">
+        ${this.renderProgressBar()}
+        <div id="rsvp-form">
+          ${this.renderStep1()}
+          ${this.renderStep2()}
+          ${this.renderStep3()}
+          ${this.renderStep4()}
+          ${this.renderStep5()}
+        </div>
+      </div>
+    `;
+  },
+
+  /* Étape 4 modifiée avec les nouvelles contraintes */
+  renderStep4() {
+    const v = this.currentStep === 4;
+    const t = this.guestData.transport;
+
+    return `
+      <div class="form-step ${v ? 'active' : ''}" id="step-4">
+        <div style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:10px; font-weight:bold;">Arrivée dans la région</label>
+          <input type="text" class="compact-input" placeholder="Lieu de départ">
+          <input type="text" class="compact-input" placeholder="Lieu d'arrivée">
+          <input type="date" class="compact-input">
+        </div>
+
+        <div class="transport-sub-options">
+          <label><input type="radio" name="church" value="ter"> Depuis la gare TER Le Péage-de-Roussillon (à 20 min.)</label>
+          <input type="time" class="compact-input" placeholder="Heure d'arrivée prévue">
+          
+          <label><input type="radio" name="church" value="other"> Depuis un autre lieu</label>
+          <input type="text" class="compact-input" placeholder="Ville de départ *">
+        </div>
+
+        <div class="transport-sub-options">
+          <label><input type="checkbox" id="need-night"> Aller à mon lieu de couchage le soir</label>
+          <div id="night-fields" class="hidden">
+            <input type="text" class="compact-input" placeholder="Nom du lieu *">
+            <input type="text" class="compact-input" placeholder="Adresse *">
+            <input type="text" class="compact-input" placeholder="Ville *">
+            <input type="text" class="compact-input" placeholder="Code postal *">
+            <input type="number" class="compact-input" placeholder="Distance depuis réception (min) *">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--secondary prev-btn">Précédent</button>
+          <button type="button" class="btn btn--primary next-btn">Confirmer ma réponse</button>
+        </div>
+      </div>
+    `;
+  },
     return `
       <style>
         .step-indicator { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 1.5rem; flex-wrap: wrap; }
