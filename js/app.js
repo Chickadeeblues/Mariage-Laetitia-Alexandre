@@ -1,17 +1,7 @@
 /**
  * app.js — Point d'entrée principal de l'application
- * 
- * Mariage Laetitia & Alexandre — 8 mai 2027
+ * * Mariage Laetitia & Alexandre — 8 mai 2027
  * Domaine de la Scie du May
- * 
- * Ce module :
- *  1. Initialise le Store (localStorage)
- *  2. Configure et démarre le Router SPA
- *  3. Initialise tous les composants de l'application
- *  4. Active les animations au scroll
- *  5. Gère le menu hamburger mobile
- *  6. Protège la route admin/dashboard
- *  7. Expose Store et Router sur window pour le debug
  */
 
 // ──────────────────────────────────────────────
@@ -26,7 +16,7 @@ import RSVP from './components/rsvp.js';
 import MapComponent from './components/map.js';
 import Carpool from './components/carpool.js';
 import GuestProfile from './components/guestProfile.js';
-import AdminDashboard from './components/adminDashboard.js';
+import AdminDashboard from './components/adminDashboard.js'; // S'assurer que le nom sur le disque est identique
 
 // ──────────────────────────────────────────────
 // Définition des routes de l'application
@@ -81,11 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Initialisation des composants
 // ──────────────────────────────────────────────
 
-/**
- * Initialise tous les composants de l'application.
- * Chaque composant est initialisé de manière sécurisée :
- * si le composant n'est pas chargé, on ignore silencieusement.
- */
 function initComponents() {
   const components = [
     { name: 'Hero', module: Hero },
@@ -112,10 +97,6 @@ function initComponents() {
 // Menu hamburger mobile
 // ──────────────────────────────────────────────
 
-/**
- * Configure le bouton hamburger pour basculer l'affichage
- * du menu de navigation sur mobile.
- */
 function initMobileMenu() {
   const hamburger = document.querySelector('.nav__hamburger');
   const navMenu = document.querySelector('.nav__links');
@@ -128,15 +109,10 @@ function initMobileMenu() {
   hamburger.addEventListener('click', () => {
     const isOpen = navMenu.classList.toggle('open');
     hamburger.classList.toggle('active', isOpen);
-
-    // Accessibilité : indiquer l'état du menu
     hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-
-    // Empêcher le scroll du body quand le menu est ouvert
     document.body.classList.toggle('menu-open', isOpen);
   });
 
-  // Fermer le menu au clic sur un lien de navigation
   navMenu.querySelectorAll('.nav__link').forEach((link) => {
     link.addEventListener('click', () => {
       navMenu.classList.remove('open');
@@ -151,23 +127,12 @@ function initMobileMenu() {
 // Gestion des changements de route
 // ──────────────────────────────────────────────
 
-/**
- * Gère les effets de bord lors d'un changement de route.
- * 
- * En particulier :
- *  - Invalide la taille de la carte Leaflet quand la page carte devient visible
- *  - Protège la route admin/dashboard : redirige si pas admin
- *  - Réinitialise les animations au scroll pour la nouvelle page
- * 
- * @param {CustomEvent} event — Événement 'route-changed' avec { route, pageId }
- */
 function handleRouteChange(event) {
   const { route, pageId } = event.detail;
 
   // ── Protection de la route admin/dashboard ──
   if (route === '#/admin/dashboard' && !Store.isAdmin()) {
     console.warn('[App] Accès admin/dashboard non autorisé. Redirection vers #/admin.');
-    // Rediriger avec un léger délai pour éviter les boucles
     setTimeout(() => {
       Router.navigate('#/admin');
     }, 50);
@@ -176,14 +141,12 @@ function handleRouteChange(event) {
 
   // ── Invalider la carte Leaflet quand elle devient visible ──
   if (route === '#/hebergements' && MapComponent && typeof MapComponent.invalidateSize === 'function') {
-    // Attendre que la page soit affichée avant d'invalider
     setTimeout(() => {
       MapComponent.invalidateSize();
     }, 200);
   }
 
-  // ── Réinitialiser les animations au scroll pour la nouvelle page ──
-  // Nécessaire car les éléments de la nouvelle page n'ont pas été observés
+  // ── Réinitialiser les animations au scroll ──
   setTimeout(() => {
     Animations.initScrollAnimations();
   }, 100);
@@ -193,8 +156,12 @@ function handleRouteChange(event) {
     GuestProfile.refresh();
   }
 
-  // ── Rafraîchir le dashboard admin si nécessaire ──
-  if (route === '#/admin/dashboard' && AdminDashboard && typeof AdminDashboard.refresh === 'function') {
-    AdminDashboard.refresh();
+  // ── RECOUPEMENT : Rafraîchir le dashboard avec la bonne méthode ──
+  if (route === '#/admin/dashboard' && AdminDashboard) {
+    if (typeof AdminDashboard.renderDashboard === 'function') {
+      AdminDashboard.renderDashboard();
+    } else if (typeof AdminDashboard.refresh === 'function') {
+      AdminDashboard.refresh();
+    }
   }
 }

@@ -220,13 +220,15 @@ const Store = {
       diet: data.diet || [],
       allergyDetails: data.allergyDetails || '',
       transport: data.transport || {
-        type: 'none',
+        mode: 'car',          // Correction de l'ancien 'type'
+        carpoolRole: 'none',  // Ajout du nouveau rôle
         city: '',
-        seatsAvailable: 0,
-        seatsNeeded: 0,
+        seatsAvailable: 1,
+        seatsNeeded: 1,
         departureDay: '',
         departureTime: '',
-        contact: ''
+        contactPhone: '',     // Alignement avec le nouveau RSVP
+        contactEmail: ''      // Alignement avec le nouveau RSVP
       },
       createdAt: now,
       updatedAt: now
@@ -264,22 +266,31 @@ const Store = {
     return guests[index];
   },
 
-  deleteGuest(id) {
+ deleteGuest(id) {
     let guests = this.getGuests();
     const guest = guests.find((g) => g.id === id);
 
     if (guest) {
+      // 1. Supprimer l'invité
       guests = guests.filter((g) => g.id !== id);
       this._setData(STORAGE_KEYS.GUESTS, guests);
       this._emit('guests-changed');
       console.log(`[Store] Invité supprimé : ${guest.firstName} ${guest.lastName}`);
 
+      // 2. CORRECTION : Supprimer ses covoiturages associés
+      let carpools = this.getCarpools();
+      const filteredCarpools = carpools.filter(c => c.guestId !== id);
+      if (carpools.length !== filteredCarpools.length) {
+        this._setData(STORAGE_KEYS.CARPOOLS, filteredCarpools);
+        this._emit('carpools-changed');
+      }
+
+      // 3. Vider la session si besoin
       if (this._getData(STORAGE_KEYS.CURRENT_GUEST) === id) {
         this.clearCurrentGuest();
       }
     }
   },
-
   // ════════════════════════════════════════════
   // Session invité courant
   // ════════════════════════════════════════════

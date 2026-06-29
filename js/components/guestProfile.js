@@ -1,6 +1,7 @@
 import Store from '../store.js';
 import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
+import RSVP from './rsvp.js'; // Import nécessaire pour forcer la réinitialisation lors d'une modification
 
 const GuestProfile = {
   container: null,
@@ -11,10 +12,9 @@ const GuestProfile = {
     
     this.render();
     
-    // Auto refresh when auth or guests change
+    // Auto refresh quand l'authentification ou les invités changent
     Store.on('auth-changed', () => this.render());
     Store.on('guests-changed', () => {
-       // Only render if we are currently looking at a guest profile
        if (Store.getCurrentGuest()) this.render();
     });
   },
@@ -30,7 +30,7 @@ const GuestProfile = {
       this.container.innerHTML = this.renderProfile(guest);
       this.attachProfileEvents();
       
-      // Animate children
+      // Animations d'apparition
       const cards = this.container.querySelectorAll('.card');
       cards.forEach((c, idx) => {
         c.style.opacity = '0';
@@ -43,89 +43,91 @@ const GuestProfile = {
     return `
       <div class="card form-steps-card">
         <h3 class="text-center">Retrouvez vos réponses</h3>
-        <p class="text-center text-muted mb-4">Entrez le numéro de téléphone utilisé lors de votre inscription pour retrouver vos réponses.</p>
+        <p class="text-center text-muted mb-4">Entrez le numéro de téléphone utilisé lors de votre inscription pour retrouver ou modifier vos réponses.</p>
         <div class="form-group">
-          <label>Numéro de téléphone</label>
-          <input type="tel" id="login-phone" placeholder="ex: 0612345678" required>
+          <label for="login-phone">Numéro de téléphone portable</label>
+          <input type="tel" id="login-phone" placeholder="06 00 00 00 00">
         </div>
         <div class="text-center mt-4">
-          <button type="button" class="btn btn--primary" id="login-btn">Rechercher</button>
+          <button type="button" class="btn btn--primary" id="login-btn" style="width: 100%;">Accéder à mon espace</button>
         </div>
       </div>
     `;
   },
 
   renderProfile(guest) {
-    // Helper pour badges de régime
-    const getDietBadges = (dietArr, allergyDetails) => {
-      if (!dietArr || dietArr.length === 0) return '<span class="text-muted">Aucun régime particulier</span>';
-      let html = '';
-      if (dietArr.includes('vegetarian')) html += '<span class="badge badge--vegetarian">Végétarien</span> ';
-      if (dietArr.includes('vegan')) html += '<span class="badge badge--vegan">Végan</span> ';
-      if (dietArr.includes('no-alcohol')) html += '<span class="badge badge--no-alcohol">Sans alcool</span> ';
-      if (dietArr.includes('allergy')) html += `<span class="badge badge--allergy">Allergie : ${allergyDetails}</span> `;
-      return html;
-    };
+    let presenceText = '';
+    let presenceClass = '';
+    if (guest.attending === true) {
+      presenceText = '🎉 Présence confirmée ! Je viens avec joie.';
+      presenceClass = 'status--confirmed';
+    } else if (guest.attending === 'maybe') {
+      presenceText = '🤔 En attente (Je viens peut-être).';
+      presenceClass = 'status--pending';
+    } else {
+      presenceText = '💌 Décliné (Je ne peux pas venir).';
+      presenceClass = 'status--declined';
+    }
+
+    // Gestion de l'affichage adaptatif du Brunch
+    let brunchText = 'Non renseigné';
+    if (guest.brunch === true) brunchText = '☕ Oui, avec plaisir !';
+    if (guest.brunch === false) brunchText = '🙏 Non, merci.';
 
     return `
-      <div class="profile-header text-center mb-4">
-        <h2>Bonjour ${guest.firstName},</h2>
-        <p class="text-muted">Voici le récapitulatif de vos réponses.</p>
-      </div>
-
-      <div class="admin-grid">
-        <div class="card mb-4">
-          <h3>Présence</h3>
-          <p>
-            ${guest.attending === true 
-              ? '<span class="badge badge--confirmed text-white px-2 py-1 radius-sm">Confirmée ✅</span>' 
-              : '<span class="badge badge--declined text-white px-2 py-1 radius-sm">Déclinée ❌</span>'}
-          </p>
-          ${guest.attending ? `
-            <p class="mt-2"><strong>Accompagnants :</strong> ${guest.companions.length > 0 ? guest.companions.map(c => c.name).join(', ') : 'Aucun'}</p>
-          ` : ''}
-        </div>
-
-        <div class="card mb-4">
-          <h3>Coordonnées</h3>
-          <p><strong>Nom :</strong> ${guest.firstName} ${guest.lastName}</p>
-          <p><strong>Email :</strong> ${guest.email}</p>
-          <p><strong>Tél :</strong> ${guest.phone || '-'}</p>
+      <div class="card profile-header-card text-center mb-4">
+        <h2>Bonjour ${guest.firstName} !</h2>
+        <p class="text-muted">Ravi de vous revoir sur l'espace de notre mariage.</p>
+        <div class="badge-presence ${presenceClass}" style="display:inline-block; margin-top:10px; padding:8px 16px; border-radius:20px; font-weight:500;">
+          ${presenceText}
         </div>
       </div>
 
-      ${guest.attending ? `
-      <div class="card mb-4">
-        <h3>Régimes alimentaires</h3>
-        <div class="mb-3">
-          <strong>Pour vous :</strong><br>
-          ${getDietBadges(guest.diet, guest.allergyDetails)}
-        </div>
-        ${guest.companions.map((c) => `
-          <div class="mb-3">
-            <strong>Pour ${c.name} :</strong><br>
-            ${getDietBadges(c.diet, c.allergyDetails)}
+      ${guest.attending !== false ? `
+        <div class="grid grid--2-cols">
+          <div class="card">
+            <h3>Vos choix</h3>
+            <ul class="profile-details-list" style="list-style:none; padding:0; margin-top:15px; line-height:1.8;">
+              <li><strong>Brunch du lendemain :</strong> ${brunchText}</li>
+              <li><strong>Contact :</strong> ${guest.phone} ${guest.email ? `(${guest.email})` : ''}</li>
+              ${guest.companions && guest.companions.length > 0 ? `
+                <li style="margin-top: 10px;">
+                  <strong>Accompagnants (${guest.companions.length}) :</strong>
+                  <ul style="padding-left:15px; font-size:14px; color:#555;">
+                    ${guest.companions.map(c => `<li>👤 ${c.name || 'Sans nom'}</li>`).join('')}
+                  </ul>
+                </li>
+              ` : '<li><strong>Accompagnant :</strong> Aucun</li>'}
+            </ul>
           </div>
-        `).join('')}
-      </div>
 
-      <div class="card mb-4">
-        <h3>Transport & Covoiturage</h3>
-        ${guest.transport.type === 'none' ? '<p>Vous vous organisez par vos propres moyens.</p>' : ''}
-        ${guest.transport.type === 'driver' ? `
-          <p><span class="badge badge--vegetarian">Conducteur</span> <strong>Départ de :</strong> ${guest.transport.city}</p>
-          <p><strong>Places proposées :</strong> ${guest.transport.seatsAvailable}</p>
-          <p><strong>Jour :</strong> ${guest.transport.departureDay}</p>
-          <p><strong>Heure :</strong> ${guest.transport.departureTime || 'Non précisée'}</p>
-          <p><strong>Contact :</strong> ${guest.transport.contact}</p>
-        ` : ''}
-        ${guest.transport.type === 'passenger' ? `
-          <p><span class="badge badge--pending">Recherche place(s)</span> <strong>Au départ de :</strong> ${guest.transport.city}</p>
-          <p><strong>Places nécessaires :</strong> ${guest.transport.seatsNeeded}</p>
-          <p><strong>Jour :</strong> ${guest.transport.departureDay}</p>
-          <p><strong>Contact :</strong> ${guest.transport.contact}</p>
-        ` : ''}
-      </div>
+          <div class="card">
+            <h3>Préférences & Logistique</h3>
+            <div style="margin-top:15px; font-size:14px; line-height:1.6;">
+              <p><strong>Régime alimentaire :</strong> 
+                ${guest.diet && guest.diet.length > 0 ? guest.diet.map(d => {
+                  if (d === 'vegetarian') return '🥗 Végétarien';
+                  if (d === 'vegan') return '🌱 Végan';
+                  if (d === 'no-alcohol') return '🧃 Sans alcool';
+                  if (d === 'allergy') return '⚠️ Allergie';
+                  return d;
+                }).join(', ') : 'Aucun régime particulier'}
+              </p>
+              ${guest.allergyDetails ? `<p style="font-size:13px; color:#c62828; font-style:italic;">Note : ${guest.allergyDetails}</p>` : ''}
+              
+              <div style="height:1px; background:#f5f2eb; margin:12px 0;"></div>
+              
+              <p><strong>Transport choisi :</strong> 
+                ${guest.transport?.mode === 'car' ? '🚗 En voiture' : guest.transport?.mode === 'train' ? '🚆 En train' : '✈️ Autre'}
+              </p>
+              ${guest.transport?.carpoolRole === 'offer' ? `
+                <p style="color:green; font-size:13px;">🚘 Vous proposez ${guest.transport.seatsAvailable} places depuis ${guest.transport.city || 'votre ville'}.</p>
+              ` : guest.transport?.carpoolRole === 'need' ? `
+                <p style="color:#b8860b; font-size:13px;">🙋 Vous recherchez ${guest.transport.seatsNeeded} places vers ${guest.transport.city || 'votre destination'}.</p>
+              ` : '<p class="text-muted" style="font-size:13px;">Pas de covoiturage actif.</p>'}
+            </div>
+          </div>
+        </div>
       ` : ''}
 
       <div class="text-center mt-4 form-actions">
@@ -168,9 +170,18 @@ const GuestProfile = {
     const editBtn = this.container.querySelector('#edit-btn');
     if (editBtn) {
       editBtn.addEventListener('click', () => {
+        // CORRECTION CRUCIALE : Forcer la réinitialisation de l'étape du formulaire RSVP à 1
+        if (RSVP && typeof RSVP.init === 'function') {
+          RSVP.currentStep = 1; 
+        }
         Router.navigate('#/rsvp');
       });
     }
+  },
+
+  // Utilisé par app.js lors des changements de routes vers '#/mes-reponses'
+  refresh() {
+    this.render();
   }
 };
 

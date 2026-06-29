@@ -65,7 +65,7 @@ const Carpool = {
   _getDrivers() {
     const guests = Store.getGuests() || [];
     return guests
-      .filter((g) => g.transport && g.transport.type === 'driver')
+      .filter((g) => g.transport && g.transport.carpoolRole === 'offer')
       .map((g) => ({
         id: g.id,
         name: `${g.firstName} ${g.lastName}`,
@@ -84,7 +84,7 @@ const Carpool = {
   _getPassengers() {
     const guests = Store.getGuests() || [];
     return guests
-      .filter((g) => g.transport && g.transport.type === 'passenger')
+      .filter((g) => g.transport && g.transport.carpoolRole === 'need')
       .map((g) => ({
         id: g.id,
         name: `${g.firstName} ${g.lastName}`,
