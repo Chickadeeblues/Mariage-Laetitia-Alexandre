@@ -77,18 +77,23 @@ const RSVP = {
 
   getHTML() {
     return `
-      <style>
+<style>
         .step-indicator { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; border: 1px solid #e0d5c1; color: #a89a7a; background: #fff; }
         .step-dot.active { background: #9b8660; border-color: #9b8660; color: #fff; }
         .step-dot.completed { background: #f4efe6; border-color: #d8ceb9; color: #9b8660; }
-        .step-label { font-size: 14px; font-weight: bold; color: #9b8660; text-align: center; margin-bottom: 20px; }
+        
+        /* Titre plus grand, sombre et élégant */
+        .step-label { font-size: 24px; font-family: 'Playfair Display', serif; color: #4a4a4a; text-align: center; margin-bottom: 15px; font-weight: 400; }
+        
         .form-step { display: none; }
         .form-step.active { display: block; }
         .compact-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .form-actions { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 2rem; }
-        .transport-sub-options { text-align: left; margin-left: 20px; margin-top: 10px; }
-        .attendance-options { display: flex; flex-direction: column; gap: 10px; margin: 1rem 0; }
+        
+        /* Espace réduit entre le champ téléphone et les boutons */
+        .attendance-options { display: flex; flex-direction: column; gap: 8px; margin: 0.5rem 0; }
+        
         .choice-btn { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #e5e0d5; border-radius: 8px; background: #fff; cursor: pointer; font-size: 15px; text-align: left; width: 100%; }
         .choice-btn.selected { border-color: #9b8660; background: #fbf9f4; font-weight: 500; }
         .diet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
@@ -129,35 +134,48 @@ const RSVP = {
     return String(str).replace(/"/g, '&quot;'); 
   },
 
-  renderStep1() {
+renderStep1() {
     const v = this.currentStep === 1;
     const att = this.guestData.attending;
     const companions = this.guestData.companions || [];
+    
     return `
       <div class="form-step ${v ? 'active' : ''}" id="step-1">
         <div>
           <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="Prénom *" required>
           <input type="text" id="guest-lastname" class="compact-input" value="${this.esc(this.guestData.lastName)}" placeholder="Nom *" required>
-          <input type="tel" id="guest-phone" class="compact-input" value="${this.esc(this.guestData.phone)}" placeholder="Téléphone portable (ex: 06 00 00 00 00) *" required>
+          <input type="tel" id="guest-phone" class="compact-input" value="${this.esc(this.guestData.phone)}" placeholder="Téléphone portable *" required>
         </div>
-        <div style="height:1px; background:#f5f2eb; margin: 1.5rem 0;"></div>
-        <div class="attendance-options">
+        <div style="height:1px; background:#f5f2eb; margin: 1rem 0;"></div>
+        
+        <div class="attendance-options" id="main-attendance-options">
           <button type="button" class="choice-btn ${att === true ? 'selected' : ''}" data-val="true"><span>🎉</span> <strong>Je viens avec joie !</strong></button>
-          <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>Je viens peut-être</strong></button>
-          <button type="button" class="choice-btn ${att === false ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>Je ne peux pas venir</strong></button>
+          ${att !== true ? `
+            <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>Je viens peut-être</strong></button>
+            <button type="button" class="choice-btn ${att === false ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>Je ne peux pas venir</strong></button>
+          ` : ''}
         </div>
-        <div id="companions-section" class="${att === true ? '' : 'hidden'}">
-          <div style="background: #fdfaf3; border-left: 2px solid #cbbfa0; padding: 10px; font-size: 13px; font-style: italic; margin-bottom:10px;">Le nombre d'invités étant strictement limité, merci de ne pas ajouter quelqu'un que nous n'avons pas prévu !</div>
-          <select id="guest-companions-count" class="compact-input">
-            <option value="0" disabled ${companions.length === 0 ? 'selected' : ''}>Nombre d'accompagnants...</option>
-            ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
-          </select>
+
+        ${att === true ? `
+        <div id="companions-section">
+          <div style="margin: 15px 0;">
+             <label style="display:block; margin-bottom:5px;">Je viens :</label>
+             <button type="button" class="choice-btn ${companions.length === 0 ? 'selected' : ''}" onclick="/* logique pour seul */">Seul(e)</button>
+             <select id="guest-companions-count" class="compact-input" style="margin-top:5px;">
+                <option value="0" ${companions.length === 0 ? 'selected' : ''}>Accompagné(e)...</option>
+                ${[1,2,3,4].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>Avec ${n} personne(s)</option>`).join('')}
+             </select>
+          </div>
           <div id="companions-list">
             ${companions.map((comp, idx) => `
-              <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(comp.name)}" placeholder="Prénom et Nom de l'accompagnant ${idx + 1}">
+              <div style="margin-bottom:10px;">
+                <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(comp.name)}" placeholder="Prénom et Nom de l'accompagnant ${idx + 1} *" required>
+                <input type="tel" class="compact-input companion-phone" data-index="${idx}" value="${this.esc(comp.phone || '')}" placeholder="Téléphone (facultatif)">
+              </div>
             `).join('')}
           </div>
-        </div>
+        </div>` : ''}
+        
         <div class="form-actions"><button type="button" class="btn btn--primary next-btn" style="width:100%;">Suivant →</button></div>
       </div>
     `;
