@@ -31,7 +31,6 @@ const RSVP = {
       contactEmail: '',
       passengerNeeds: [],
       churchArrival: '',
-      // Nouveaux champs
       arrivalBeforeDDay: false,
       arrivalFrom: '',
       arrivalTo: '',
@@ -49,22 +48,31 @@ const RSVP = {
     this.container = document.getElementById('rsvp-container');
     if (!this.container) return;
 
-    const currentGuest = Store.getCurrentGuest();
-    if (currentGuest) {
-      this.guestData = {
-        ...this.guestData,
-        ...currentGuest,
-        transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
-      };
+    try {
+      const currentGuest = Store.getCurrentGuest();
+      if (currentGuest) {
+        this.guestData = {
+          ...this.guestData,
+          ...currentGuest,
+          transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
+        };
+      }
+      this.render();
+    } catch (error) {
+      console.error("[RSVP] Erreur lors de l'initialisation :", error);
     }
-    this.render();
   },
 
   render() {
     if (!this.container) return;
-    this.container.innerHTML = this.getHTML();
-    this.attachEvents();
-    Animations.fadeIn(this.container);
+    try {
+      this.container.innerHTML = this.getHTML();
+      this.attachEvents();
+      Animations.fadeIn(this.container);
+    } catch (error) {
+      console.error("[RSVP] Erreur fatale lors du rendu :", error);
+      this.container.innerHTML = `<div style="padding: 20px; text-align: center; color: red; background: #fff; border-radius: 8px;">Une erreur est survenue lors du chargement du formulaire. Veuillez rafraîchir la page.</div>`;
+    }
   },
 
   getHTML() {
@@ -116,11 +124,15 @@ const RSVP = {
     return html;
   },
 
-  esc(str) { return String(str).replace(/"/g, '&quot;'); },
+  esc(str) { 
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/"/g, '&quot;'); 
+  },
 
   renderStep1() {
     const v = this.currentStep === 1;
     const att = this.guestData.attending;
+    const companions = this.guestData.companions || [];
     return `
       <div class="form-step ${v ? 'active' : ''}" id="step-1">
         <div>
@@ -137,11 +149,11 @@ const RSVP = {
         <div id="companions-section" class="${att === true ? '' : 'hidden'}">
           <div style="background: #fdfaf3; border-left: 2px solid #cbbfa0; padding: 10px; font-size: 13px; font-style: italic; margin-bottom:10px;">Le nombre d'invités étant strictement limité, merci de ne pas ajouter quelqu'un que nous n'avons pas prévu !</div>
           <select id="guest-companions-count" class="compact-input">
-            <option value="0" disabled ${this.guestData.companions.length === 0 ? 'selected' : ''}>Nombre d'accompagnants...</option>
-            ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${this.guestData.companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
+            <option value="0" disabled ${companions.length === 0 ? 'selected' : ''}>Nombre d'accompagnants...</option>
+            ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
           <div id="companions-list">
-            ${this.guestData.companions.map((comp, idx) => `
+            ${companions.map((comp, idx) => `
               <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(comp.name)}" placeholder="Prénom et Nom de l'accompagnant ${idx + 1}">
             `).join('')}
           </div>
@@ -171,8 +183,11 @@ const RSVP = {
 
   renderStep3() {
     const v = this.currentStep === 3;
+    const companions = this.guestData.companions || [];
+    
     const renderBlock = (personLabel, personKey, currentDiet, currentAllergyDetails) => {
-      const hasAllergy = currentDiet && currentDiet.includes('allergy');
+      const dietArray = currentDiet || [];
+      const hasAllergy = dietArray.includes('allergy');
       const details = currentAllergyDetails || '';
       const isLactose = details.includes('[Lactose]');
       const isGluten = details.includes('[Gluten]');
@@ -186,9 +201,9 @@ const RSVP = {
         <div style="margin-bottom: 1.5rem;">
           <p style="font-weight: 500; border-bottom: 1px solid #f5f2eb; padding-bottom: 4px;">${personLabel}</p>
           <div class="diet-grid">
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="vegetarian" ${currentDiet?.includes('vegetarian') ? 'checked' : ''}><span>🥗 Végétarien</span></label>
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="vegan" ${currentDiet?.includes('vegan') ? 'checked' : ''}><span>🌱 Végan</span></label>
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="no-alcohol" ${currentDiet?.includes('no-alcohol') ? 'checked' : ''}><span>🧃 Sans alcool</span></label>
+            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="vegetarian" ${dietArray.includes('vegetarian') ? 'checked' : ''}><span>🥗 Végétarien</span></label>
+            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="vegan" ${dietArray.includes('vegan') ? 'checked' : ''}><span>🌱 Végan</span></label>
+            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="no-alcohol" ${dietArray.includes('no-alcohol') ? 'checked' : ''}><span>🧃 Sans alcool</span></label>
             <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${personKey}" value="allergy" ${hasAllergy ? 'checked' : ''}><span>⚠️ Allergie</span></label>
           </div>
           <div class="allergy-sub-options ${hasAllergy ? '' : 'hidden'}" id="allergy-details-${personKey}">
@@ -206,7 +221,7 @@ const RSVP = {
 
     let html = `<div class="form-step ${v ? 'active' : ''}" id="step-3">`;
     html += renderBlock('Pour vous', 'main', this.guestData.diet, this.guestData.allergyDetails);
-    this.guestData.companions.forEach((comp, idx) => {
+    companions.forEach((comp, idx) => {
       html += renderBlock(`Pour ${comp.name || 'Accompagnant ' + (idx + 1)}`, String(idx), comp.diet, comp.allergyDetails);
     });
     html += `<div class="form-actions"><button type="button" class="btn btn--secondary prev-btn">← Précédent</button><button type="button" class="btn btn--primary next-btn">Suivant →</button></div></div>`;
@@ -215,7 +230,7 @@ const RSVP = {
 
   renderStep4() {
     const v = this.currentStep === 4;
-    const t = this.guestData.transport;
+    const t = this.guestData.transport || {}; // Protection contre les objets mal formatés
     const isCar = t.mode === 'car';
     const showNeedSection = !isCar && t.carpoolRole === 'need';
     const n = t.passengerNeeds || [];
@@ -364,7 +379,6 @@ const RSVP = {
       });
     });
 
-    // Transport Checkboxes
     const arriveBeforeCb = this.container.querySelector('#t-arrive-before');
     if (arriveBeforeCb) {
       arriveBeforeCb.addEventListener('change', (e) => {
@@ -430,7 +444,6 @@ const RSVP = {
     }
     if (this.currentStep === 4) {
       const t = this.guestData.transport;
-      
       t.arrivalBeforeDDay = document.getElementById('t-arrive-before')?.checked || false;
       if (t.arrivalBeforeDDay) {
         t.arrivalFrom = (document.getElementById('t-arr-from')?.value || '').trim();
@@ -477,15 +490,18 @@ const RSVP = {
     }
     if (this.currentStep === 4 && this.guestData.transport.carpoolRole === 'need') {
       const t = this.guestData.transport;
-      if (t.passengerNeeds.includes('church') && t.churchArrival === 'far' && !t.city) { Animations.showToast("Précisez la ville de départ", "error"); return false; }
-      if (t.passengerNeeds.includes('night') && (!t.nightName || !t.nightAddress || !t.nightDistance)) { Animations.showToast("Remplissez les champs obligatoires du lieu de couchage", "error"); return false; }
+      const n = t.passengerNeeds || [];
+      if (n.includes('church') && t.churchArrival === 'far' && !t.city) { Animations.showToast("Précisez la ville de départ", "error"); return false; }
+      if (n.includes('night') && (!t.nightName || !t.nightAddress || !t.nightDistance)) { Animations.showToast("Remplissez les champs obligatoires du lieu de couchage", "error"); return false; }
     }
     return true;
   },
 
   handleNext() {
+    // CORRECTION MAJEURE : Sauvegarder d'abord, puis valider.
+    this.saveCurrentStepData(); 
+
     if (this.validateStep()) {
-      this.saveCurrentStepData();
       if (this.currentStep === 1 && this.guestData.attending === false) { this.submitForm(); return; }
       if (this.currentStep === 1) {
         const existing = Store.getGuestByPhone(this.guestData.phone);
@@ -524,12 +540,13 @@ const RSVP = {
       
       let extraInfo = '';
       if (t.carpoolRole === 'need') {
-        const n = [];
-        if (t.passengerNeeds.includes('church')) n.push(t.churchArrival === 'ter' ? `Gare TER (${t.churchTime})` : `Plus loin (${t.city})`);
-        if (t.passengerNeeds.includes('church-venue')) n.push("Eglise->Domaine");
-        if (t.passengerNeeds.includes('night')) n.push(`Soir->${t.nightCity}`);
-        if (t.passengerNeeds.includes('brunch')) n.push("Brunch");
-        extraInfo = `[${n.join(', ')}]`;
+        const n = t.passengerNeeds || [];
+        const needsArr = [];
+        if (n.includes('church')) needsArr.push(t.churchArrival === 'ter' ? `Gare TER (${t.churchTime})` : `Plus loin (${t.city})`);
+        if (n.includes('church-venue')) needsArr.push("Eglise->Domaine");
+        if (n.includes('night')) needsArr.push(`Soir->${t.nightCity}`);
+        if (n.includes('brunch')) needsArr.push("Brunch");
+        extraInfo = `[${needsArr.join(', ')}]`;
       }
 
       Store.saveCarpool({
