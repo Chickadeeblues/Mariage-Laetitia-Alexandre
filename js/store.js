@@ -1,438 +1,358 @@
 /**
  * store.js — Module de persistance des données
- * 
- * Gère toute la persistance via localStorage pour l'application
- * de mariage Laetitia & Alexandre.
+ *
+ * Toutes les données sont stockées dans Supabase (cloud).
+ * Le localStorage est conservé uniquement pour la session
+ * de l'invité courant et l'authentification admin.
  */
 
 // ──────────────────────────────────────────────
-// Clés de stockage localStorage
+// Configuration Supabase
 // ──────────────────────────────────────────────
-const STORAGE_KEYS = {
-  GUESTS: 'wedding_guests',
-  CARPOOLS: 'wedding_carpools',
-  ACCOMMODATIONS: 'wedding_accommodations',
-  CURRENT_GUEST: 'wedding_current_guest_id',
-  ADMIN_AUTH: 'wedding_admin_auth'
+const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Prefer': 'return=representation'
 };
 
+// ──────────────────────────────────────────────
+// Clés localStorage (session uniquement)
+// ──────────────────────────────────────────────
+const LOCAL = {
+  CURRENT_GUEST: 'wedding_current_guest_id',
+  ADMIN_AUTH:    'wedding_admin_auth'
+};
+
+// ──────────────────────────────────────────────
 // Hash SHA-256 du mot de passe administrateur
+// ──────────────────────────────────────────────
 const ADMIN_PASSWORD_HASH = '2efdd4eeac99f6be0f0e0bea27dbbbbcb91e00c998f783a223afd7d24ad57a52';
 
-// Fonction de hachage utilisant l'API Web Crypto native
 async function hashPassword(password) {
-  const msgBuffer = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ──────────────────────────────────────────────
-// Données initiales des hébergements
+// Hébergements par défaut (insérés au 1er init)
 // ──────────────────────────────────────────────
 const DEFAULT_ACCOMMODATIONS = [
   {
-    id: 'acc-1',
     name: 'Domaine de la Scie du May',
-    lat: 45.4113,
-    lng: 4.5889,
-    capacity: 'Variable',
-    description: 'Hébergement sur le lieu de réception. Contactez les mariés pour les disponibilités. Tarif sur demande.',
-    bookingUrl: '',
-    distance: 'Sur place',
-    icon: 'venue'
+    lat: 45.4113, lng: 4.5889, capacity: 'Variable',
+    description: 'Hébergement sur le lieu de réception. Contactez les mariés pour les disponibilités.',
+    booking_url: '', distance: 'Sur place', icon: 'venue'
   },
   {
-    id: 'acc-2',
     name: 'La Roche du Pilat',
-    lat: 45.418,
-    lng: 4.605,
-    capacity: '6 personnes',
+    lat: 45.418, lng: 4.605, capacity: '6 personnes',
     description: 'Gîte de 100m² avec vue panoramique. ~100€/nuit.',
-    bookingUrl: 'https://www.gites-de-france.com',
-    distance: '~3 km',
-    icon: 'gite'
+    booking_url: 'https://www.gites-de-france.com', distance: '~3 km', icon: 'gite'
   },
   {
-    id: 'acc-3',
-    name: 'Chez Delphine (Chambre d\'hôtes)',
-    lat: 45.415,
-    lng: 4.595,
-    capacity: '2 à 4 pers.',
-    description: 'Chambre d\'hôtes dans un cadre paisible. ~85€/nuit.',
-    bookingUrl: 'https://www.escapade-chezdelphine.fr',
-    distance: '~3 km',
-    icon: 'chambre'
+    name: "Chez Delphine (Chambre d'hôtes)",
+    lat: 45.415, lng: 4.595, capacity: '2 à 4 pers.',
+    description: "Chambre d'hôtes dans un cadre paisible. ~85€/nuit.",
+    booking_url: 'https://www.escapade-chezdelphine.fr', distance: '~3 km', icon: 'chambre'
   },
   {
-    id: 'acc-4',
     name: 'Hôtel Restaurant Éclosion',
-    lat: 45.415,
-    lng: 4.575,
-    capacity: 'Variable',
+    lat: 45.415, lng: 4.575, capacity: 'Variable',
     description: 'Chambres tout confort. À partir de ~120€/nuit.',
-    bookingUrl: 'https://eclosion-restaurant.fr',
-    distance: '~4 km',
-    icon: 'chambre'
+    booking_url: 'https://eclosion-restaurant.fr', distance: '~4 km', icon: 'chambre'
   },
   {
-    id: 'acc-5',
     name: 'Camping Le Bessat / Croix de Chaubouret',
-    lat: 45.378,
-    lng: 4.515,
-    capacity: 'Tentes & Chalets',
+    lat: 45.378, lng: 4.515, capacity: 'Tentes & Chalets',
     description: 'Camping nature pour petits budgets. À partir de ~20€/nuit.',
-    bookingUrl: 'https://www.pilat-tourisme.fr',
-    distance: '~12 km',
-    icon: 'gite'
+    booking_url: 'https://www.pilat-tourisme.fr', distance: '~12 km', icon: 'gite'
   },
   {
-    id: 'acc-6',
     name: 'Options Airbnb (Parc du Pilat)',
-    lat: 45.395,
-    lng: 4.550,
-    capacity: 'Variable',
-    description: 'Recherchez des gîtes ou chambres sur Airbnb dans un rayon de 20 km. Tarifs variables.',
-    bookingUrl: 'https://www.airbnb.fr/s/Doizieux--France',
-    distance: '< 20 km',
-    icon: 'gite'
+    lat: 45.395, lng: 4.550, capacity: 'Variable',
+    description: 'Recherchez des gîtes ou chambres sur Airbnb dans un rayon de 20 km.',
+    booking_url: 'https://www.airbnb.fr/s/Doizieux--France', distance: '< 20 km', icon: 'gite'
   }
 ];
 
 // ──────────────────────────────────────────────
-// Registre des listeners d'événements
+// Système d'événements interne
 // ──────────────────────────────────────────────
 const _listeners = {};
 
 // ──────────────────────────────────────────────
-// Objet Store principal
+// Utilitaire : appel API Supabase
+// ──────────────────────────────────────────────
+async function supabase(method, table, { filter = '', body = null } = {}) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${filter ? '?' + filter : ''}`;
+  const opts = { method, headers: { ...HEADERS } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`[Supabase] ${method} ${table} — ${res.status}: ${err}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+// ──────────────────────────────────────────────
+// Conversion snake_case ↔ camelCase
+// (Supabase renvoie snake_case, l'appli utilise camelCase)
+// ──────────────────────────────────────────────
+function toApp(g) {
+  if (!g) return null;
+  return {
+    id:             g.id,
+    firstName:      g.first_name,
+    lastName:       g.last_name,
+    phone:          g.phone,
+    email:          g.email,
+    attending:      g.attending,
+    companions:     g.companions  || [],
+    diet:           g.diet        || [],
+    allergyDetails: g.allergy_details,
+    brunch:         g.brunch,
+    transport:      g.transport   || {},
+    createdAt:      g.created_at,
+    updatedAt:      g.updated_at
+  };
+}
+
+function toDb(data) {
+  const obj = {};
+  if (data.firstName      !== undefined) obj.first_name      = data.firstName;
+  if (data.lastName       !== undefined) obj.last_name       = data.lastName;
+  if (data.phone          !== undefined) obj.phone           = data.phone;
+  if (data.email          !== undefined) obj.email           = data.email;
+  if (data.attending      !== undefined) obj.attending       = data.attending;
+  if (data.companions     !== undefined) obj.companions      = data.companions;
+  if (data.diet           !== undefined) obj.diet            = data.diet;
+  if (data.allergyDetails !== undefined) obj.allergy_details = data.allergyDetails;
+  if (data.brunch         !== undefined) obj.brunch          = data.brunch;
+  if (data.transport      !== undefined) obj.transport       = data.transport;
+  obj.updated_at = new Date().toISOString();
+  return obj;
+}
+
+function carpoolToApp(c) {
+  if (!c) return null;
+  return {
+    id:            c.id,
+    guestId:       c.guest_id,
+    type:          c.type,
+    city:          c.city,
+    seatsAvailable: c.seats_available,
+    seatsNeeded:   c.seats_needed,
+    departureDay:  c.departure_day,
+    departureTime: c.departure_time,
+    contact:       c.contact,
+    createdAt:     c.created_at
+  };
+}
+
+function accToApp(a) {
+  if (!a) return null;
+  return {
+    id:          a.id,
+    name:        a.name,
+    lat:         a.lat,
+    lng:         a.lng,
+    capacity:    a.capacity,
+    description: a.description,
+    distance:    a.distance,
+    bookingUrl:  a.booking_url,
+    icon:        a.icon,
+    createdAt:   a.created_at
+  };
+}
+
+// ──────────────────────────────────────────────
+// Store principal
 // ──────────────────────────────────────────────
 const Store = {
 
   // ════════════════════════════════════════════
-  // Utilitaires internes
-  // ════════════════════════════════════════════
-
-  _generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  },
-
-  _getData(key) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      console.error(`[Store] Erreur lecture localStorage pour "${key}":`, e);
-      return null;
-    }
-  },
-
-  _setData(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-      console.error(`[Store] Erreur écriture localStorage pour "${key}":`, e);
-    }
-  },
-
-  _emit(event) {
-    if (_listeners[event]) {
-      _listeners[event].forEach((callback) => {
-        try {
-          callback();
-        } catch (e) {
-          console.error(`[Store] Erreur callback pour événement "${event}":`, e);
-        }
-      });
-    }
-  },
-
-  // ════════════════════════════════════════════
-  // Système d'événements
+  // Événements
   // ════════════════════════════════════════════
 
   on(event, callback) {
-    if (!_listeners[event]) {
-      _listeners[event] = [];
-    }
+    if (!_listeners[event]) _listeners[event] = [];
     _listeners[event].push(callback);
   },
 
   off(event, callback) {
-    if (_listeners[event]) {
-      _listeners[event] = _listeners[event].filter((cb) => cb !== callback);
-    }
+    if (_listeners[event])
+      _listeners[event] = _listeners[event].filter(cb => cb !== callback);
+  },
+
+  _emit(event) {
+    (_listeners[event] || []).forEach(cb => { try { cb(); } catch(e) { console.error(e); } });
   },
 
   // ════════════════════════════════════════════
   // Initialisation
   // ════════════════════════════════════════════
 
-  init() {
-    if (!this._getData(STORAGE_KEYS.GUESTS)) {
-      this._setData(STORAGE_KEYS.GUESTS, []);
-    }
-    if (!this._getData(STORAGE_KEYS.CARPOOLS)) {
-      this._setData(STORAGE_KEYS.CARPOOLS, []);
-    }
-    if (!this._getData(STORAGE_KEYS.ACCOMMODATIONS)) {
-      this._setData(STORAGE_KEYS.ACCOMMODATIONS, DEFAULT_ACCOMMODATIONS);
-    }
-    console.log('[Store] Initialisation terminée.');
-  },
-
-  // ════════════════════════════════════════════
-  // Gestion des invités (Guests)
-  // ════════════════════════════════════════════
-
-  getGuests() {
-    return this._getData(STORAGE_KEYS.GUESTS) || [];
-  },
-
-  getGuest(id) {
-    const guests = this.getGuests();
-    return guests.find((g) => g.id === id);
-  },
-
-  getGuestByPhone(phone) {
-    if (!phone) return undefined;
-    const guests = this.getGuests();
-    const cleanPhone = phone.replace(/[\s\-\.]/g, '');
-    return guests.find((g) => g.phone && g.phone.replace(/[\s\-\.]/g, '') === cleanPhone);
-  },
-
-  saveGuest(data) {
-    const guests = this.getGuests();
-    const now = new Date().toISOString();
-
-    const newGuest = {
-      id: this._generateId(),
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
-      email: data.email || '',
-      phone: data.phone || '',
-      attending: data.attending !== undefined ? data.attending : null,
-      companions: data.companions || [],
-      diet: data.diet || [],
-      allergyDetails: data.allergyDetails || '',
-      transport: data.transport || {
-        mode: 'car',          // Correction de l'ancien 'type'
-        carpoolRole: 'none',  // Ajout du nouveau rôle
-        city: '',
-        seatsAvailable: 1,
-        seatsNeeded: 1,
-        departureDay: '',
-        departureTime: '',
-        contactPhone: '',     // Alignement avec le nouveau RSVP
-        contactEmail: ''      // Alignement avec le nouveau RSVP
-      },
-      createdAt: now,
-      updatedAt: now
-    };
-
-    guests.push(newGuest);
-    this._setData(STORAGE_KEYS.GUESTS, guests);
-    this._emit('guests-changed');
-
-    console.log(`[Store] Invité créé : ${newGuest.firstName} ${newGuest.lastName} (${newGuest.id})`);
-    return newGuest;
-  },
-
-  updateGuest(id, data) {
-    const guests = this.getGuests();
-    const index = guests.findIndex((g) => g.id === id);
-
-    if (index === -1) {
-      console.warn(`[Store] Invité introuvable pour mise à jour : ${id}`);
-      return null;
-    }
-
-    guests[index] = {
-      ...guests[index],
-      ...data,
-      id: guests[index].id,
-      createdAt: guests[index].createdAt,
-      updatedAt: new Date().toISOString()
-    };
-
-    this._setData(STORAGE_KEYS.GUESTS, guests);
-    this._emit('guests-changed');
-
-    console.log(`[Store] Invité mis à jour : ${guests[index].firstName} ${guests[index].lastName}`);
-    return guests[index];
-  },
-
- deleteGuest(id) {
-    let guests = this.getGuests();
-    const guest = guests.find((g) => g.id === id);
-
-    if (guest) {
-      // 1. Supprimer l'invité
-      guests = guests.filter((g) => g.id !== id);
-      this._setData(STORAGE_KEYS.GUESTS, guests);
-      this._emit('guests-changed');
-      console.log(`[Store] Invité supprimé : ${guest.firstName} ${guest.lastName}`);
-
-      // 2. CORRECTION : Supprimer ses covoiturages associés
-      let carpools = this.getCarpools();
-      const filteredCarpools = carpools.filter(c => c.guestId !== id);
-      if (carpools.length !== filteredCarpools.length) {
-        this._setData(STORAGE_KEYS.CARPOOLS, filteredCarpools);
-        this._emit('carpools-changed');
+  async init() {
+    try {
+      // Insérer les hébergements par défaut s'il n'y en a pas
+      const existing = await supabase('GET', 'accommodations', { filter: 'select=id&limit=1' });
+      if (!existing || existing.length === 0) {
+        for (const acc of DEFAULT_ACCOMMODATIONS) {
+          await supabase('POST', 'accommodations', { body: acc });
+        }
+        console.log('[Store] Hébergements par défaut insérés.');
       }
-
-      // 3. Vider la session si besoin
-      if (this._getData(STORAGE_KEYS.CURRENT_GUEST) === id) {
-        this.clearCurrentGuest();
-      }
+      console.log('[Store] Initialisation Supabase terminée.');
+    } catch (e) {
+      console.error('[Store] Erreur init :', e);
     }
   },
+
   // ════════════════════════════════════════════
-  // Session invité courant
+  // Invités
+  // ════════════════════════════════════════════
+
+  async getGuests() {
+    const rows = await supabase('GET', 'guests', { filter: 'select=*&order=created_at.asc' });
+    return rows.map(toApp);
+  },
+
+  async getGuest(id) {
+    const rows = await supabase('GET', 'guests', { filter: `select=*&id=eq.${id}` });
+    return toApp(rows[0] || null);
+  },
+
+  async getGuestByPhone(phone) {
+    if (!phone) return null;
+    const clean = phone.replace(/[\s\-\.]/g, '');
+    const rows = await supabase('GET', 'guests', { filter: `select=*` });
+    const match = rows.find(g => g.phone && g.phone.replace(/[\s\-\.]/g, '') === clean);
+    return toApp(match || null);
+  },
+
+  async saveGuest(data) {
+    const body = {
+      ...toDb(data),
+      created_at: new Date().toISOString()
+    };
+    const rows = await supabase('POST', 'guests', { body });
+    const saved = toApp(rows[0]);
+    this._emit('guests-changed');
+    console.log(`[Store] Invité créé : ${saved.firstName} ${saved.lastName}`);
+    return saved;
+  },
+
+  async updateGuest(id, data) {
+    const body = toDb(data);
+    const rows = await supabase('PATCH', 'guests', {
+      filter: `id=eq.${id}`,
+      body
+    });
+    const updated = toApp(rows[0]);
+    this._emit('guests-changed');
+    console.log(`[Store] Invité mis à jour : ${updated.firstName} ${updated.lastName}`);
+    return updated;
+  },
+
+  async deleteGuest(id) {
+    await supabase('DELETE', 'guests', { filter: `id=eq.${id}` });
+    if (this._getLocal(LOCAL.CURRENT_GUEST) === id) this.clearCurrentGuest();
+    this._emit('guests-changed');
+    console.log(`[Store] Invité supprimé : ${id}`);
+  },
+
+  // ════════════════════════════════════════════
+  // Session invité courant (localStorage)
   // ════════════════════════════════════════════
 
   getCurrentGuest() {
-    const guestId = this._getData(STORAGE_KEYS.CURRENT_GUEST);
-    if (!guestId) return null;
-    return this.getGuest(guestId) || null;
+    const id = this._getLocal(LOCAL.CURRENT_GUEST);
+    if (!id) return null;
+    // Retourne une promesse — appelants doivent awaiter
+    return this.getGuest(id);
   },
 
   setCurrentGuest(guestId) {
-    this._setData(STORAGE_KEYS.CURRENT_GUEST, guestId);
+    this._setLocal(LOCAL.CURRENT_GUEST, guestId);
     this._emit('auth-changed');
-    console.log(`[Store] Invité courant défini : ${guestId}`);
   },
 
   clearCurrentGuest() {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_GUEST);
+    localStorage.removeItem(LOCAL.CURRENT_GUEST);
     this._emit('auth-changed');
-    console.log('[Store] Session invité effacée.');
   },
 
   // ════════════════════════════════════════════
-  // Gestion des covoiturages (Carpools)
+  // Covoiturages
   // ════════════════════════════════════════════
 
-  getCarpools() {
-    return this._getData(STORAGE_KEYS.CARPOOLS) || [];
+  async getCarpools() {
+    const rows = await supabase('GET', 'carpools', { filter: 'select=*&order=created_at.asc' });
+    return rows.map(carpoolToApp);
   },
 
-  getCarpoolsByType(type) {
-    return this.getCarpools().filter((c) => c.type === type);
+  async getCarpoolsByGuestId(guestId) {
+    const rows = await supabase('GET', 'carpools', { filter: `select=*&guest_id=eq.${guestId}` });
+    return rows.map(carpoolToApp);
   },
 
-  getCarpoolsByGuestId(guestId) {
-    return this.getCarpools().filter((c) => c.guestId === guestId);
-  },
-
-  saveCarpool(data) {
-    const carpools = this.getCarpools();
-    const now = new Date().toISOString();
-
-    const newCarpool = {
-      id: this._generateId(),
-      ...data,
-      createdAt: now,
-      updatedAt: now
+  async saveCarpool(data) {
+    const body = {
+      guest_id:       data.guestId,
+      type:           data.type,
+      city:           data.city,
+      seats_available: data.seatsAvailable || null,
+      seats_needed:   data.seatsNeeded || null,
+      departure_day:  data.departureDay,
+      departure_time: data.departureTime,
+      contact:        data.contact
     };
-
-    carpools.push(newCarpool);
-    this._setData(STORAGE_KEYS.CARPOOLS, carpools);
+    const rows = await supabase('POST', 'carpools', { body });
+    const saved = carpoolToApp(rows[0]);
     this._emit('carpools-changed');
-
-    console.log(`[Store] Covoiturage créé : ${newCarpool.id} (${newCarpool.type})`);
-    return newCarpool;
+    return saved;
   },
 
-  updateCarpool(id, data) {
-    const carpools = this.getCarpools();
-    const index = carpools.findIndex((c) => c.id === id);
-
-    if (index === -1) {
-      console.warn(`[Store] Covoiturage introuvable : ${id}`);
-      return null;
-    }
-
-    carpools[index] = {
-      ...carpools[index],
-      ...data,
-      id: carpools[index].id,
-      createdAt: carpools[index].createdAt,
-      updatedAt: new Date().toISOString()
-    };
-
-    this._setData(STORAGE_KEYS.CARPOOLS, carpools);
+  async deleteCarpool(id) {
+    await supabase('DELETE', 'carpools', { filter: `id=eq.${id}` });
     this._emit('carpools-changed');
-
-    console.log(`[Store] Covoiturage mis à jour : ${id}`);
-    return carpools[index];
-  },
-
-  deleteCarpool(id) {
-    let carpools = this.getCarpools();
-    carpools = carpools.filter((c) => c.id !== id);
-    this._setData(STORAGE_KEYS.CARPOOLS, carpools);
-    this._emit('carpools-changed');
-    console.log(`[Store] Covoiturage supprimé : ${id}`);
   },
 
   // ════════════════════════════════════════════
-  // Gestion des hébergements (Accommodations)
+  // Hébergements
   // ════════════════════════════════════════════
 
-  getAccommodations() {
-    return this._getData(STORAGE_KEYS.ACCOMMODATIONS) || [];
+  async getAccommodations() {
+    const rows = await supabase('GET', 'accommodations', { filter: 'select=*&order=created_at.asc' });
+    return rows.map(accToApp);
   },
 
-  saveAccommodation(data) {
-    const accommodations = this.getAccommodations();
-
-    const newAccommodation = {
-      id: this._generateId(),
-      ...data,
-      createdAt: new Date().toISOString()
+  async saveAccommodation(data) {
+    const body = {
+      name:        data.name,
+      lat:         data.lat,
+      lng:         data.lng,
+      capacity:    data.capacity,
+      description: data.description || '',
+      distance:    data.distance || '',
+      booking_url: data.bookingUrl || '',
+      icon:        data.icon || 'gite'
     };
-
-    accommodations.push(newAccommodation);
-    this._setData(STORAGE_KEYS.ACCOMMODATIONS, accommodations);
+    const rows = await supabase('POST', 'accommodations', { body });
+    const saved = accToApp(rows[0]);
     this._emit('accommodations-changed');
-
-    console.log(`[Store] Hébergement créé : ${newAccommodation.name}`);
-    return newAccommodation;
+    return saved;
   },
 
-  updateAccommodation(id, data) {
-    const accommodations = this.getAccommodations();
-    const index = accommodations.findIndex((a) => a.id === id);
-
-    if (index === -1) {
-      console.warn(`[Store] Hébergement introuvable : ${id}`);
-      return null;
-    }
-
-    accommodations[index] = {
-      ...accommodations[index],
-      ...data,
-      id: accommodations[index].id
-    };
-
-    this._setData(STORAGE_KEYS.ACCOMMODATIONS, accommodations);
+  async deleteAccommodation(id) {
+    await supabase('DELETE', 'accommodations', { filter: `id=eq.${id}` });
     this._emit('accommodations-changed');
-
-    console.log(`[Store] Hébergement mis à jour : ${accommodations[index].name}`);
-    return accommodations[index];
-  },
-
-  deleteAccommodation(id) {
-    let accommodations = this.getAccommodations();
-    accommodations = accommodations.filter((a) => a.id !== id);
-    this._setData(STORAGE_KEYS.ACCOMMODATIONS, accommodations);
-    this._emit('accommodations-changed');
-    console.log(`[Store] Hébergement supprimé : ${id}`);
   },
 
   // ════════════════════════════════════════════
@@ -442,26 +362,20 @@ const Store = {
   async adminLogin(password) {
     const hash = await hashPassword(password);
     if (hash === ADMIN_PASSWORD_HASH) {
-      this._setData(STORAGE_KEYS.ADMIN_AUTH, {
-        authenticated: true,
-        timestamp: new Date().toISOString()
-      });
+      this._setLocal(LOCAL.ADMIN_AUTH, { authenticated: true, timestamp: new Date().toISOString() });
       this._emit('auth-changed');
-      console.log('[Store] Connexion admin réussie.');
       return true;
     }
-    console.warn('[Store] Échec de connexion admin.');
     return false;
   },
 
   adminLogout() {
-    localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+    localStorage.removeItem(LOCAL.ADMIN_AUTH);
     this._emit('auth-changed');
-    console.log('[Store] Déconnexion admin.');
   },
 
   isAdmin() {
-    const auth = this._getData(STORAGE_KEYS.ADMIN_AUTH);
+    const auth = this._getLocal(LOCAL.ADMIN_AUTH);
     return auth !== null && auth.authenticated === true;
   },
 
@@ -469,70 +383,66 @@ const Store = {
   // Statistiques
   // ════════════════════════════════════════════
 
-  getStats() {
-    const guests = this.getGuests();
-    const carpools = this.getCarpools();
+  async getStats() {
+    const [guests, carpools] = await Promise.all([this.getGuests(), this.getCarpools()]);
 
     const totalGuests = guests.length;
+    const totalPeople = guests.reduce((s, g) => s + 1 + (g.companions?.length || 0), 0);
 
-    const totalPeople = guests.reduce((sum, g) => {
-      return sum + 1 + (g.companions ? g.companions.length : 0);
-    }, 0);
+    const confirmed      = guests.filter(g => g.attending === true);
+    const confirmedPeople = confirmed.reduce((s, g) => s + 1 + (g.companions?.length || 0), 0);
+    const declined       = guests.filter(g => g.attending === false).length;
+    const maybe          = guests.filter(g => g.attending === 'maybe').length;
+    const pending        = guests.filter(g => g.attending === null || g.attending === undefined).length;
 
-    const confirmedGuests = guests.filter((g) => g.attending === true);
-    const confirmed = confirmedGuests.length;
-
-    const confirmedPeople = confirmedGuests.reduce((sum, g) => {
-      return sum + 1 + (g.companions ? g.companions.length : 0);
-    }, 0);
-
-    const declined = guests.filter((g) => g.attending === false).length;
-    const pending = guests.filter((g) => g.attending === null || g.attending === undefined).length;
-
-    let vegetarian = 0;
-    let vegan = 0;
-    let noAlcohol = 0;
+    let vegetarian = 0, vegan = 0, noAlcohol = 0;
     const allergies = [];
 
-    const countDiets = (dietArray, name, allergyDetails) => {
-      if (!dietArray || !Array.isArray(dietArray)) return;
-      if (dietArray.includes('vegetarian')) vegetarian++;
-      if (dietArray.includes('vegan')) vegan++;
-      if (dietArray.includes('no-alcohol')) noAlcohol++;
-      if (dietArray.includes('allergy') && allergyDetails) {
+    const countDiets = (dietArr, name, allergyDetails) => {
+      if (!Array.isArray(dietArr)) return;
+      if (dietArr.includes('vegetarian')) vegetarian++;
+      if (dietArr.includes('vegan')) vegan++;
+      if (dietArr.includes('no-alcohol')) noAlcohol++;
+      if (dietArr.includes('allergy') && allergyDetails)
         allergies.push({ name, details: allergyDetails });
-      }
     };
 
-    confirmedGuests.forEach((guest) => {
-      const guestName = `${guest.firstName} ${guest.lastName}`.trim();
-      countDiets(guest.diet, guestName, guest.allergyDetails);
-
-      if (guest.companions && Array.isArray(guest.companions)) {
-        guest.companions.forEach((companion) => {
-          countDiets(companion.diet, companion.name || 'Accompagnant', companion.allergyDetails);
-        });
-      }
+    confirmed.forEach(g => {
+      countDiets(g.diet, `${g.firstName} ${g.lastName}`, g.allergyDetails);
+      (g.companions || []).forEach(c =>
+        countDiets(c.diet, c.name || 'Accompagnant', c.allergyDetails)
+      );
     });
 
-    const offers = carpools.filter((c) => c.type === 'offer');
-    const requests = carpools.filter((c) => c.type === 'request');
-
-    const drivers = offers.length;
-    const seatsAvailable = offers.reduce((sum, c) => sum + (parseInt(c.seatsAvailable, 10) || 0), 0);
-    const needRide = requests.length;
-    const seatsNeeded = requests.reduce((sum, c) => sum + (parseInt(c.seatsNeeded, 10) || 0), 0);
+    const offers   = carpools.filter(c => c.type === 'offer');
+    const requests = carpools.filter(c => c.type === 'request');
 
     return {
-      totalGuests,
-      totalPeople,
-      confirmed,
-      confirmedPeople,
-      declined,
-      pending,
+      totalGuests, totalPeople,
+      confirmed: confirmed.length, confirmedPeople,
+      declined, maybe, pending,
       diets: { vegetarian, vegan, noAlcohol, allergies },
-      transport: { drivers, seatsAvailable, needRide, seatsNeeded }
+      transport: {
+        drivers:        offers.length,
+        seatsAvailable: offers.reduce((s, c) => s + (c.seatsAvailable || 0), 0),
+        needRide:       requests.length,
+        seatsNeeded:    requests.reduce((s, c) => s + (c.seatsNeeded || 0), 0)
+      }
     };
+  },
+
+  // ════════════════════════════════════════════
+  // Utilitaires localStorage internes
+  // ════════════════════════════════════════════
+
+  _getLocal(key) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch { return null; }
+  },
+
+  _setLocal(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); }
+    catch (e) { console.error(e); }
   }
 };
 

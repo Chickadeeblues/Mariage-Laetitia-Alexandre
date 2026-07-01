@@ -2,18 +2,17 @@ import Store from '../store.js';
 import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
 
-const adminDashboard = {
-  loginBtn: null,
+const AdminDashboard = {
   logoutBtn: null,
 
   init() {
-    // Événements login
-    this.loginBtn = document.getElementById('admin-login-btn');
-    if (this.loginBtn) {
-      this.loginBtn.addEventListener('click', async (e) => {
+    // ── Login ──────────────────────────────────────
+    const loginForm = document.getElementById('admin-login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const password = document.getElementById('admin-password').value;
-        const errDiv = document.getElementById('admin-error');
+        const errDiv   = document.getElementById('admin-error');
         if (await Store.adminLogin(password)) {
           if (errDiv) errDiv.style.display = 'none';
           document.getElementById('admin-password').value = '';
@@ -21,9 +20,9 @@ const adminDashboard = {
           Router.navigate('#/admin/dashboard');
         } else {
           if (errDiv) {
-            errDiv.textContent = "Mot de passe incorrect";
+            errDiv.textContent   = "Mot de passe incorrect";
             errDiv.style.display = 'block';
-            errDiv.style.color = 'red';
+            errDiv.style.color   = 'red';
             errDiv.style.marginTop = '10px';
           }
           Animations.showToast("Mot de passe incorrect", "error");
@@ -31,7 +30,7 @@ const adminDashboard = {
       });
     }
 
-    // Événements logout
+    // ── Logout ─────────────────────────────────────
     this.logoutBtn = document.getElementById('admin-logout-btn');
     if (this.logoutBtn) {
       this.logoutBtn.addEventListener('click', () => {
@@ -41,120 +40,155 @@ const adminDashboard = {
       });
     }
 
-    // Auto-refresh quand les données changent (si on est sur le dashboard)
+    // ── Auto-refresh sur changement de données ─────
     const refreshIfActive = () => {
       if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
         this.renderDashboard();
       }
     };
-
-    Store.on('guests-changed', refreshIfActive);
-    Store.on('carpools-changed', refreshIfActive);
+    Store.on('guests-changed',        refreshIfActive);
+    Store.on('carpools-changed',      refreshIfActive);
     Store.on('accommodations-changed', refreshIfActive);
 
-    // Si on navigue sur le dashboard, rendre les données
+    // ── Rendu au changement de route ───────────────
     window.addEventListener('route-changed', (e) => {
       if (e.detail.route === '#/admin/dashboard') {
-        if (!Store.isAdmin()) {
-          Router.navigate('#/admin');
-          return;
-        }
+        if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
         this.renderDashboard();
       }
     });
   },
 
-  renderDashboard() {
-    this.renderStats();
-    this.renderDiets();
-    this.renderGuestsList();
-    this.renderCarpools();
-    this.renderAccommodations();
-  },
+  // ════════════════════════════════════════════════
+  // Dashboard principal
+  // ════════════════════════════════════════════════
 
-  renderStats() {
-    const stats = Store.getStats();
-    const guests = Store.getGuests();
-    
-    // Calcul précis du brunch basé sur l'invité principal
-    const brunchCount = guests.filter(g => g.brunch === true).length;
-
-    const setStat = (id, number, label) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = `<div class="stat-card__number">${number}</div><div class="stat-card__label">${label}</div>`;
-    };
-
-    setStat('stat-total', stats.totalGuests, `Foyers invités (${stats.totalPeople} pers.)`);
-    setStat('stat-confirmed', stats.confirmed, `Confirmés (${stats.confirmedPeople} pers.)`);
-    setStat('stat-pending', stats.pending, 'En attente (Peut-être)');
-    setStat('stat-declined', stats.declined, 'Déclinés');
-    
-    // Ajout visuel du brunch (Assurez-vous d'avoir un conteneur HTML avec cette ID si nécessaire)
-    const brunchEl = document.getElementById('stat-brunch');
-    if (brunchEl) {
-      brunchEl.innerHTML = `<div class="stat-card__number" style="color: var(--gold);">${brunchCount}</div><div class="stat-card__label">Présents au Brunch</div>`;
+  async renderDashboard() {
+    this.showLoader();
+    try {
+      await Promise.all([
+        this.renderStats(),
+        this.renderDiets(),
+        this.renderGuestsList(),
+        this.renderCarpools(),
+        this.renderAccommodations()
+      ]);
+    } catch (e) {
+      console.error('[Admin] Erreur renderDashboard :', e);
+      Animations.showToast("Erreur de chargement des données", "error");
+    } finally {
+      this.hideLoader();
     }
   },
 
-  renderDiets() {
-    const stats = Store.getStats();
+  showLoader() {
+    const el = document.getElementById('admin-loader');
+    if (el) el.style.display = 'block';
+  },
+  hideLoader() {
+    const el = document.getElementById('admin-loader');
+    if (el) el.style.display = 'none';
+  },
+
+  // ════════════════════════════════════════════════
+  // Stats
+  // ════════════════════════════════════════════════
+
+  async renderStats() {
+    const stats = await Store.getStats();
+
+    const setStat = (id, number, label) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `
+        <div class="stat-card__number">${number}</div>
+        <div class="stat-card__label">${label}</div>`;
+    };
+
+    setStat('stat-total',     stats.totalGuests,  `Foyers invités (${stats.totalPeople} pers.)`);
+    setStat('stat-confirmed', stats.confirmed,    `Confirmés (${stats.confirmedPeople} pers.)`);
+    setStat('stat-maybe',     stats.maybe,        'Peut-être');
+    setStat('stat-declined',  stats.declined,     'Déclinés');
+    setStat('stat-pending',   stats.pending,      'En attente');
+  },
+
+  // ════════════════════════════════════════════════
+  // Régimes alimentaires
+  // ════════════════════════════════════════════════
+
+  async renderDiets() {
     const container = document.getElementById('admin-diets');
     if (!container) return;
+    const stats = await Store.getStats();
 
-    // Version optimisée et plus compacte de la grille
     let html = `
-      <div class="admin-grid mb-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
-        <div class="card" style="padding: 10px; text-align: center;">
-          <h5 style="margin: 0; font-size: 14px;">🥗 Végétariens</h5>
-          <strong style="font-size: 20px; color: var(--sage); display: block; margin-top: 5px;">${stats.diets.vegetarian}</strong>
+      <div class="admin-grid mb-4">
+        <div class="card">
+          <h4>🥗 Végétariens</h4>
+          <div class="stat-card__number" style="color: var(--sage)">${stats.diets.vegetarian}</div>
         </div>
-        <div class="card" style="padding: 10px; text-align: center;">
-          <h5 style="margin: 0; font-size: 14px;">🌱 Végans</h5>
-          <strong style="font-size: 20px; color: var(--forest); display: block; margin-top: 5px;">${stats.diets.vegan}</strong>
+        <div class="card">
+          <h4>🌱 Végans</h4>
+          <div class="stat-card__number" style="color: var(--forest)">${stats.diets.vegan}</div>
         </div>
-        <div class="card" style="padding: 10px; text-align: center;">
-          <h5 style="margin: 0; font-size: 14px;">🧃 Sans alcool</h5>
-          <strong style="font-size: 20px; color: #6a9bd8; display: block; margin-top: 5px;">${stats.diets.noAlcohol}</strong>
+        <div class="card">
+          <h4>🧃 Sans alcool</h4>
+          <div class="stat-card__number" style="color: #6a9bd8">${stats.diets.noAlcohol}</div>
         </div>
       </div>
     `;
 
-    if (stats.diets.allergies && stats.diets.allergies.length > 0) {
+    if (stats.diets.allergies.length > 0) {
       html += `
-        <div class="card" style="padding: 12px;">
-          <h5 style="margin: 0 0 8px 0;">⚠️ Allergies déclarées</h5>
-          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.4;">
-            ${stats.diets.allergies.map(a => `<li><strong>${a.name} :</strong> ${a.details}</li>`).join('')}
+        <div class="card">
+          <h4>⚠️ Allergies déclarées</h4>
+          <ul style="margin-top: 10px; padding-left: 20px;">
+            ${stats.diets.allergies.map(a =>
+              `<li><strong>${a.name} :</strong> ${a.details}</li>`
+            ).join('')}
           </ul>
-        </div>
-      `;
+        </div>`;
     } else {
-      html += `<div class="card" style="padding: 10px;"><p class="text-muted" style="margin:0; font-size:13px;">Aucune allergie déclarée.</p></div>`;
+      html += `<div class="card"><p class="text-muted">Aucune allergie déclarée pour le moment.</p></div>`;
     }
 
     container.innerHTML = html;
   },
 
-  renderGuestsList() {
+  // ════════════════════════════════════════════════
+  // Liste des invités
+  // ════════════════════════════════════════════════
+
+  async renderGuestsList() {
     const container = document.getElementById('admin-guests-list');
     if (!container) return;
-    const guests = Store.getGuests();
+
+    container.innerHTML = '<p class="text-muted text-center mt-2">Chargement…</p>';
+    const guests = await Store.getGuests();
 
     if (guests.length === 0) {
       container.innerHTML = '<p class="text-muted text-center mt-4">Aucune réponse pour le moment.</p>';
       return;
     }
 
+    const badgeFor = (attending) => {
+      if (attending === true)      return '<span class="badge badge--confirmed">✓ Oui</span>';
+      if (attending === false)     return '<span class="badge badge--declined">✗ Non</span>';
+      if (attending === 'maybe')   return '<span class="badge badge--pending">? Peut-être</span>';
+      return '<span class="badge badge--pending">En attente</span>';
+    };
+
     let html = `
       <div class="table-responsive">
-        <table class="admin-table" style="width:100%; border-collapse: collapse; margin-top:20px;">
+        <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding: 10px;">Nom (et accompagnants)</th>
-              <th style="padding: 10px;">Présence</th>
-              <th style="padding: 10px;">Brunch</th>
-              <th style="padding: 10px;">Contact</th>
-              <th style="padding: 10px;">Actions</th>
+              <th style="padding:10px;">Nom</th>
+              <th style="padding:10px;">Présence</th>
+              <th style="padding:10px;">Brunch</th>
+              <th style="padding:10px;">Accomp.</th>
+              <th style="padding:10px;">Contact</th>
+              <th style="padding:10px;">Transport</th>
+              <th style="padding:10px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -162,145 +196,149 @@ const adminDashboard = {
 
     guests.forEach((g, idx) => {
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
-      
-      // Gestion fine des statuts de présence
-      let presence = '<span class="badge badge--pending" style="background:#fdf8ee; color:#7a6135; padding:3px 6px; border-radius:4px;">Peut-être</span>';
-      if (g.attending === true) presence = '<span class="badge badge--confirmed" style="background:#eef7ee; color:#2e6b2e; padding:3px 6px; border-radius:4px;">Oui</span>';
-      if (g.attending === false) presence = '<span class="badge badge--declined" style="background:#fdeeee; color:#b02a2a; padding:3px 6px; border-radius:4px;">Non</span>';
-
-      // Remplacement accompagnant par colonne Brunch
-      let brunchStatus = '<span style="color: #aaa;">-</span>';
-      if (g.brunch === true) brunchStatus = '<strong style="color: var(--sage)">Oui</strong>';
-      if (g.brunch === false) brunchStatus = '<span style="color: #bb2d3b">Non</span>';
-
-      // Affichage du nom principal et de sa liste d'accompagnants
-      let nameCellContent = `<strong>${g.firstName} ${g.lastName}</strong>`;
-      if (g.companions && g.companions.length > 0) {
-        nameCellContent += `<div style="padding-left: 12px; margin-top: 4px; font-size: 13px; color: #666; border-left: 2px solid #e0d5c1;">`;
-        g.companions.forEach(c => {
-          nameCellContent += `<div>👤 ${c.name || 'Sans nom'}</div>`;
-        });
-        nameCellContent += `</div>`;
-      }
+      const transport = g.transport?.mode
+        ? { car: '🚗', train: '🚆', other: '✈️' }[g.transport.mode] || '—'
+        : '—';
+      const brunch = g.brunch === true ? '☕ Oui' : g.brunch === false ? '🙏 Non' : '—';
 
       html += `
-        <tr style="background-color: ${bg}; border-bottom: 1px solid #eee; vertical-align: top;">
-          <td style="padding: 10px;">${nameCellContent}</td>
-          <td style="padding: 10px;">${presence}</td>
-          <td style="padding: 10px;">${brunchStatus}</td>
-          <td style="padding: 10px; font-size: 13px;">${g.email}<br><small style="color:#777;">${g.phone || ''}</small></td>
-          <td style="padding: 10px;">
-            <button class="btn btn--outline delete-guest-btn" data-id="${g.id}" style="padding: 4px 8px; font-size: 12px; color: red; border-color: red;">Supprimer</button>
+        <tr style="background:${bg}; border-bottom:1px solid #eee;">
+          <td style="padding:10px;"><strong>${g.firstName} ${g.lastName}</strong></td>
+          <td style="padding:10px;">${badgeFor(g.attending)}</td>
+          <td style="padding:10px;">${brunch}</td>
+          <td style="padding:10px;">${g.companions.length}</td>
+          <td style="padding:10px;">${g.email || ''}<br><small>${g.phone || ''}</small></td>
+          <td style="padding:10px;">${transport}</td>
+          <td style="padding:10px;">
+            <button class="btn btn--outline delete-guest-btn"
+              data-id="${g.id}"
+              style="padding:4px 8px; font-size:12px; color:red; border-color:red;">
+              Supprimer
+            </button>
           </td>
         </tr>
       `;
     });
 
-    html += `</tbody></table></div>`;
+    html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // Attacher les événements de suppression
     container.querySelectorAll('.delete-guest-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        if (confirm("Êtes-vous sûr de vouloir supprimer cet invité et toutes ses données associées (covoiturage) ?")) {
-          Store.deleteGuest(e.target.dataset.id);
+      btn.addEventListener('click', async (e) => {
+        if (confirm("Supprimer cet invité et toutes ses données ?")) {
+          await Store.deleteGuest(e.target.dataset.id);
           Animations.showToast("Invité supprimé", "success");
         }
       });
     });
   },
 
-  renderCarpools() {
+  // ════════════════════════════════════════════════
+  // Covoiturage
+  // ════════════════════════════════════════════════
+
+  async renderCarpools() {
     const container = document.getElementById('admin-carpools');
     if (!container) return;
-    const stats = Store.getStats();
-    const guests = Store.getGuests();
+    const stats = await Store.getStats();
 
-    // Génération de la liste nominative des conducteurs et passagers en faisant un lookup sur les guests
-    let driversList = '';
-    let passengersList = '';
-
-    guests.forEach(g => {
-      if (!g.transport) return;
-      
-      if (g.transport.carpoolRole === 'offer') {
-        driversList += `<li style="margin-bottom:6px;">🚗 <strong>${g.firstName} ${g.lastName}</strong> (Départ : ${g.transport.city || 'Non renseigné'}) - <small style="color:#666;">${g.transport.seatsAvailable} places dispo</small></li>`;
-      } else if (g.transport.carpoolRole === 'need') {
-        passengersList += `<li style="margin-bottom:6px;">🙋 <strong>${g.firstName} ${g.lastName}</strong> (Cherche vers : ${g.transport.city || 'Non renseigné'}) - <small style="color:#666;">${g.transport.seatsNeeded} places demandées</small></li>`;
-      }
-    });
-
-    let html = `
+    container.innerHTML = `
       <div class="admin-grid mb-4">
-        <div class="card" style="border-left: 4px solid var(--sage); padding: 15px;">
-          <h4>Conducteurs</h4>
-          <p class="text-muted mt-1" style="font-size:14px;">${stats.transport.drivers} voiture(s) - Total de <strong>${stats.transport.seatsAvailable} places</strong>.</p>
-          <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
-            ${driversList || '<li class="text-muted">Aucun conducteur inscrit</li>'}
-          </ul>
+        <div class="card" style="border-left:4px solid var(--sage);">
+          <h4>🚗 Conducteurs</h4>
+          <p class="text-muted mt-2">
+            ${stats.transport.drivers} voiture(s) — 
+            <strong>${stats.transport.seatsAvailable} place(s)</strong> disponible(s).
+          </p>
         </div>
-        <div class="card" style="border-left: 4px solid var(--gold); padding: 15px;">
-          <h4>Recherche de places</h4>
-          <p class="text-muted mt-1" style="font-size:14px;">${stats.transport.needRide} groupe(s) - Total de <strong>${stats.transport.seatsNeeded} places</strong>.</p>
-          <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
-            ${passengersList || '<li class="text-muted">Aucune demande inscrite</li>'}
-          </ul>
+        <div class="card" style="border-left:4px solid var(--gold);">
+          <h4>🙋 Recherche de places</h4>
+          <p class="text-muted mt-2">
+            ${stats.transport.needRide} personne(s) — 
+            <strong>${stats.transport.seatsNeeded} place(s)</strong> recherchée(s).
+          </p>
         </div>
       </div>
-      <p class="text-center mt-2"><a href="#/covoiturage" class="btn btn--secondary">Gérer les covoiturages sur la page publique</a></p>
+      <p class="text-center mt-2">
+        <a href="#/covoiturage" class="btn btn--secondary">
+          Gérer les covoiturages sur la page publique
+        </a>
+      </p>
     `;
-
-    container.innerHTML = html;
   },
 
-  renderAccommodations() {
+  // ════════════════════════════════════════════════
+  // Hébergements
+  // ════════════════════════════════════════════════
+
+  async renderAccommodations() {
     const container = document.getElementById('admin-accommodations');
     if (!container) return;
-    const accommodations = Store.getAccommodations();
+
+    container.innerHTML = '<p class="text-muted text-center mt-2">Chargement…</p>';
+    const accommodations = await Store.getAccommodations();
 
     let html = `
       <div class="mb-4">
         <button class="btn btn--primary" id="add-acc-btn">+ Ajouter un hébergement</button>
       </div>
-      <div class="carpool-list" style="margin-top: 20px;">
+      <div class="carpool-list" style="margin-top:20px;">
     `;
 
     accommodations.forEach(acc => {
       html += `
         <div class="card mb-3">
           <h4>${acc.name}</h4>
-          <p class="text-muted"><small>📍 ${acc.lat}, ${acc.lng} | 🛏️ Capacité : ${acc.capacity}</small></p>
+          <p class="text-muted">
+            <small>📍 ${acc.lat}, ${acc.lng} | 🛏️ ${acc.capacity} | 📏 ${acc.distance || '—'}</small>
+          </p>
+          ${acc.bookingUrl
+            ? `<p><a href="${acc.bookingUrl}" target="_blank" style="font-size:13px; color:var(--gold);">Voir le lien de réservation →</a></p>`
+            : ''}
           <div class="mt-3">
-            <button class="btn btn--outline delete-acc-btn" data-id="${acc.id}" style="padding: 4px 8px; font-size: 12px; color: red; border-color: red;">Supprimer</button>
+            <button class="btn btn--outline delete-acc-btn"
+              data-id="${acc.id}"
+              style="padding:4px 8px; font-size:12px; color:red; border-color:red;">
+              Supprimer
+            </button>
           </div>
         </div>
       `;
     });
 
-    html += `</div>`;
+    html += '</div>';
     container.innerHTML = html;
 
+    // Ajouter un hébergement
     const addBtn = container.querySelector('#add-acc-btn');
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
+      addBtn.addEventListener('click', async () => {
         const name = prompt("Nom de l'hébergement :");
         if (!name) return;
-        const lat = prompt("Latitude (ex: 45.42) :");
-        const lng = prompt("Longitude (ex: 4.59) :");
+        const lat      = prompt("Latitude (ex: 45.42) :");
+        const lng      = prompt("Longitude (ex: 4.59) :");
         const capacity = prompt("Capacité (ex: 4 personnes) :");
+        const bookingUrl = prompt("Lien de réservation (optionnel) :") || '';
 
-        Store.saveAccommodation({
-          name, lat: parseFloat(lat) || 45.411, lng: parseFloat(lng) || 4.588, capacity,
-          description: "", distance: "", bookingUrl: ""
+        await Store.saveAccommodation({
+          name,
+          lat:        parseFloat(lat) || 45.411,
+          lng:        parseFloat(lng) || 4.588,
+          capacity:   capacity || '',
+          bookingUrl,
+          description: '',
+          distance:    '',
+          icon:        'gite'
         });
         Animations.showToast("Hébergement ajouté", "success");
       });
     }
 
+    // Supprimer un hébergement
     container.querySelectorAll('.delete-acc-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         if (confirm("Supprimer cet hébergement ?")) {
-          Store.deleteAccommodation(e.target.dataset.id);
+          await Store.deleteAccommodation(e.target.dataset.id);
           Animations.showToast("Hébergement supprimé", "success");
         }
       });
@@ -308,4 +346,4 @@ const adminDashboard = {
   }
 };
 
-export default adminDashboard;
+export default AdminDashboard;

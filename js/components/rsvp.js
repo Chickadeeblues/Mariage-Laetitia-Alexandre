@@ -545,41 +545,49 @@ renderStep1() {
     }
   },
 
-  submitForm() {
+async submitForm() {
+    const submitBtn = document.getElementById('final-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi en cours...";
+    }
+
+    // 1. Sauvegarde locale (pour l'appareil de l'invité)
     let savedGuest;
     if (this.guestData.id) savedGuest = Store.updateGuest(this.guestData.id, this.guestData);
     else savedGuest = Store.saveGuest(this.guestData);
-
     Store.setCurrentGuest(savedGuest.id);
 
+    // 2. Gestion Covoiturage local
     const t = savedGuest.transport;
     if (t && (t.carpoolRole === 'offer' || t.carpoolRole === 'need')) {
       Store.getCarpoolsByGuestId(savedGuest.id).forEach(c => Store.deleteCarpool(c.id));
-      
-      let extraInfo = '';
-      if (t.carpoolRole === 'need') {
-        const n = t.passengerNeeds || [];
-        const needsArr = [];
-        if (n.includes('church')) needsArr.push(t.churchArrival === 'ter' ? `Gare TER (${t.churchTime})` : `Plus loin (${t.city})`);
-        if (n.includes('church-venue')) needsArr.push("Eglise->Domaine");
-        if (n.includes('night')) needsArr.push(`Soir->${t.nightCity}`);
-        if (n.includes('brunch')) needsArr.push("Brunch");
-        extraInfo = `[${needsArr.join(', ')}]`;
-      }
-
       Store.saveCarpool({
         guestId: savedGuest.id,
-        type: t.carpoolRole === 'offer' ? 'offer' : 'request',
-        city: t.city || (t.carpoolRole === 'need' && t.churchArrival === 'ter' ? 'Gare TER Roussillon' : 'Non précisée'),
+        type: t.carpoolRole,
+        city: t.city,
         seatsAvailable: t.seatsAvailable,
         seatsNeeded: t.seatsNeeded,
-        departureDay: t.departureDay,
-        departureTime: t.departureTime,
-        contact: `${savedGuest.phone} ${extraInfo}`.trim()
+        contact: savedGuest.phone
       });
     }
 
-    Animations.showToast("Votre réponse a été enregistrée !", "success");
+    // 3. Envoi centralisé (Google Sheets)
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyszfkicFmzXw7gFPnvJwQGVEk1NPmVLO6_9v9XId3UUcn7CHZBFsFfEty1JXpgMrkHrg/exec";
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.guestData)
+      });
+      Animations.showToast("Réponse transmise aux mariés !", "success");
+    } catch (error) {
+      console.error("[RSVP] Erreur envoi Google :", error);
+      Animations.showToast("Erreur d'envoi vers la base centrale.", "error");
+    }
+
     this.currentStep = 1;
     Router.navigate('#/mes-reponses');
   }
