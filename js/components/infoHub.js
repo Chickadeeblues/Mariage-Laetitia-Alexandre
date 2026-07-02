@@ -7,13 +7,17 @@ const InfoHub = {
     page: null,
   },
 
-  init() {
-    this._elements.page = document.getElementById('page-home');
-    if (!this._elements.page) return;
-    
-    // On remplace le contenu de la page par la grille
+// Dans js/components/infoHub.js
+init() {
+  // Ciblez la section dédiée au lieu de page-home
+  this._elements.page = document.getElementById('page-infos');
+  if (!this._elements.page) return;
+  
+  // Injectez le contenu seulement si la page est vide pour éviter les doublons
+  if (this._elements.page.innerHTML.trim() === '') {
     this._elements.page.innerHTML = this._renderGrid();
-  },
+  }
+},
 
   _renderGrid() {
     const items = [

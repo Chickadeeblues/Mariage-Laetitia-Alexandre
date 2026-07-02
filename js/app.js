@@ -79,7 +79,8 @@ async function initComponents() {
     { name: 'MapComponent',   module: MapComponent },
     { name: 'Carpool',        module: Carpool },
     { name: 'GuestProfile',   module: GuestProfile },
-    { name: 'AdminDashboard', module: AdminDashboard }
+    { name: 'AdminDashboard', module: AdminDashboard },
+	{ name: 'InfoHub',        module: InfoHub }
   ];
 
   for (const { name, module } of components) {
