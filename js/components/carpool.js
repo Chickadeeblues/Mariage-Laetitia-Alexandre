@@ -32,16 +32,14 @@ const Carpool = {
   /**
    * Initialise le composant covoiturage.
    */
-  init() {
+  async init() {
     this._elements.container = document.getElementById('carpool-container');
     if (!this._elements.container) return;
 
     // Rendu initial
-    this._render();
-
-    // Écouter les changements
-    const unsub1 = Store.on('guests-changed', () => this._render());
-    const unsub2 = Store.on('carpools-changed', () => this._render());
+    await this._render();
+	const unsub1 = Store.on('guests-changed', () => this._render());
+	const unsub2 = Store.on('carpools-changed', () => this._render());
 
     this._unsubscribers = [unsub1, unsub2];
   },
@@ -62,8 +60,8 @@ const Carpool = {
    * Récupère les conducteurs depuis le Store.
    * @returns {Array} Liste des conducteurs avec leurs infos transport
    */
-  _getDrivers() {
-    const guests = Store.getGuests() || [];
+  async _getDrivers() {
+  const guests = await Store.getGuests() || [];
     return guests
       .filter((g) => g.transport && g.transport.carpoolRole === 'offer')
       .map((g) => ({
@@ -81,8 +79,8 @@ const Carpool = {
    * Récupère les passagers depuis le Store.
    * @returns {Array} Liste des passagers avec leurs infos transport
    */
-  _getPassengers() {
-    const guests = Store.getGuests() || [];
+  async _getPassengers() {
+  const guests = await Store.getGuests() || [];
     return guests
       .filter((g) => g.transport && g.transport.carpoolRole === 'need')
       .map((g) => ({
@@ -113,16 +111,15 @@ const Carpool = {
   /**
    * Rend le composant complet.
    */
-  _render() {
-    if (!this._elements.container) return;
+  async _render() {
+  if (!this._elements.container) return;
+  const allDrivers = await this._getDrivers();
+  const allPassengers = await this._getPassengers();
+  const drivers = this._filterByCity(allDrivers);
+  const passengers = this._filterByCity(allPassengers);
 
-    const allDrivers = this._getDrivers();
-    const allPassengers = this._getPassengers();
-    const drivers = this._filterByCity(allDrivers);
-    const passengers = this._filterByCity(allPassengers);
-
-    const totalSeatsAvailable = allDrivers.reduce((sum, d) => sum + d.seatsAvailable, 0);
-    const totalSeatsNeeded = allPassengers.reduce((sum, p) => sum + p.seatsNeeded, 0);
+  const totalSeatsAvailable = allDrivers.reduce((sum, d) => sum + d.seatsAvailable, 0);
+  const totalSeatsNeeded = allPassengers.reduce((sum, p) => sum + p.seatsNeeded, 0);
 
     this._elements.container.innerHTML = `
       <!-- En-tête covoiturage -->

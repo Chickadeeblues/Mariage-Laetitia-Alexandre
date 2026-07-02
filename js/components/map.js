@@ -37,7 +37,7 @@ const MapComponent = {
   /**
    * Initialise le composant carte.
    */
-  init() {
+  async init() {
     this._elements.mapContainer = document.getElementById('map-container');
     this._elements.accommodationsList = document.getElementById('accommodations-list');
 
@@ -47,13 +47,11 @@ const MapComponent = {
     this._initMap();
 
     // Charger les hébergements
+    await this._loadAccommodations();
+	this._storeUnsubscribe = Store.on('accommodations-changed', () => {
     this._loadAccommodations();
-
-    // Écouter les changements
-    this._storeUnsubscribe = Store.on('accommodations-changed', () => {
-      this._loadAccommodations();
-    });
-  },
+  });
+},
 
   /**
    * Nettoie les ressources.
@@ -366,8 +364,8 @@ const MapComponent = {
    * Charge les hébergements depuis le Store et met à jour
    * les marqueurs et la liste.
    */
-  _loadAccommodations() {
-    const accommodations = Store.getAccommodations() || [];
+  async _loadAccommodations() {
+  const accommodations = await Store.getAccommodations() || [];
 
     // Nettoyer les marqueurs existants (sauf le domaine)
     if (this._markersLayer) {
