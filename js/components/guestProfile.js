@@ -6,24 +6,21 @@ import RSVP from './rsvp.js'; // Import nécessaire pour forcer la réinitialisa
 const GuestProfile = {
   container: null,
 
-  init() {
+async init() {
     this.container = document.getElementById('guest-profile-container');
     if (!this.container) return;
-    
     this.render();
-    
-    // Auto refresh quand l'authentification ou les invités changent
-    Store.on('auth-changed', () => this.render());
-    Store.on('guests-changed', () => {
-       if (Store.getCurrentGuest()) this.render();
-    });
+	Store.on('auth-changed', () => this.render());
+	Store.on('guests-changed', async () => {
+    if (await Store.getCurrentGuest()) this.render();
+  });
+}
   },
 
-  render() {
-    if (!this.container) return;
-    const guest = Store.getCurrentGuest();
-    
-    if (!guest) {
+async render() {
+  if (!this.container) return;
+  const guest = await Store.getCurrentGuest(); // await ajouté
+  if (!guest) {
       this.container.innerHTML = this.renderLoginForm();
       this.attachLoginEvents();
     } else {
@@ -140,14 +137,14 @@ const GuestProfile = {
   attachLoginEvents() {
     const loginBtn = this.container.querySelector('#login-btn');
     if (loginBtn) {
-      loginBtn.addEventListener('click', () => {
+    loginBtn.addEventListener('click', async () => { 
         const phone = this.container.querySelector('#login-phone').value.trim();
         if (!phone) {
           Animations.showToast('Veuillez entrer un numéro de téléphone.', 'error');
           return;
         }
         
-        const guest = Store.getGuestByPhone(phone);
+        const guest = await Store.getGuestByPhone(phone);
         if (guest) {
           Store.setCurrentGuest(guest.id);
           Animations.showToast('Profil trouvé avec succès !', 'success');
@@ -180,9 +177,9 @@ const GuestProfile = {
   },
 
   // Utilisé par app.js lors des changements de routes vers '#/mes-reponses'
-  refresh() {
-    this.render();
-  }
+async refresh() {
+  await this.render();
+}
 };
 
 export default GuestProfile;

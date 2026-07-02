@@ -542,15 +542,42 @@ async handleNext() {
   },
 
 async submitForm() {
-  let savedGuest;
-  if (this.guestData.id) {
-    savedGuest = await Store.updateGuest(this.guestData.id, this.guestData);
-  } else {
-    savedGuest = await Store.saveGuest(this.guestData);
+  try {
+    let savedGuest;
+    if (this.guestData.id) {
+      savedGuest = await Store.updateGuest(this.guestData.id, this.guestData);
+    } else {
+      savedGuest = await Store.saveGuest(this.guestData);
+    }
+
+    Store.setCurrentGuest(savedGuest.id);
+
+    const t = savedGuest.transport;
+    if (t && (t.carpoolRole === 'offer' || t.carpoolRole === 'need')) {
+      const existing = await Store.getCarpoolsByGuestId(savedGuest.id);
+      for (const c of existing) await Store.deleteCarpool(c.id);
+      await Store.saveCarpool({
+        guestId:        savedGuest.id,
+        type:           t.carpoolRole === 'offer' ? 'offer' : 'request',
+        city:           t.city,
+        seatsAvailable: t.seatsAvailable,
+        seatsNeeded:    t.seatsNeeded,
+        departureDay:   t.departureDay,
+        departureTime:  t.departureTime,
+        contact:        t.contactPhone || savedGuest.phone
+      });
+    }
+
+    Animations.showToast("Merci pour votre réponse !", "success");
+    this.currentStep = 1;
+    Router.navigate('#/mes-reponses');
+
+  } catch (err) {
+    console.error('[RSVP] Erreur submitForm :', err);
+    Animations.showToast("Une erreur est survenue, veuillez réessayer.", "error");
   }
-  Store.setCurrentGuest(savedGuest.id);
-  const existing = await Store.getCarpoolsByGuestId(savedGuest.id);
-  for (const c of existing) await Store.deleteCarpool(c.id);
-  await Store.saveCarpool({...});
 }
+
+};  
+
 export default RSVP;
