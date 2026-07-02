@@ -1666,25 +1666,52 @@ p {
   }
 }
 
-/* Style des cubes */
+/* ===================== INFO GRID (LES 6 CUBES) ===================== */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  padding: 40px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 800px;
+  margin: 0 auto 40px;
+}
+
+@media (min-width: 768px) {
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
 }
 
 .info-card {
-  background: #FAF8F5; /* Votre couleur --cream */
-  border: 1px solid #E8E4D9;
-  border-radius: 20px; /* Bords arrondis */
-  padding: 30px;
+  background: var(--white);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 32px 20px;
   text-align: center;
-  transition: transform 0.3s ease;
-  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1; /* Force la forme carrée */
 }
 
 .info-card:hover {
-  transform: translateY(-5px);
-  border-color: #9CAF88; /* Votre couleur --sage */
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--sage);
+}
+
+.info-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.info-title {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--forest);
+  margin: 0;
 }
