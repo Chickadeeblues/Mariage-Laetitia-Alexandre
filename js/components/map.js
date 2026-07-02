@@ -377,7 +377,8 @@ async _loadAccommodations() {
   } catch (e) {
     console.error('[Map] Erreur chargement hébergements :', e);
   }
-}
+},
+  
   /**
    * Rend la grille de cartes d'hébergements sous la carte.
    * @param {Array} accommodations - Liste des hébergements
