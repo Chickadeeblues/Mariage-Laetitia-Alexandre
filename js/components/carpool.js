@@ -60,8 +60,10 @@ const Carpool = {
    * Récupère les conducteurs depuis le Store.
    * @returns {Array} Liste des conducteurs avec leurs infos transport
    */
-  async _getDrivers() {
-  const guests = await Store.getGuests() || [];
+async _getDrivers() {
+  try {
+    const result = await Store.getGuests();
+    const guests = Array.isArray(result) ? result : [];
     return guests
       .filter((g) => g.transport && g.transport.carpoolRole === 'offer')
       .map((g) => ({
@@ -71,16 +73,18 @@ const Carpool = {
         seatsAvailable: g.transport.seatsAvailable || 0,
         departureDay: g.transport.departureDay || '',
         departureTime: g.transport.departureTime || '',
-        contact: g.transport.contact || g.phone || '',
+        contact: g.transport.contactPhone || g.phone || '',
       }));
-  },
+  } catch (e) {
+    console.error('[Carpool] Erreur _getDrivers :', e);
+    return [];
+  }
+},
 
-  /**
-   * Récupère les passagers depuis le Store.
-   * @returns {Array} Liste des passagers avec leurs infos transport
-   */
-  async _getPassengers() {
-  const guests = await Store.getGuests() || [];
+async _getPassengers() {
+  try {
+    const result = await Store.getGuests();
+    const guests = Array.isArray(result) ? result : [];
     return guests
       .filter((g) => g.transport && g.transport.carpoolRole === 'need')
       .map((g) => ({
@@ -89,10 +93,14 @@ const Carpool = {
         city: g.transport.city || 'Non précisé',
         seatsNeeded: g.transport.seatsNeeded || 1,
         departureDay: g.transport.departureDay || '',
-        contact: g.transport.contact || g.phone || '',
+        contact: g.transport.contactPhone || g.phone || '',
       }));
-  },
-
+  } catch (e) {
+    console.error('[Carpool] Erreur _getPassengers :', e);
+    return [];
+  }
+},
+  
   /**
    * Filtre les résultats par ville.
    * @param {Array} list - Liste à filtrer

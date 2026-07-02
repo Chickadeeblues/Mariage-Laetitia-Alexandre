@@ -364,21 +364,20 @@ const MapComponent = {
    * Charge les hébergements depuis le Store et met à jour
    * les marqueurs et la liste.
    */
-  async _loadAccommodations() {
-  const accommodations = await Store.getAccommodations() || [];
+async _loadAccommodations() {
+  try {
+    const result = await Store.getAccommodations();
+    const accommodations = Array.isArray(result) ? result : [];
 
-    // Nettoyer les marqueurs existants (sauf le domaine)
     if (this._markersLayer) {
       this._markersLayer.clearLayers();
     }
-
-    // Ajouter les marqueurs
     accommodations.forEach((acc) => this._addAccommodationMarker(acc));
-
-    // Rendre la liste
     this._renderAccommodationsList(accommodations);
-  },
-
+  } catch (e) {
+    console.error('[Map] Erreur chargement hébergements :', e);
+  }
+}
   /**
    * Rend la grille de cartes d'hébergements sous la carte.
    * @param {Array} accommodations - Liste des hébergements
