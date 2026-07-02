@@ -44,19 +44,15 @@ const RSVP = {
     }
   },
 
-  init() {
+async init() {
     this.container = document.getElementById('rsvp-container');
     if (!this.container) return;
 
     try {
-      const currentGuest = Store.getCurrentGuest();
-      if (currentGuest) {
-        this.guestData = {
-          ...this.guestData,
-          ...currentGuest,
-          transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
-        };
-      }
+      const currentGuest = await Store.getCurrentGuest();
+if (currentGuest) {
+  this.guestData = { ...currentGuest };
+}
       this.render();
     } catch (error) {
       console.error("[RSVP] Erreur lors de l'initialisation :", error);
@@ -515,14 +511,14 @@ renderStep1() {
     return true;
   },
 
-  handleNext() {
+async handleNext() {
     // CORRECTION MAJEURE : Sauvegarder d'abord, puis valider.
     this.saveCurrentStepData(); 
 
     if (this.validateStep()) {
       if (this.currentStep === 1 && this.guestData.attending === false) { this.submitForm(); return; }
       if (this.currentStep === 1) {
-        const existing = Store.getGuestByPhone(this.guestData.phone);
+        const existing = await Store.getGuestByPhone(this.guestData.phone);
         if (existing && existing.id !== this.guestData.id) this.guestData = { ...this.guestData, ...existing };
       }
       if (this.currentStep === 2 && this.guestData.attending !== true) { this.currentStep = 4; this.render(); return; }
@@ -546,51 +542,15 @@ renderStep1() {
   },
 
 async submitForm() {
-    const submitBtn = document.getElementById('final-submit-btn');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Envoi en cours...";
-    }
-
-    // 1. Sauvegarde locale (pour l'appareil de l'invité)
-    let savedGuest;
-    if (this.guestData.id) savedGuest = Store.updateGuest(this.guestData.id, this.guestData);
-    else savedGuest = Store.saveGuest(this.guestData);
-    Store.setCurrentGuest(savedGuest.id);
-
-    // 2. Gestion Covoiturage local
-    const t = savedGuest.transport;
-    if (t && (t.carpoolRole === 'offer' || t.carpoolRole === 'need')) {
-      Store.getCarpoolsByGuestId(savedGuest.id).forEach(c => Store.deleteCarpool(c.id));
-      Store.saveCarpool({
-        guestId: savedGuest.id,
-        type: t.carpoolRole,
-        city: t.city,
-        seatsAvailable: t.seatsAvailable,
-        seatsNeeded: t.seatsNeeded,
-        contact: savedGuest.phone
-      });
-    }
-
-    // 3. Envoi centralisé (Google Sheets)
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyszfkicFmzXw7gFPnvJwQGVEk1NPmVLO6_9v9XId3UUcn7CHZBFsFfEty1JXpgMrkHrg/exec";
-
-    try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(this.guestData)
-      });
-      Animations.showToast("Réponse transmise aux mariés !", "success");
-    } catch (error) {
-      console.error("[RSVP] Erreur envoi Google :", error);
-      Animations.showToast("Erreur d'envoi vers la base centrale.", "error");
-    }
-
-    this.currentStep = 1;
-    Router.navigate('#/mes-reponses');
+  let savedGuest;
+  if (this.guestData.id) {
+    savedGuest = await Store.updateGuest(this.guestData.id, this.guestData);
+  } else {
+    savedGuest = await Store.saveGuest(this.guestData);
   }
-};
-
+  Store.setCurrentGuest(savedGuest.id);
+  const existing = await Store.getCarpoolsByGuestId(savedGuest.id);
+  for (const c of existing) await Store.deleteCarpool(c.id);
+  await Store.saveCarpool({...});
+}
 export default RSVP;
