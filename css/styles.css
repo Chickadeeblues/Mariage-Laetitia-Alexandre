@@ -380,7 +380,8 @@ p {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.20em;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  line-height: 1.2;
 }
 
 .hero__title {
