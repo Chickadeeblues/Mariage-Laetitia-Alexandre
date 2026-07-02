@@ -16,6 +16,7 @@ import RSVP from './components/rsvp.js';
 import MapComponent from './components/map.js';
 import Carpool from './components/carpool.js';
 import GuestProfile from './components/guestProfile.js';
+import InfoHub from './components/infoHub.js';
 import AdminDashboard from './components/adminDashboard.js';
 
 // ──────────────────────────────────────────────
@@ -24,6 +25,7 @@ import AdminDashboard from './components/adminDashboard.js';
 const ROUTES = {
   '#/': 'page-home',
   '#/rsvp': 'page-rsvp',
+  '#/infos': 'page-infos',
   '#/hebergements': 'page-hebergements',
   '#/covoiturage': 'page-covoiturage',
   '#/mes-reponses': 'page-mes-reponses',

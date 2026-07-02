@@ -1570,7 +1570,7 @@ p {
   }
 
   .hero {
-    padding: 90px 16px 50px;
+    padding: 20px 16px 50px;
   }
 
   .hero__prelude {
@@ -1664,4 +1664,27 @@ p {
     background: white;
     color: black;
   }
+}
+
+/* Style des cubes */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 40px;
+}
+
+.info-card {
+  background: #FAF8F5; /* Votre couleur --cream */
+  border: 1px solid #E8E4D9;
+  border-radius: 20px; /* Bords arrondis */
+  padding: 30px;
+  text-align: center;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  border-color: #9CAF88; /* Votre couleur --sage */
 }
