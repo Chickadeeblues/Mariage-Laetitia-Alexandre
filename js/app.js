@@ -1,6 +1,6 @@
 /**
  * app.js — Point d'entrée principal de l'application
- * * Mariage Laetitia & Alexandre — 8 mai 2027
+ * Mariage Laetitia & Alexandre — 8 mai 2027
  * Domaine de la Scie du May
  */
 
@@ -16,7 +16,7 @@ import RSVP from './components/rsvp.js';
 import MapComponent from './components/map.js';
 import Carpool from './components/carpool.js';
 import GuestProfile from './components/guestProfile.js';
-import AdminDashboard from './components/adminDashboard.js'; // S'assurer que le nom sur le disque est identique
+import AdminDashboard from './components/adminDashboard.js';
 
 // ──────────────────────────────────────────────
 // Définition des routes de l'application
@@ -41,13 +41,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('║  📍 Domaine de la Scie du May            ║');
   console.log('╚══════════════════════════════════════════╝');
 
-  // ── 1. Initialiser le Store ──
+  // ── 1. Initialiser le Store (Supabase) ──
   await Store.init();
 
-  // ── 2. Initialiser le Router avec les routes ──
+  // ── 2. Initialiser le Router ──
   Router.init(ROUTES);
 
-  // ── 3. Initialiser tous les composants disponibles ──
+  // ── 3. Initialiser tous les composants ──
   await initComponents();
 
   // ── 4. Activer les animations au scroll ──
@@ -68,28 +68,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ──────────────────────────────────────────────
-// Initialisation des composants
+// Initialisation des composants (async, séquentielle)
 // ──────────────────────────────────────────────
-
-function initComponents() {
-  const components = [
-    { name: 'Hero', module: Hero },
-    { name: 'RSVP', module: RSVP },
-    { name: 'MapComponent', module: MapComponent },
-    { name: 'Carpool', module: Carpool },
-    { name: 'GuestProfile', module: GuestProfile },
-    { name: 'AdminDashboard', module: AdminDashboard }
-  ];
-
-  // Après :
 async function initComponents() {
   const components = [
-    { name: 'Hero',            module: Hero },
-    { name: 'RSVP',            module: RSVP },
-    { name: 'MapComponent',    module: MapComponent },
-    { name: 'Carpool',         module: Carpool },
-    { name: 'GuestProfile',    module: GuestProfile },
-    { name: 'AdminDashboard',  module: AdminDashboard }
+    { name: 'Hero',           module: Hero },
+    { name: 'RSVP',           module: RSVP },
+    { name: 'MapComponent',   module: MapComponent },
+    { name: 'Carpool',        module: Carpool },
+    { name: 'GuestProfile',   module: GuestProfile },
+    { name: 'AdminDashboard', module: AdminDashboard }
   ];
 
   for (const { name, module } of components) {
@@ -101,13 +89,12 @@ async function initComponents() {
         console.error(`[App] Erreur lors de l'initialisation de ${name} :`, e);
       }
     }
-	}
-	};
+  }
+}
 
 // ──────────────────────────────────────────────
 // Menu hamburger mobile
 // ──────────────────────────────────────────────
-
 function initMobileMenu() {
   const hamburger = document.querySelector('.nav__hamburger');
   const navMenu = document.querySelector('.nav__links');
@@ -137,57 +124,25 @@ function initMobileMenu() {
 // ──────────────────────────────────────────────
 // Gestion des changements de route
 // ──────────────────────────────────────────────
-
-function handleRouteChange(event) {
-  const { route, pageId } = event.detail;
-
-  // ── Protection de la route admin/dashboard ──
-  if (route === '#/admin/dashboard' && !Store.isAdmin()) {
-    console.warn('[App] Accès admin/dashboard non autorisé. Redirection vers #/admin.');
-    setTimeout(() => {
-      Router.navigate('#/admin');
-    }, 50);
-    return;
-  }
-
-  // ── Invalider la carte Leaflet quand elle devient visible ──
-  if (route === '#/hebergements' && MapComponent && typeof MapComponent.invalidateSize === 'function') {
-    setTimeout(() => {
-      MapComponent.invalidateSize();
-    }, 200);
-  }
-
-  // ── Réinitialiser les animations au scroll ──
-  setTimeout(() => {
-    Animations.initScrollAnimations();
-  }, 100);
-
-  // ── Rafraîchir le profil invité si nécessaire ──
 async function handleRouteChange(event) {
-  const { route, pageId } = event.detail;
+  const { route } = event.detail;
 
   // ── Protection de la route admin/dashboard ──
   if (route === '#/admin/dashboard' && !Store.isAdmin()) {
-    console.warn('[App] Accès admin/dashboard non autorisé. Redirection vers #/admin.');
-    setTimeout(() => {
-      Router.navigate('#/admin');
-    }, 50);
+    console.warn('[App] Accès non autorisé. Redirection vers #/admin.');
+    setTimeout(() => Router.navigate('#/admin'), 50);
     return;
   }
 
   // ── Invalider la carte Leaflet quand elle devient visible ──
   if (route === '#/hebergements' && MapComponent && typeof MapComponent.invalidateSize === 'function') {
-    setTimeout(() => {
-      MapComponent.invalidateSize();
-    }, 200);
+    setTimeout(() => MapComponent.invalidateSize(), 200);
   }
 
   // ── Réinitialiser les animations au scroll ──
-  setTimeout(() => {
-    Animations.initScrollAnimations();
-  }, 100);
+  setTimeout(() => Animations.initScrollAnimations(), 100);
 
-  // ── Rafraîchir le profil invité si nécessaire ──
+  // ── Rafraîchir le profil invité ──
   if (route === '#/mes-reponses' && GuestProfile && typeof GuestProfile.refresh === 'function') {
     await GuestProfile.refresh();
   }
