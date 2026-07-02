@@ -16,7 +16,9 @@ import RSVP from './components/rsvp.js';
 import MapComponent from './components/map.js';
 import Carpool from './components/carpool.js';
 import GuestProfile from './components/guestProfile.js';
-import InfoHub from './components/infoHub.js';
+import InfoHub    from './components/infoHub.js';
+import HowToGet   from './components/howToGet.js';
+import InfoPages  from './components/infoPages.js';
 import AdminDashboard from './components/adminDashboard.js';
 
 // ──────────────────────────────────────────────
@@ -25,7 +27,12 @@ import AdminDashboard from './components/adminDashboard.js';
 const ROUTES = {
   '#/': 'page-home',
   '#/rsvp': 'page-rsvp',
-  '#/infos': 'page-infos',
+  '#/infos':            'page-infos',
+  '#/infos/messe':      'page-infos-messe',
+  '#/infos/animations': 'page-infos-animations',
+  '#/infos/contacts':   'page-infos-contacts',
+  '#/comment-venir':    'page-comment-venir',
+  '#/liste':            'page-liste',
   '#/hebergements': 'page-hebergements',
   '#/covoiturage': 'page-covoiturage',
   '#/mes-reponses': 'page-mes-reponses',
@@ -79,6 +86,9 @@ async function initComponents() {
     { name: 'MapComponent',   module: MapComponent },
     { name: 'Carpool',        module: Carpool },
     { name: 'GuestProfile',   module: GuestProfile },
+	{ name: 'InfoHub',   module: InfoHub },
+	{ name: 'HowToGet',  module: HowToGet },
+	{ name: 'InfoPages', module: InfoPages },
     { name: 'AdminDashboard', module: AdminDashboard }
   ];
 
@@ -121,6 +131,30 @@ function initMobileMenu() {
       document.body.classList.remove('menu-open');
     });
   });
+  
+  
+function initDropdowns() {
+  document.querySelectorAll('.nav__dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.nav__link--dropdown');
+    if (!trigger) return;
+    trigger.addEventListener('click', (e) => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        e.preventDefault();
+        dropdown.classList.toggle('open');
+      }
+      // Desktop : le hover CSS gère l'affichage
+    });
+  });
+  // Fermer le dropdown si clic en dehors
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.nav__dropdown.open').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('open');
+    });
+  });
+}
+// → Appeler initDropdowns() dans DOMContentLoaded après initMobileMenu()
+
 }
 
 // ──────────────────────────────────────────────

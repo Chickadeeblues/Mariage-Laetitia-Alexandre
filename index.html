@@ -31,25 +31,40 @@
 <body>
 
   <!-- ===================== NAVIGATION ===================== -->
-  <nav class="nav" id="main-nav">
-    <div class="nav__inner container">
-      <a href="#/" class="nav__logo">L &amp; A</a>
-
-      <div class="nav__links" id="nav-links">
-        <a href="#/" class="nav__link" data-page="home">Accueil</a>
-        <a href="#/rsvp" class="nav__link" data-page="rsvp">RSVP</a>
-        <a href="#/hebergements" class="nav__link" data-page="hebergements">Hébergements</a>
-        <a href="#/covoiturage" class="nav__link" data-page="covoiturage">Covoiturage</a>
-        <a href="#/admin" class="nav__admin-link" data-page="admin">Espace mariés</a>
+<nav class="nav" id="main-nav">
+  <div class="nav__inner container">
+    <a href="#/" class="nav__logo">L &amp; A</a>
+ 
+    <div class="nav__links" id="nav-links">
+      <a href="#/" class="nav__link" data-page="home">Accueil</a>
+ 
+      <!-- Menu déroulant Infos pratiques -->
+      <div class="nav__dropdown">
+        <a href="#/infos" class="nav__link nav__link--dropdown" data-page="infos">
+          Infos pratiques <span class="nav__caret">▾</span>
+        </a>
+        <div class="nav__dropdown-menu">
+          <a href="#/infos/messe"      class="nav__dropdown-item">💒 Messe &amp; Réception</a>
+          <a href="#/infos/animations" class="nav__dropdown-item">🎤 Animations &amp; Discours</a>
+          <a href="#/infos/contacts"   class="nav__dropdown-item">✉️ Contacts utiles</a>
+        </div>
       </div>
-
-      <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu de navigation" aria-expanded="false">
-        <span class="nav__hamburger-line"></span>
-        <span class="nav__hamburger-line"></span>
-        <span class="nav__hamburger-line"></span>
-      </button>
+ 
+      <a href="#/rsvp"           class="nav__link" data-page="rsvp">RSVP</a>
+      <a href="#/comment-venir"  class="nav__link" data-page="comment-venir">Comment venir ?</a>
+	  <a href="#/covoiturage"    class="nav__link" data-page="covoiturage">Covoiturage</a>
+      <a href="#/hebergements"   class="nav__link" data-page="hebergements">Hébergement</a>  
+      <a href="#/liste"          class="nav__link" data-page="liste">Liste de mariage</a>
+      <a href="#/admin"          class="nav__admin-link" data-page="admin">Admin.</a>
     </div>
-  </nav>
+ 
+    <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu de navigation" aria-expanded="false">
+      <span class="nav__hamburger-line"></span>
+      <span class="nav__hamburger-line"></span>
+      <span class="nav__hamburger-line"></span>
+    </button>
+  </div>
+</nav>
 
   <!-- ===================== PAGE : ACCUEIL ===================== -->
   <section id="page-home" class="page active">
@@ -90,59 +105,20 @@
     </div>
   </section>
   
- <!-- ===================== PAGE : Infos ===================== -->
+<!-- PAGE : INFOS PRATIQUES (hub) -->
+<section id="page-infos" class="page"></section>
+ 
+<!-- PAGE : MESSE & RÉCEPTION -->
+<section id="page-infos-messe" class="page"></section>
+ 
+<!-- PAGE : ANIMATIONS & DISCOURS -->
+<section id="page-infos-animations" class="page"></section>
+ 
+<!-- PAGE : CONTACTS UTILES -->
+<section id="page-infos-contacts" class="page"></section>
 
-<section id="page-infos" class="page">
-  <div class="container">
-    <div class="section-header">
-      <h2>Informations pratiques</h2>
-      <div class="ornament"></div>
-    </div>
-
-    <div class="info-grid">
-      <a href="#/programme" class="info-card">
-        <span class="info-icon">💒</span>
-        <h3 class="info-title">Messe & Réception</h3>
-      </a>
-      <a href="#/programme" class="info-card">
-        <span class="info-icon">🎤</span>
-        <h3 class="info-title">Animations & Discours</h3>
-      </a>
-      <a href="#/transports" class="info-card">
-        <span class="info-icon">🚗</span>
-        <h3 class="info-title">Comment venir ?</h3>
-      </a>
-      <a href="#/hebergements" class="info-card">
-        <span class="info-icon">🛌</span>
-        <h3 class="info-title">Où dormir ?</h3>
-      </a>
-      <a href="#/liste" class="info-card">
-        <span class="info-icon">🎁</span>
-        <h3 class="info-title">Liste de mariage</h3>
-      </a>
-      <a href="#/contact" class="info-card">
-        <span class="info-icon">✉️</span>
-        <h3 class="info-title">Contacts utiles</h3>
-      </a>
-    </div>
-  </div>
-</section>
-
-
-  <!-- ===================== PAGE : HÉBERGEMENTS ===================== -->
-  <section id="page-hebergements" class="page">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Où dormir ?</h2>
-        <div class="ornament"></div>
-        <p class="text-muted">Découvrez les hébergements à proximité du domaine pour profiter pleinement de la fête.</p>
-      </div>
-
-      <div id="map-container" style="height: 500px;"></div>
-
-      <section id="accommodations-list" class="accommodations-grid"></section>
-    </div>
-  </section>
+<!-- PAGE : COMMENT VENIR -->
+<section id="page-comment-venir" class="page"></section>
 
   <!-- ===================== PAGE : COVOITURAGE ===================== -->
   <section id="page-covoiturage" class="page">
@@ -156,6 +132,25 @@
       <div id="carpool-container"></div>
     </div>
   </section>
+
+<!-- ===================== PAGE : HÉBERGEMENTS ===================== -->
+  <section id="page-hebergements" class="page">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <h2>Où dormir ?</h2>
+        <div class="ornament"></div>
+        <p class="text-muted">Découvrez les hébergements à proximité du domaine pour profiter pleinement de la fête.</p>
+      </div>
+
+      <div id="map-container" style="height: 500px;"></div>
+
+      <section id="accommodations-list" class="accommodations-grid"></section>
+    </div>
+  </section>
+ 
+<!-- PAGE : LISTE DE MARIAGE -->
+<section id="page-liste" class="page"></section>
+
 
   <!-- ===================== PAGE : MES RÉPONSES ===================== -->
   <section id="page-mes-reponses" class="page">
