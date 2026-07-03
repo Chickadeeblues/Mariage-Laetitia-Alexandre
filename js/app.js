@@ -157,6 +157,55 @@ function initDropdowns() {
 
 }
 
+/**
+ * AJOUT dans app.js — Fonction initDropdowns()
+ * À ajouter après initMobileMenu() dans DOMContentLoaded,
+ * et à définir comme fonction top-level dans le fichier.
+ */
+
+function initDropdowns() {
+  const dropdowns = document.querySelectorAll('.nav__dropdown');
+
+  dropdowns.forEach(dropdown => {
+    const trigger = dropdown.querySelector('.nav__link--dropdown');
+    if (!trigger) return;
+
+    // Mobile uniquement : toggle au tap
+    trigger.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768) {
+        e.preventDefault();
+        // Fermer les autres
+        dropdowns.forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
+        dropdown.classList.toggle('open');
+      }
+      // Desktop : le CSS hover gère tout
+    });
+
+    // Fermer quand on clique sur un item du sous-menu
+    dropdown.querySelectorAll('.nav__dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+        // Fermer aussi le menu hamburger sur mobile
+        const navLinks = document.getElementById('nav-links');
+        const hamburger = document.getElementById('nav-hamburger');
+        if (navLinks) navLinks.classList.remove('open');
+        if (hamburger) { hamburger.classList.remove('active'); hamburger.setAttribute('aria-expanded', 'false'); }
+        document.body.classList.remove('menu-open');
+      });
+    });
+  });
+
+  // Clic en dehors → ferme tous les dropdowns
+  document.addEventListener('click', (e) => {
+    dropdowns.forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('open');
+    });
+  });
+}
+
+// Dans DOMContentLoaded, après initMobileMenu() :
+// initDropdowns();
+
 // ──────────────────────────────────────────────
 // Gestion des changements de route
 // ──────────────────────────────────────────────

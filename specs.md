@@ -13,7 +13,7 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 - Base de données cloud : Supabase (PostgreSQL REST API)
 - Carte interactive : Leaflet.js + OpenStreetMap
 - Hébergement : GitHub Pages
-- Polices : Cormorant Garamond + Outfit (Google Fonts)
+- Polices : Cormorant Garamond (titres) + Outfit (corps)
 
 ---
 
@@ -33,15 +33,80 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
     └── components/
         ├── hero.js             # Page d'accueil, particules, parallaxe
         ├── rsvp.js             # Formulaire multi-étapes (5 étapes)
-        ├── map.js              # Carte Leaflet + liste hébergements
+        ├── map.js              # Carte Leaflet + liste hébergements triée par distance GPS
         ├── carpool.js          # Affichage offres/demandes covoiturage
         ├── guestProfile.js     # Espace personnel invité
-        └── adminDashboard.js   # Tableau de bord mariés
+        ├── adminDashboard.js   # Tableau de bord mariés
+        ├── infoHub.js          # Page hub "Infos pratiques" (6 cubes)
+        ├── howToGet.js         # Page "Comment venir ?" (église + domaine + train)
+        └── infoPages.js        # Sous-pages : Messe, Animations, Contacts, Liste
 ```
 
 ---
 
-## 3. Base de données Supabase
+## 3. Navigation & Routes SPA
+
+### Barre de navigation
+```
+Accueil | Infos pratiques ▾ | RSVP | Comment venir ? | Hébergements | Covoiturage | Liste de mariage | Espace mariés
+```
+
+**"Infos pratiques"** est un menu déroulant :
+- Desktop : hover → sous-menu visible
+- Mobile : tap → sous-menu en liste déroulante (fond opaque), tap ailleurs → ferme
+
+Sous-menu :
+```
+→ 💒 Messe & Réception      (#/infos/messe)
+→ 🎤 Animations & Discours  (#/infos/animations)
+→ ✉️ Contacts utiles        (#/infos/contacts)
+```
+
+### Table des routes
+
+| Hash | Page | Composant |
+|---|---|---|
+| `#/` | Accueil | `hero.js` |
+| `#/infos` | Hub informations pratiques (6 cubes) | `infoHub.js` |
+| `#/infos/messe` | Messe & Réception | `infoPages.js` |
+| `#/infos/animations` | Animations & Discours | `infoPages.js` |
+| `#/infos/contacts` | Contacts utiles | `infoPages.js` |
+| `#/rsvp` | Formulaire RSVP | `rsvp.js` |
+| `#/comment-venir` | Comment venir ? | `howToGet.js` |
+| `#/hebergements` | Carte + liste hébergements | `map.js` |
+| `#/covoiturage` | Offres et demandes | `carpool.js` |
+| `#/liste` | Liste de mariage | `infoPages.js` |
+| `#/mes-reponses` | Profil invité | `guestProfile.js` |
+| `#/admin` | Login mariés | `adminDashboard.js` |
+| `#/admin/dashboard` | Tableau de bord | `adminDashboard.js` |
+
+---
+
+## 4. Page "Infos pratiques" — Hub (6 cubes)
+
+Grille 3×2 sur desktop, 2×3 sur mobile (jamais 1 colonne), cubes carrés :
+
+| # | Icône | Titre | Destination |
+|---|---|---|---|
+| 1 | 💒 | Messe & Réception | `#/infos/messe` |
+| 2 | 🛌 | Où dormir ? | `#/hebergements` |
+| 3 | 🚗 | Comment venir ? | `#/comment-venir` |
+| 4 | 🎁 | Liste de mariage | `#/liste` |
+| 5 | 🎤 | Animations & Discours | `#/infos/animations` |
+| 6 | ✉️ | Contacts utiles | `#/infos/contacts` |
+
+---
+
+## 5. Page "Comment venir ?"
+
+Trois blocs :
+1. **Cérémonie** — Église Notre-Dame-de-Pitié, Malleval (42520). Parkings : du Bourg (~3 min), de la Mairie (~2 min), route de Pélussin (~8 min en montée). Ruelles médiévales inaccessibles en voiture.
+2. **Réception** — Domaine de la Scie du May, Doizieux (42740). Parking gratuit sur place, suivre les ballons.
+3. **Train** — Gare TER Le Péage-de-Roussillon (Lyon ↔ Valence, ~40 min depuis Lyon Part-Dieu). Renvoi vers page covoiturage.
+
+---
+
+## 6. Base de données Supabase
 
 **Projet** : `upaxcudmifqwiglodywf.supabase.co`
 
@@ -51,14 +116,16 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 | `id` | uuid PK | Généré automatiquement |
 | `first_name` | text | Prénom |
 | `last_name` | text | Nom |
-| `phone` | text | Téléphone (clé d'identification invité) |
+| `phone` | text | Téléphone (clé d'identification) |
 | `email` | text | Email (optionnel) |
 | `attending` | boolean / 'maybe' | true / false / 'maybe' |
-| `companions` | jsonb | Tableau `[{name, diet, allergyDetails}]` |
-| `diet` | jsonb | Tableau `['vegetarian','vegan','no-alcohol','allergy']` |
+| `companions` | jsonb | `[{name, diet, allergyDetails}]` |
+| `diet` | jsonb | `['vegetarian','vegan','no-alcohol','allergy']` |
 | `allergy_details` | text | Ex: `[Lactose] [Gluten] [Autre: noix]` |
 | `brunch` | boolean | Participation brunch du 9 mai |
-| `transport` | jsonb | Objet transport complet (voir §4) |
+| `transport` | jsonb | Objet transport complet (voir §7) |
+| `accommodation_id` | uuid FK → accommodations | Hébergement choisi (nullable) |
+| `accommodation_name` | text | Nom libre si hors liste |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
@@ -71,27 +138,28 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 | `city` | text | Ville de départ |
 | `seats_available` | int | Pour les offres |
 | `seats_needed` | int | Pour les demandes |
-| `departure_day` | text | Date au format ISO |
-| `departure_time` | text | Heure HH:MM |
+| `departure_day` | text | Date ISO |
+| `departure_time` | text | HH:MM |
 | `contact` | text | Téléphone ou email |
 
 ### Table `accommodations`
 | Colonne | Type | Description |
 |---|---|---|
 | `id` | uuid PK | |
-| `name` | text | Nom de l'hébergement |
+| `name` | text | Nom |
 | `lat` / `lng` | float | Coordonnées GPS |
-| `capacity` | text | Ex: "6 personnes" |
+| `capacity` | text | Texte descriptif |
+| `capacity_number` | int | Numérique (0 = non limité) |
 | `description` | text | |
-| `distance` | text | Ex: "~3 km" |
-| `booking_url` | text | Lien de réservation |
+| `distance` | text | Indicatif |
+| `booking_url` | text | Lien réservation |
 | `icon` | text | `'venue'`, `'gite'`, `'chambre'` |
 
-**Sécurité** : Row Level Security activée, policies publiques en lecture/écriture (contrôle applicatif).
+**Disponibilité** : `getAccommodationsWithAvailability()` calcule `spotsLeft = capacity_number − Σ(1 + companions.length)` pour chaque invité ayant `accommodation_id` renseigné.
 
 ---
 
-## 4. Objet `transport` (jsonb dans `guests`)
+## 7. Objet `transport` (jsonb)
 
 ```json
 {
@@ -121,73 +189,109 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 
 ---
 
-## 5. Formulaire RSVP (5 étapes)
+## 8. Formulaire RSVP (5 étapes)
 
 | Étape | Contenu | Logique |
 |---|---|---|
-| 1 — Réponse | Prénom, Nom, Téléphone + présence (oui/peut-être/non) + accompagnants (max 5) | Si "non" → soumission directe |
-| 2 — Brunch | Participation brunch du 9 mai 9h30-13h30 | Sautée si "non" à l'étape 1 |
-| 3 — Repas | Régimes alimentaires (végétarien, végan, sans alcool, allergie) pour chaque personne | Sautée si "non" ou "peut-être" |
-| 4 — Transport | Mode (voiture/train/autre), covoiturage (offre/besoin/rien), détails trajets | Toujours affichée |
-| 5 — Hébergement | Statut hébergement (trouvé/cherche encore) + lien vers la liste | Toujours affichée |
-
-**Identification invité** : par numéro de téléphone. Si le numéro existe déjà en base, le profil est pré-rempli (mise à jour plutôt que création).
+| 1 — Réponse | Prénom, Nom, Téléphone + présence + accompagnants (max 5) | Si "non" → soumission directe |
+| 2 — Brunch | Brunch du 9 mai 9h30–13h30 | Sautée si "non" |
+| 3 — Repas | Régimes par personne + sous-options allergies | Sautée si "non" ou "peut-être" |
+| 4 — Transport | Mode + covoiturage + détails trajets | Toujours |
+| 5 — Hébergement | Autocomplete hébergements (≥3 lettres) + places restantes | Toujours |
 
 ---
 
-## 6. Routes SPA
+## 9. Espace administration
 
-| Hash | Page | Composant |
-|---|---|---|
-| `#/` | Accueil | `hero.js` |
-| `#/rsvp` | Formulaire RSVP | `rsvp.js` |
-| `#/hebergements` | Carte + liste hébergements | `map.js` |
-| `#/covoiturage` | Offres et demandes | `carpool.js` |
-| `#/mes-reponses` | Profil invité | `guestProfile.js` |
-| `#/admin` | Login mariés | `adminDashboard.js` |
-| `#/admin/dashboard` | Tableau de bord | `adminDashboard.js` |
+- Mot de passe hashé SHA-256 côté client
+- Session en `localStorage`
+- Dashboard : stats (total / confirmés / peut-être / déclinés / en attente), régimes, liste invités (avec brunch + transport), covoiturage, hébergements
 
 ---
 
-## 7. Espace administration
-
-- Accès par mot de passe hashé SHA-256 côté client
-- Session stockée en `localStorage` (clé `wedding_admin_auth`)
-- Tableau de bord : stats globales, régimes alimentaires, liste invités, synthèse covoiturage, gestion hébergements (ajout/suppression)
-- Stat "Peut-être" incluse dans les compteurs
-
----
-
-## 8. Persistance locale (localStorage)
-
-Seules deux clés, jamais de données métier :
+## 10. Persistance localStorage
 
 | Clé | Contenu |
 |---|---|
-| `wedding_current_guest_id` | UUID de l'invité connecté |
+| `wedding_current_guest_id` | UUID invité connecté |
 | `wedding_admin_auth` | `{authenticated: true, timestamp}` |
 
 ---
 
-## 9. Points de vigilance pour refactoring
+## 11. Hébergements en base
 
-- **Toutes les méthodes `Store` sont `async`** — tout appelant doit utiliser `await`
-- **`initComponents()` utilise `for...of`** et non `forEach` pour respecter l'ordre async
-- **`DOMContentLoaded` est `async`** dans `app.js`
-- **Conversion snake_case ↔ camelCase** assurée par `toApp()` / `toDb()` dans `store.js`
-- **Firefox** est plus strict que Chrome sur les Promises non résolues — tester sur les deux
-- **Cache navigateur** : forcer Ctrl+Shift+R après chaque déploiement GitHub Pages
-- **`Store.on()`** ne retourne pas de fonction de désinscription (pas de cleanup possible actuellement)
-- **Pas de bundler** : les imports sont des ES Modules natifs, attention à la compatibilité des chemins relatifs
+Triés par distance GPS dans `map.js` :
+
+| Nom | Distance | capacity_number |
+|---|---|---|
+| Domaine de la Scie du May | Sur place | 20 |
+| Chez Delphine (Chambre d'hôtes) | ~3 km | 4 |
+| La Roche du Pilat | ~3 km | 6 |
+| Hôtel Restaurant Éclosion | ~4 km | 24 |
+| Camping Bel'Époque du Pilat | ~15 km | 0 |
+| Camping de la Lône | ~20 km | 0 |
+| Huttopia Pays de Condrieu | ~22 km | 0 |
+
+Marqueur carte spécial : 🚆 Gare TER Le Péage-de-Roussillon (`45.3767, 4.7970`).
 
 ---
 
-## 10. Hébergements par défaut
+## 12. Charte graphique
 
-Insérés automatiquement à l'initialisation si la table `accommodations` est vide :
-1. Domaine de la Scie du May *(sur place)*
-2. La Roche du Pilat — gîte 6 pers. *(~3 km)*
-3. Chez Delphine — chambre d'hôtes *(~3 km)*
-4. Hôtel Restaurant Éclosion *(~4 km)*
-5. Camping Le Bessat *(~12 km)*
-6. Options Airbnb Parc du Pilat *(<20 km)*
+### Palette
+| Variable CSS | Valeur | Usage |
+|---|---|---|
+| `--white` | `#FFFFFF` | Fonds cartes |
+| `--cream` | `#FAF8F5` | Fond général de la page |
+| `--sage` | `#9CAF88` | Vert sauge — accents secondaires, bordures |
+| `--forest` | `#2D5A3D` | Vert sapin — couleur principale, titres |
+| `--gold` | `#C9A84C` | Doré — mise en valeur, ornements |
+| `--gold-light` | `#E8D5A3` | Doré clair — dégradés, fonds subtils |
+| `--text-dark` | `#2C2C2C` | Texte principal |
+| `--text-muted` | `#6B6B6B` | Texte secondaire |
+
+### Typographie
+- **`--font-display`** : `'Cormorant Garamond'` — uniquement pour `h1` à `h4`, éléments hero, noms des mariés
+- **`--font-body`** : `'Outfit'` — tout le reste : nav, boutons, labels, corps de texte, formulaires
+- **Règle absolue** : ne jamais mélanger les deux polices dans un même élément. Cormorant = élégance décorative. Outfit = lisibilité fonctionnelle.
+- Weights Cormorant : 400 (normal), 500, 600, 700 — et leurs italiques
+- Weights Outfit : 300 (léger), 400 (normal), 500 (medium), 600 (semi-bold)
+
+### Espacements & Rayons
+| Variable | Valeur | Usage |
+|---|---|---|
+| `--radius-sm` | `8px` | Boutons, inputs |
+| `--radius-md` | `12px` | Cartes secondaires, popups |
+| `--radius-lg` | `20px` | Cartes principales |
+
+### Ombres
+| Variable | Usage |
+|---|---|
+| `--shadow-sm` | Éléments au repos |
+| `--shadow-md` | Cartes au hover |
+| `--shadow-lg` | Toasts, menus flottants |
+
+### Grille cubes "Infos pratiques"
+- Desktop (≥768px) : 3 colonnes, `gap: 24px`, `aspect-ratio: 1/1`
+- Mobile (<768px) : **toujours 2 colonnes**, `gap: 12px`, cubes plus compacts
+- **Ne jamais passer à 1 colonne** — l'effet "tout d'un coup d'œil" est l'intention de design
+
+### Règles CSS critiques identifiées
+1. **Voile page d'accueil** : l'effet parallaxe dans `hero.js` modifie `opacity` du hero content au scroll → supprimer ou limiter à `opacity >= 0.3` minimum
+2. **Menu mobile** : utiliser fond `background: #FAF8F5` plein (sans `backdrop-filter`) sur mobile — le flou translucide rend les liens illisibles sur fond de contenu
+3. **Dropdown mobile** : basculer sur toggle au tap (pas hover), fond opaque, `z-index: 1010`, fermeture au clic extérieur
+4. **Nav hamburger** : après clic sur un item du dropdown, fermer à la fois le sous-menu ET le menu hamburger
+
+---
+
+## 13. Points de vigilance pour refactoring
+
+- **Toutes les méthodes `Store` sont `async`** — tout appelant doit `await`
+- **`initComponents()` utilise `for...of`** — respecte l'ordre async (pas `forEach`)
+- **`DOMContentLoaded` est `async`** dans `app.js`
+- **Conversion snake_case ↔ camelCase** : `toApp()` / `toDb()` dans `store.js`
+- **Firefox** plus strict que Chrome sur Promises — tester sur les deux
+- **Cache** : Ctrl+Shift+R après chaque déploiement GitHub Pages
+- **`Store.on()`** ne retourne pas de désinscripteur (pas de cleanup actuellement)
+- **Pas de bundler** : ES Modules natifs — attention aux chemins relatifs
+- **`infoPages.js`** injecte du CSS dynamiquement — vérifier la non-duplication au changement de route

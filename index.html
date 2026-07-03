@@ -18,7 +18,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -37,34 +37,37 @@
  
     <div class="nav__links" id="nav-links">
       <a href="#/" class="nav__link" data-page="home">Accueil</a>
+      <a href="#/rsvp" class="nav__link" data-page="rsvp">RSVP</a>
  
-      <!-- Menu déroulant Infos pratiques -->
       <div class="nav__dropdown">
         <a href="#/infos" class="nav__link nav__link--dropdown" data-page="infos">
-          Infos pratiques <span class="nav__caret">▾</span>
+          Informations <span class="nav__caret">▾</span>
         </a>
         <div class="nav__dropdown-menu">
+          <a href="#/infos"            class="nav__dropdown-item">🗺️ Vue d'ensemble</a>
+          <div class="nav__dropdown-sep"></div>
           <a href="#/infos/messe"      class="nav__dropdown-item">💒 Messe &amp; Réception</a>
+          <a href="#/comment-venir"    class="nav__dropdown-item">🚗 Comment venir ?</a>
+          <a href="#/hebergements"     class="nav__dropdown-item">🛌 Hébergements</a>
+          <a href="#/covoiturage"      class="nav__dropdown-item">🤝 Covoiturage</a>
+          <a href="#/liste"            class="nav__dropdown-item">🎁 Liste de mariage</a>
+          <div class="nav__dropdown-sep"></div>
           <a href="#/infos/animations" class="nav__dropdown-item">🎤 Animations &amp; Discours</a>
           <a href="#/infos/contacts"   class="nav__dropdown-item">✉️ Contacts utiles</a>
         </div>
       </div>
  
-      <a href="#/rsvp"           class="nav__link" data-page="rsvp">RSVP</a>
-      <a href="#/comment-venir"  class="nav__link" data-page="comment-venir">Comment venir ?</a>
-	  <a href="#/covoiturage"    class="nav__link" data-page="covoiturage">Covoiturage</a>
-      <a href="#/hebergements"   class="nav__link" data-page="hebergements">Hébergement</a>  
-      <a href="#/liste"          class="nav__link" data-page="liste">Liste de mariage</a>
-      <a href="#/admin"          class="nav__admin-link" data-page="admin">Admin.</a>
+      <a href="#/admin" class="nav__admin-link" data-page="admin">Espace mariés</a>
     </div>
  
-    <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu de navigation" aria-expanded="false">
+    <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false">
       <span class="nav__hamburger-line"></span>
       <span class="nav__hamburger-line"></span>
       <span class="nav__hamburger-line"></span>
     </button>
   </div>
 </nav>
+
 
   <!-- ===================== PAGE : ACCUEIL ===================== -->
   <section id="page-home" class="page active">

@@ -203,32 +203,34 @@ const Hero = {
    * Initialise un effet de parallaxe subtil au scroll.
    * Le fond du hero se déplace plus lentement que le contenu.
    */
-  _initParallax() {
-    const heroContent = this._elements.heroSection.querySelector('.hero-content') 
-      || this._elements.heroSection;
+/**
+ * CORRECTION hero.js — Supprimer l'effet opacity au scroll
+ * 
+ * Dans _initParallax(), remplacez la méthode complète par celle-ci.
+ * L'effet de fondu au scroll est supprimé (causait le "voile").
+ * Seul l'effet de translation Y est conservé, atténué.
+ */
+_initParallax() {
+  const heroContent = this._elements.heroSection.querySelector('.hero-content')
+    || this._elements.heroSection;
 
-    this._scrollHandler = () => {
-      const scrollY = window.scrollY;
-      const heroHeight = this._elements.heroSection.offsetHeight;
+  this._scrollHandler = () => {
+    const scrollY = window.scrollY;
+    const heroHeight = this._elements.heroSection.offsetHeight;
 
-      // Ne traiter que quand la section est visible
-      if (scrollY > heroHeight * 1.5) return;
+    if (scrollY > heroHeight) return;
 
-      const parallaxSpeed = 0.3;
-      const opacity = Math.max(0, 1 - scrollY / (heroHeight * 0.8));
+    // Translation parallaxe uniquement — PAS de modification d'opacité
+    heroContent.style.transform = `translateY(${scrollY * 0.2}px)`;
 
-      // Déplacement parallaxe du contenu
-      heroContent.style.transform = `translateY(${scrollY * parallaxSpeed}px)`;
-      heroContent.style.opacity = opacity;
+    // Particules avec facteur différent
+    if (this._elements.particlesContainer) {
+      this._elements.particlesContainer.style.transform = `translateY(${scrollY * 0.1}px)`;
+    }
+  };
 
-      // Déplacer les particules avec un autre facteur
-      if (this._elements.particlesContainer) {
-        this._elements.particlesContainer.style.transform = `translateY(${scrollY * 0.15}px)`;
-      }
-    };
-
-    window.addEventListener('scroll', this._scrollHandler, { passive: true });
-  },
+  window.addEventListener('scroll', this._scrollHandler, { passive: true });
+},
 
   // ─── PARTICULES DÉCORATIVES ───────────────────────────
 

@@ -140,113 +140,123 @@ p {
 
 
 /* ===================== NAVIGATION ===================== */
+/* ── fond opaque sur mobile, dropdown robuste ── */
 .nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   z-index: 1000;
-  background: rgba(250, 248, 245, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
-  transition: background var(--transition), box-shadow var(--transition);
+  background: #FAF8F5; /* opaque — plus de backdrop-filter */
+  border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+  transition: box-shadow 0.3s ease;
 }
-
+ 
 .nav.scrolled {
-  background: rgba(250, 248, 245, 0.95);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
-
+ 
 .nav__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 72px;
+  height: 68px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
-
-.nav__logo {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--forest);
-  letter-spacing: 0.08em;
-  transition: color var(--transition);
-  position: relative;
-}
-
-.nav__logo::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.nav__logo:hover::after {
-  opacity: 1;
-}
-
+ 
+/* Menu desktop */
 .nav__links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
-
+ 
 .nav__link {
   position: relative;
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 8px 12px;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--text-dark);
-  transition: color var(--transition);
-  letter-spacing: 0.02em;
+  font-family: var(--font-body);
+  transition: color 0.2s;
+  white-space: nowrap;
 }
-
+ 
 .nav__link::after {
   content: '';
   position: absolute;
-  bottom: 2px;
-  left: 16px;
-  right: 16px;
+  bottom: 2px; left: 12px; right: 12px;
   height: 2px;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  background: var(--gold);
   border-radius: 1px;
   transform: scaleX(0);
   transform-origin: center;
-  transition: transform var(--transition);
+  transition: transform 0.2s ease;
 }
-
+ 
 .nav__link:hover,
-.nav__link.active {
-  color: var(--forest);
-}
-
+.nav__link.active { color: var(--forest); }
+ 
 .nav__link:hover::after,
-.nav__link.active::after {
-  transform: scaleX(1);
-}
-
+.nav__link.active::after { transform: scaleX(1); }
+ 
 .nav__admin-link {
   font-size: 0.75rem;
   font-weight: 400;
   color: var(--text-muted);
   opacity: 0.5;
-  padding: 6px 12px;
-  transition: opacity var(--transition), color var(--transition);
-  letter-spacing: 0.01em;
+  padding: 6px 10px;
+  transition: opacity 0.2s, color 0.2s;
 }
-
-.nav__admin-link:hover {
-  opacity: 1;
-  color: var(--forest);
+.nav__admin-link:hover { opacity: 1; color: var(--forest); }
+ 
+/* ── Dropdown desktop ── */
+.nav__dropdown {
+  position: relative;
 }
-
-/* Hamburger */
+ 
+.nav__dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #FFFFFF;
+  border: 1.5px solid #e8e0d0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 220px;
+  padding: 6px 0;
+  z-index: 200;
+}
+ 
+/* Desktop : hover */
+@media (min-width: 769px) {
+  .nav__dropdown:hover .nav__dropdown-menu { display: block; }
+}
+ 
+/* Mobile : classe .open */
+.nav__dropdown.open .nav__dropdown-menu { display: block; }
+ 
+.nav__dropdown-item {
+  display: block;
+  padding: 10px 18px;
+  font-size: 14px;
+  color: #444;
+  font-family: var(--font-body);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.nav__dropdown-item:hover { background: #fdfaf5; color: var(--forest); }
+ 
+.nav__caret {
+  font-size: 10px;
+  margin-left: 3px;
+  display: inline-block;
+  transition: transform 0.2s;
+}
+.nav__dropdown.open .nav__caret { transform: rotate(180deg); }
+ 
+/* ── Hamburger ── */
 .nav__hamburger {
   display: none;
   flex-direction: column;
@@ -256,29 +266,96 @@ p {
   height: 32px;
   padding: 4px;
   z-index: 1010;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
-
+ 
 .nav__hamburger-line {
   display: block;
   width: 100%;
   height: 2px;
   background-color: var(--text-dark);
   border-radius: 2px;
-  transition: transform var(--transition), opacity var(--transition);
+  transition: transform 0.3s ease, opacity 0.3s ease;
   transform-origin: center;
 }
-
-.nav__hamburger.open .nav__hamburger-line:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.nav__hamburger.open .nav__hamburger-line:nth-child(2) {
-  opacity: 0;
-  transform: scaleX(0);
-}
-
-.nav__hamburger.open .nav__hamburger-line:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
+ 
+.nav__hamburger.active .nav__hamburger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav__hamburger.active .nav__hamburger-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav__hamburger.active .nav__hamburger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+ 
+/* ── Menu mobile ── */
+@media (max-width: 768px) {
+  .nav__hamburger { display: flex; }
+ 
+  .nav__links {
+    /* Menu fermé : caché */
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #FAF8F5; /* OPAQUE — pas de backdrop-filter */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    z-index: 1005;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+    overflow-y: auto;
+    padding: 80px 20px 40px;
+  }
+ 
+  .nav__links.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+ 
+  .nav__link {
+    font-size: 1.2rem;
+    font-family: var(--font-display);
+    padding: 12px 24px;
+    width: 100%;
+    text-align: center;
+  }
+ 
+  .nav__admin-link {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+ 
+  /* Dropdown dans le menu mobile : en liste statique */
+  .nav__dropdown {
+    width: 100%;
+    text-align: center;
+  }
+ 
+  .nav__dropdown > .nav__link--dropdown {
+    width: 100%;
+    display: block;
+  }
+ 
+  .nav__dropdown-menu {
+    position: static;
+    border: none;
+    box-shadow: none;
+    background: rgba(45, 90, 61, 0.05);
+    border-radius: 8px;
+    padding: 4px 0;
+    margin: 4px 0 8px;
+    /* Toujours visible sur mobile quand le menu est ouvert */
+    display: block;
+  }
+ 
+  .nav__dropdown-item {
+    font-size: 1rem;
+    font-family: var(--font-display);
+    padding: 10px 16px;
+    text-align: center;
+  }
 }
 
 
@@ -1667,76 +1744,1406 @@ p {
 }
 
 /* ===================== INFO GRID (LES 6 CUBES) ===================== */
+ 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 800px;
-  margin: 0 auto 40px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto 48px;
 }
-
-@media (min-width: 768px) {
-  .info-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-  }
-}
-
+ 
 .info-card {
   background: var(--white);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1.5px solid rgba(0,0,0,0.05);
   border-radius: var(--radius-lg);
-  padding: 32px 20px;
+  padding: 24px 16px;
   text-align: center;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1 / 1; /* Force la forme carrée */
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
-
+ 
 .info-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
   border-color: var(--sage);
 }
-
-.info-icon {
-  font-size: 2.5rem;
-  margin-bottom: 12px;
-}
-
-.info-title {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--forest);
-  margin: 0;
-}
-
  
-<!-- ===================== CSS DROPDOWN À AJOUTER dans styles.css ===================== -->
-<style id="nav-dropdown-styles">
-  .nav__dropdown { position:relative; }
-  .nav__dropdown-menu {
-    display:none; position:absolute; top:100%; left:0;
-    background:#fff; border:1.5px solid #e8e0d0; border-radius:10px;
-    box-shadow:0 8px 24px rgba(0,0,0,.1); min-width:220px;
-    padding:6px 0; z-index:200;
+.info-card__icon { font-size: 2rem; margin-bottom: 10px; }
+.info-card__title {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--forest);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+.info-card__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+ 
+/* Mobile : 2 colonnes — JAMAIS 1 colonne */
+@media (max-width: 767px) {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 100%;
   }
-  .nav__dropdown:hover .nav__dropdown-menu,
-  .nav__dropdown.open  .nav__dropdown-menu { display:block; }
+ 
+  .info-card {
+    padding: 16px 10px;
+    border-radius: var(--radius-md);
+  }
+ 
+  .info-card__icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .info-card__title { font-size: 0.82rem; }
+  .info-card__desc { display: none; } /* Caché sur mobile pour gagner de la place */
+}
+ 
+/* Très petit écran */
+@media (max-width: 360px) {
+  .info-grid { gap: 8px; }
+  .info-card { padding: 12px 8px; }
+  .info-card__icon { font-size: 1.4rem; }
+  .info-card__title { font-size: 0.75rem; }
+}
+ 
+ 
+/* ── 4. PAGES générales — padding top correct ── */
+.page {
+  display: none;
+  min-height: 100vh;
+  padding-top: 68px; /* hauteur de la nav */
+}
+ 
+.page.active {
+  display: block;
+  animation: fadeIn 0.4s ease forwards;
+}
+ 
+#page-home {
+  padding-top: 0;
+  display: none;
+}
+ 
+#page-home.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+ 
+@media (max-width: 768px) {
+  .nav__inner { height: 60px; }
+  .page { padding-top: 60px; }
+}
+ 
+@media (min-width: 1200px) {
+  .nav__inner { height: 72px; }
+  .page { padding-top: 72px; }
+}
+.nav__dropdown-sep {
+  height: 1px;
+  background: #f0ebe0;
+  margin: 4px 0;
+}
+ 
+/* ── Dropdown enrichi ── */
+.nav__dropdown-menu {
+  min-width: 240px;
+}
+ 
+.nav__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  color: #444;
+  font-family: var(--font-body);
+  font-weight: 400;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+ 
+.nav__dropdown-item:hover {
+  background: #fdfaf5;
+  color: var(--forest);
+}
+graphy and nav · CSS
+/* ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+ 
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+ 
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+ 
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+ 
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+ 
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+ 
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+ 
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+ 
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+ 
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+ 
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+ 
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+ 
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+ 
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+ 
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+  }
   .nav__dropdown-item {
-    display:block; padding:10px 18px; font-size:14px; color:#444;
-    text-decoration:none; transition:background .15s;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
   }
-  .nav__dropdown-item:hover { background:#fdfaf5; color:#9b8660; }
-  .nav__caret { font-size:11px; margin-left:3px; }
-  /* Mobile : dropdown en liste */
-  @media(max-width:768px){
-    .nav__dropdown-menu { position:static;border:none;box-shadow:none;padding:0 0 0 16px;display:block; }
-    .nav__dropdown-item { font-size:14px;padding:8px 10px; }
+}
+ 
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+ 
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+ 
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+ 
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+ 
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+ 
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+ 
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+ 
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+ 
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+ graphy and nav · CSS
+/* ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+ 
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+ 
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+ 
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+ 
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+ 
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+ 
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+ 
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+ 
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+ 
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+ 
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+ 
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+ 
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+ 
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+ 
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
   }
-</style>
+  .nav__dropdown-item {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+  }
+}
+ 
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+ 
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+ 
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+ 
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+ 
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+ 
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+ 
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+ 
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+ 
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+ 
+* ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+ 
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+ 
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+ 
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+ 
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+ 
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+ 
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+ 
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+ 
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+ 
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+ 
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+ 
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+ 
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+ 
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+ 
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+  }
+  .nav__dropdown-item {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+  }
+}
+ 
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+ 
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+ 
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+ 
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+ 
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+ 
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+ 
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+ 
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+ 
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+ 
+* ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+ 
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+ 
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+ 
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+ 
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+ 
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+ 
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+ 
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+ 
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+ 
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+ 
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+ 
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+ 
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+ 
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+ 
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+  }
+  .nav__dropdown-item {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+  }
+}
+ 
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+ 
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+ 
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+ 
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+ 
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+ 
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+ 
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+ 
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+ 
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+ * ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+ 
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+ 
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+ 
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+ 
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+ 
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+ 
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+ 
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+ 
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+ 
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+ 
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+ 
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+ 
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+ 
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+ 
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+  }
+  .nav__dropdown-item {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+  }
+}
+ 
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+ 
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+ 
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+ 
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+ 
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+ 
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+ 
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+ 
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+ 
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* ============================================================
+   TYPOGRAPHIE & NAVIGATION — Remplacement complet
+   Libre Baskerville + Source Sans 3
+   ============================================================ */
+
+/* ── Dans index.html, remplacer le lien Google Fonts par : ──
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+
+/* ── Variables à mettre à jour dans :root ── */
+:root {
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Typographie globale ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: clamp(2rem, 5.5vw, 3.8rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
+h4 { font-size: clamp(1rem, 1.8vw, 1.25rem); }
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+
+/* Italique Baskerville pour les accents décoratifs */
+.hero__names,
+.italic-accent {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ── Hero ── */
+.hero__prelude {
+  font-family: var(--font-body);
+  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hero__title-line {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+
+.hero__names {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dark);
+}
+
+.hero__venue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 400;
+  color: var(--forest);
+}
+
+.hero__location {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+/* ── Navigation ── */
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--forest);
+  letter-spacing: 0.04em;
+}
+
+.nav__link,
+.nav__dropdown-item {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+/* Mobile : titres de nav en Baskerville */
+@media (max-width: 768px) {
+  .nav__link {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+  }
+  .nav__dropdown-item {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+  }
+}
+
+/* ── Boutons ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Labels formulaires ── */
+.form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+
+/* ── Cubes info ── */
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+}
+
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+
+/* ── Section headers ── */
+.section-header h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--forest);
+}
+
+/* Ornement sous les titres de section */
+.section-header .ornament {
+  margin: 12px auto 20px;
+}
+
+/* ── Cards & stat ── */
+.stat-card__number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── Badges ── */
+.badge {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Toast ── */
+.toast {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* ── Séparateur dans le dropdown ── */
+.nav__dropdown-sep {
+  height: 1px;
+  background: #f0ebe0;
+  margin: 4px 0;
+}
+
+/* ── Dropdown enrichi ── */
+.nav__dropdown-menu {
+  min-width: 240px;
+}
+
+.nav__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  color: #444;
+  font-family: var(--font-body);
+  font-weight: 400;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav__dropdown-item:hover {
+  background: #fdfaf5;
+  color: var(--forest);
+}
+ 
+
+
+
+
+
+
