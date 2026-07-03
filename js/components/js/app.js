@@ -1,0 +1,239 @@
+/**
+ * app.js — Point d'entrée principal de l'application
+ * Mariage Laetitia & Alexandre — 8 mai 2027
+ * Domaine de la Scie du May
+ */
+
+// ──────────────────────────────────────────────
+// Imports des modules
+// ──────────────────────────────────────────────
+import Store from './store.js';
+import Router from './utils/router.js';
+import Animations from './utils/animations.js';
+
+import Hero from './components/hero.js';
+import RSVP from './components/rsvp.js';
+import MapComponent from './components/map.js';
+import Carpool from './components/carpool.js';
+import GuestProfile from './components/guestProfile.js';
+import InfoHub    from './components/infoHub.js';
+import HowToGet   from './components/howToGet.js';
+import InfoPages  from './components/infoPages.js';
+import AdminDashboard from './components/adminDashboard.js';
+
+// ──────────────────────────────────────────────
+// Définition des routes de l'application
+// ──────────────────────────────────────────────
+const ROUTES = {
+  '#/': 'page-home',
+  '#/rsvp': 'page-rsvp',
+  '#/infos':            'page-infos',
+  '#/infos/messe':      'page-infos-messe',
+  '#/infos/animations': 'page-infos-animations',
+  '#/infos/contacts':   'page-infos-contacts',
+  '#/comment-venir':    'page-comment-venir',
+  '#/liste':            'page-liste',
+  '#/hebergements': 'page-hebergements',
+  '#/covoiturage': 'page-covoiturage',
+  '#/mes-reponses': 'page-mes-reponses',
+  '#/admin': 'page-admin',
+  '#/admin/dashboard': 'page-admin-dashboard'
+};
+
+// ──────────────────────────────────────────────
+// Initialisation au chargement du DOM
+// ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('╔══════════════════════════════════════════╗');
+  console.log('║  💍 Mariage Laetitia & Alexandre         ║');
+  console.log('║  📅 8 mai 2027                           ║');
+  console.log('║  📍 Domaine de la Scie du May            ║');
+  console.log('╚══════════════════════════════════════════╝');
+
+  // ── 1. Initialiser le Store (Supabase) ──
+  await Store.init();
+
+  // ── 2. Initialiser le Router ──
+  Router.init(ROUTES);
+
+  // ── 3. Initialiser tous les composants ──
+  await initComponents();
+
+  // ── 4. Activer les animations au scroll ──
+  Animations.initScrollAnimations();
+
+  // ── 5. Configurer le menu hamburger mobile ──
+  initMobileMenu();
+
+  // ── 6. Écouter les changements de route ──
+  window.addEventListener('route-changed', handleRouteChange);
+
+  // ── 7. Exposer pour le debug ──
+  window.Store = Store;
+  window.Router = Router;
+  window.Animations = Animations;
+
+  console.log('[App] Application initialisée avec succès.');
+});
+
+// ──────────────────────────────────────────────
+// Initialisation des composants (async, séquentielle)
+// ──────────────────────────────────────────────
+async function initComponents() {
+  const components = [
+    { name: 'Hero',           module: Hero },
+    { name: 'RSVP',           module: RSVP },
+    { name: 'MapComponent',   module: MapComponent },
+    { name: 'Carpool',        module: Carpool },
+    { name: 'GuestProfile',   module: GuestProfile },
+	{ name: 'InfoHub',   module: InfoHub },
+	{ name: 'HowToGet',  module: HowToGet },
+	{ name: 'InfoPages', module: InfoPages },
+    { name: 'AdminDashboard', module: AdminDashboard }
+  ];
+
+  for (const { name, module } of components) {
+    if (module && typeof module.init === 'function') {
+      try {
+        await module.init();
+        console.log(`[App] Composant ${name} initialisé.`);
+      } catch (e) {
+        console.error(`[App] Erreur lors de l'initialisation de ${name} :`, e);
+      }
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Menu hamburger mobile
+// ──────────────────────────────────────────────
+function initMobileMenu() {
+  const hamburger = document.querySelector('.nav__hamburger');
+  const navMenu = document.querySelector('.nav__links');
+
+  if (!hamburger || !navMenu) {
+    console.warn('[App] Éléments du menu mobile introuvables.');
+    return;
+  }
+
+  hamburger.addEventListener('click', () => {
+    const isOpen = navMenu.classList.toggle('open');
+    hamburger.classList.toggle('active', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    document.body.classList.toggle('menu-open', isOpen);
+  });
+
+  navMenu.querySelectorAll('.nav__link').forEach((link) => {
+    link.addEventListener('click', () => {
+      navMenu.classList.remove('open');
+      hamburger.classList.remove('active');
+      hamburger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('menu-open');
+    });
+  });
+  
+  
+function initDropdowns() {
+  document.querySelectorAll('.nav__dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.nav__link--dropdown');
+    if (!trigger) return;
+    trigger.addEventListener('click', (e) => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        e.preventDefault();
+        dropdown.classList.toggle('open');
+      }
+      // Desktop : le hover CSS gère l'affichage
+    });
+  });
+  // Fermer le dropdown si clic en dehors
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.nav__dropdown.open').forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('open');
+    });
+  });
+}
+// → Appeler initDropdowns() dans DOMContentLoaded après initMobileMenu()
+
+}
+
+/**
+ * AJOUT dans app.js — Fonction initDropdowns()
+ * À ajouter après initMobileMenu() dans DOMContentLoaded,
+ * et à définir comme fonction top-level dans le fichier.
+ */
+
+function initDropdowns() {
+  const dropdowns = document.querySelectorAll('.nav__dropdown');
+
+  dropdowns.forEach(dropdown => {
+    const trigger = dropdown.querySelector('.nav__link--dropdown');
+    if (!trigger) return;
+
+    // Mobile uniquement : toggle au tap
+    trigger.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768) {
+        e.preventDefault();
+        // Fermer les autres
+        dropdowns.forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
+        dropdown.classList.toggle('open');
+      }
+      // Desktop : le CSS hover gère tout
+    });
+
+    // Fermer quand on clique sur un item du sous-menu
+    dropdown.querySelectorAll('.nav__dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+        // Fermer aussi le menu hamburger sur mobile
+        const navLinks = document.getElementById('nav-links');
+        const hamburger = document.getElementById('nav-hamburger');
+        if (navLinks) navLinks.classList.remove('open');
+        if (hamburger) { hamburger.classList.remove('active'); hamburger.setAttribute('aria-expanded', 'false'); }
+        document.body.classList.remove('menu-open');
+      });
+    });
+  });
+
+  // Clic en dehors → ferme tous les dropdowns
+  document.addEventListener('click', (e) => {
+    dropdowns.forEach(d => {
+      if (!d.contains(e.target)) d.classList.remove('open');
+    });
+  });
+}
+
+// Dans DOMContentLoaded, après initMobileMenu() :
+// initDropdowns();
+
+// ──────────────────────────────────────────────
+// Gestion des changements de route
+// ──────────────────────────────────────────────
+async function handleRouteChange(event) {
+  const { route } = event.detail;
+
+  // ── Protection de la route admin/dashboard ──
+  if (route === '#/admin/dashboard' && !Store.isAdmin()) {
+    console.warn('[App] Accès non autorisé. Redirection vers #/admin.');
+    setTimeout(() => Router.navigate('#/admin'), 50);
+    return;
+  }
+
+  // ── Invalider la carte Leaflet quand elle devient visible ──
+  if (route === '#/hebergements' && MapComponent && typeof MapComponent.invalidateSize === 'function') {
+    setTimeout(() => MapComponent.invalidateSize(), 200);
+  }
+
+  // ── Réinitialiser les animations au scroll ──
+  setTimeout(() => Animations.initScrollAnimations(), 100);
+
+  // ── Rafraîchir le profil invité ──
+  if (route === '#/mes-reponses' && GuestProfile && typeof GuestProfile.refresh === 'function') {
+    await GuestProfile.refresh();
+  }
+
+  // ── Rafraîchir le dashboard admin ──
+  if (route === '#/admin/dashboard' && AdminDashboard && typeof AdminDashboard.renderDashboard === 'function') {
+    await AdminDashboard.renderDashboard();
+  }
+}
