@@ -2,6 +2,29 @@ import Store from '../store.js';
 import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
 
+const WEDDING_TASKS = [
+  { id: 1, date: "J-10 mois", label: "Envoyer contrats, acomptes et chèques caution à la Scie" },
+  { id: 2, date: "J-10 mois", label: "Comparer les devis traiteur" },
+  { id: 3, date: "J-10 mois", label: "Dresser et contacter les logements à proximité" },
+  { id: 4, date: "J-9 mois",  label: "Bloquer la liste des invités (78 max)" },
+  { id: 5, date: "J-9 mois",  label: "Choisir les témoins (2 chacun)" },
+  { id: 6, date: "J-8 mois",  label: "Commencer la préparation au mariage avec Firas" },
+  { id: 7, date: "J-8 mois",  label: "Entamer les démarches mariage civil" },
+  { id: 8, date: "J-7 mois",  label: "Trouver la robe de mariée" },
+  { id: 9, date: "J-6 mois",  label: "Envoyer les faire-parts et invitations officielles" },
+  { id: 10, date: "J-6 mois", label: "Planifier la lune de miel" },
+  { id: 11, date: "J-5 mois", label: "Définir la liste de mariage" },
+  { id: 12, date: "J-4 mois", label: "Transmettre dossier à la chancellerie de St-Etienne" },
+  { id: 13, date: "J-4 mois", label: "Définir programme, menu, boissons et déco" },
+  { id: 14, date: "J-4 mois", label: "Trouver le costume du Renard" },
+  { id: 15, date: "J-3 mois", label: "Checker les réponses invités et prévoir la papeterie" },
+  { id: 16, date: "J-2 mois", label: "Prévoir les cadeaux invités" },
+  { id: 17, date: "J-1 mois", label: "Confirmer les réservations et verser le solde Scie du May" },
+  { id: 18, date: "5 mai",    label: "Courses pratiques (PQ, savon...) + récupérer torchons" },
+  { id: 19, date: "6 mai",    label: "Mise en place salle de réception et décoration" },
+  { id: 20, date: "7 mai",    label: "Préparation église et récupération clefs/vin/osties" }
+];
+
 // Utilitaire pour formater le téléphone (0600000000 -> 06 00 00 00 00)
 const formatPhone = (phone) => {
   if (!phone) return '';
@@ -98,13 +121,64 @@ const AdminDashboard = {
         this.renderCarpools(stats),
         this.renderAccommodations()
       ]);
+    this.renderManagementZone();
     } catch (e) {
       console.error('[Admin] Erreur renderDashboard :', e);
       Animations.showToast("Erreur de chargement des données", "error");
     } finally {
+      // Puis on cache le loader une fois que TOUT est affiché
       this.hideLoader();
     }
   },
+
+renderManagementZone() {
+    // 1. Récupérer l'état des tâches
+    const savedTasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
+    
+    // 2. Widget en haut (Timer + Tâche)
+    const statsContainer = document.querySelector('.admin-grid'); // Ajuste le sélecteur si besoin
+    const firstTask = WEDDING_TASKS.find(t => !savedTasks.includes(t.id));
+    const timerText = getCountdownText();
+
+    const widget = document.getElementById('admin-pilot-widget') || document.createElement('div');
+    widget.id = 'admin-pilot-widget';
+    widget.style.cssText = `display:flex; justify-content:space-between; align-items:center; background:#2D5A3D; color:#fff; padding:20px; border-radius:12px; margin-bottom:20px;`;
+    widget.innerHTML = `
+      <div style="font-size:18px; font-weight:bold;">${timerText}</div>
+      <div style="background:rgba(255,255,255,0.1); padding:8px 12px; border-radius:6px; border:1px solid #C9A84C;">
+        🎯 À faire prochainement : <strong>${firstTask ? firstTask.label : 'Tout est prêt !'}</strong>
+      </div>
+    `;
+    if(!document.getElementById('admin-pilot-widget')) document.body.prepend(widget);
+
+    // 3. Check-list en bas de page
+    const container = document.getElementById('admin-tasks-zone') || document.createElement('div');
+    container.id = 'admin-tasks-zone';
+    container.innerHTML = `
+      <h3 style="margin-top:40px;">📋 Check-list de suivi</h3>
+      <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden;">
+        ${WEDDING_TASKS.map(t => `
+          <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:12px; width:100px; color:var(--gold); font-weight:bold;">${t.date}</td>
+            <td style="padding:12px;">${t.label}</td>
+            <td style="padding:12px; text-align:right;">
+              <input type="checkbox" ${savedTasks.includes(t.id) ? 'checked' : ''} onchange="AdminDashboard.toggleTask(${t.id})">
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+    `;
+    document.getElementById('admin-dashboard-root').appendChild(container);
+  },
+
+  toggleTask(id) {
+    let tasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
+    if (tasks.includes(id)) tasks = tasks.filter(t => t !== id);
+    else tasks.push(id);
+    localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
+    this.renderManagementZone(); // Rafraîchit l'affichage
+  }
+};
 
   showLoader() {
     const el = document.getElementById('admin-loader');
