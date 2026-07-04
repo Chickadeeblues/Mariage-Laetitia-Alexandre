@@ -191,8 +191,15 @@ const RSVP = {
             </div>
           </div>` : ''}
 
+		const DEADLINE_BLOCK = `
+		<div class="rsvp-deadline">
+		<span class="rsvp-deadline__icon">📅</span>
+		<p>Merci de confirmer votre présence <strong>avant le 30 novembre 2026</strong>.</p>
+		</div>
+`		;
+
         <div class="form-actions">
-          <button type="button" class="btn btn--primary next-btn" style="width:100%;">Suivant →</button>
+        <button type="button" class="btn btn--primary next-btn" style="width:100%;">Suivant →</button>
         </div>
       </div>`;
   },
@@ -219,6 +226,13 @@ const RSVP = {
   renderStep3() {
     const v = this.currentStep === 3;
     const companions = this.guestData.companions || [];
+	
+	const ALLERGY_REASSURANCE = `
+	<div class="rsvp-allergy-note">
+    Toutes vos contraintes alimentaires seront transmises à notre traiteur.
+    Renseignez-les sans hésiter !
+	</div>
+`	;
 
     const renderBlock = (label, key, diet, allergyDetails) => {
       const d = diet || [];

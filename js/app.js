@@ -19,6 +19,7 @@ import GuestProfile from './components/guestProfile.js';
 import InfoHub    from './components/infoHub.js';
 import HowToGet   from './components/howToGet.js';
 import InfoPages  from './components/infoPages.js';
+import FAQ from './components/faq.js';
 import AdminDashboard from './components/adminDashboard.js';
 
 // ──────────────────────────────────────────────
@@ -37,6 +38,7 @@ const ROUTES = {
   '#/covoiturage': 'page-covoiturage',
   '#/mes-reponses': 'page-mes-reponses',
   '#/admin': 'page-admin',
+  '#/faq': 'page-faq',
   '#/admin/dashboard': 'page-admin-dashboard'
 };
 
@@ -89,6 +91,7 @@ async function initComponents() {
 	{ name: 'InfoHub',   module: InfoHub },
 	{ name: 'HowToGet',  module: HowToGet },
 	{ name: 'InfoPages', module: InfoPages },
+	{ name: 'FAQ', module: FAQ },
     { name: 'AdminDashboard', module: AdminDashboard }
   ];
 
