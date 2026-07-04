@@ -176,7 +176,7 @@ renderManagementZone() {
     else tasks.push(id);
     localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
     this.renderManagementZone(); // Rafraîchit l'affichage
-  }
+  },
     showLoader() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'block';
@@ -184,7 +184,8 @@ renderManagementZone() {
   hideLoader() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'none';
-  },
+  }
+};
 
   // ════════════════════════════════════════════════
   // 1, 2 & 4. Widget Compte à rebours + Grille 8 cartes (Sauge & sans fond blanc)
@@ -754,6 +755,5 @@ renderManagementZone() {
       });
     });
   }
-};
 
 export default AdminDashboard;
