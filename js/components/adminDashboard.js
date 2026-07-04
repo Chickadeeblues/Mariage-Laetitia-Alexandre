@@ -131,54 +131,357 @@ async renderDashboard() {
   }
 },
 
+/**
+ * REMPLACEMENT des méthodes renderManagementZone() et toggleTask()
+ * dans adminDashboard.js
+ * 
+ * Copiez ces deux méthodes en remplacement des versions existantes.
+ * Elles s'insèrent dans l'objet AdminDashboard, séparées par des virgules.
+ */
+
+// ════════════════════════════════════════════════════════════
+// WIDGET + CHECKLIST
+// ════════════════════════════════════════════════════════════
+
 renderManagementZone() {
-    // 1. Récupérer l'état des tâches
-    const savedTasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
-    
-    // 2. Widget en haut (Timer + Tâche)
-    const statsContainer = document.querySelector('.admin-grid'); // Ajuste le sélecteur si besoin
-    const firstTask = WEDDING_TASKS.find(t => !savedTasks.includes(t.id));
-    const timerText = getCountdownText();
+  const root = document.querySelector('#page-admin-dashboard .container');
+  if (!root) return;
 
-    const widget = document.getElementById('admin-pilot-widget') || document.createElement('div');
-    widget.id = 'admin-pilot-widget';
-    widget.style.cssText = `display:flex; justify-content:space-between; align-items:center; background:#2D5A3D; color:#fff; padding:20px; border-radius:12px; margin-bottom:20px;`;
-    widget.innerHTML = `
-      <div style="font-size:18px; font-weight:bold;">${timerText}</div>
-      <div style="background:rgba(255,255,255,0.1); padding:8px 12px; border-radius:6px; border:1px solid #C9A84C;">
-        🎯 À faire prochainement : <strong>${firstTask ? firstTask.label : 'Tout est prêt !'}</strong>
+  // ── Calcul du compte à rebours ──
+  const target = new Date(2027, 4, 8);
+  const now    = new Date();
+  let months = (target.getFullYear() - now.getFullYear()) * 12
+             + (target.getMonth()    - now.getMonth());
+  let days   = target.getDate() - now.getDate();
+  if (days < 0) {
+    months -= 1;
+    days += new Date(target.getFullYear(), target.getMonth(), 0).getDate();
+  }
+  const countdown = now >= target
+    ? '🎉 Le grand jour est arrivé !'
+    : `Plus que <strong>${months > 0 ? months + ' mois' : ''}${months > 0 && days > 0 ? ' et ' : ''}${days > 0 ? days + ' jour' + (days > 1 ? 's' : '') : ''}</strong> !`;
+
+  // ── Tâche recommandée selon la période ──
+  const savedTasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
+  const nextTask = WEDDING_TASKS.find(t => !savedTasks.includes(t.id));
+  const taskLabel = nextTask ? nextTask.label : '✅ Tout est prêt !';
+  const taskPeriod = nextTask ? nextTask.date : '';
+
+  // ── Groupement des tâches par période ──
+  const groups = {};
+  WEDDING_TASKS.forEach(t => {
+    if (!groups[t.date]) groups[t.date] = [];
+    groups[t.date].push(t);
+  });
+
+  // ── HTML ──
+  let html = `
+    <style>
+      #admin-mgmt { margin-top: 32px; }
+
+      /* Widget */
+      .mgmt-widget {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        background: #fff;
+        border: 1.5px solid var(--sage);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 28px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+      .mgmt-widget__countdown {
+        flex: 0 0 200px;
+        background: linear-gradient(135deg, var(--forest), #3a734f);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 16px;
+        text-align: center;
+        gap: 4px;
+      }
+      .mgmt-widget__countdown-label {
+        font-family: var(--font-body);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.75;
+      }
+      .mgmt-widget__countdown-value {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        line-height: 1.3;
+      }
+      .mgmt-widget__task {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 20px 24px;
+        gap: 4px;
+      }
+      .mgmt-widget__task-period {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .mgmt-widget__task-label {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        color: var(--forest);
+        font-style: italic;
+      }
+      .mgmt-widget__task-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* Checklist */
+      .checklist-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .checklist-header h3 {
+        font-family: var(--font-display);
+        color: var(--forest);
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .checklist-progress {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .checklist-progress strong { color: var(--forest); }
+
+      .checklist-group { margin-bottom: 16px; }
+
+      .checklist-group__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-body);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+        padding: 6px 12px;
+        background: #fdfaf5;
+        border-radius: 6px;
+        margin-bottom: 4px;
+        border-left: 3px solid var(--gold);
+      }
+
+      .checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border-radius: 8px;
+        border: 1px solid #ede8df;
+        margin-bottom: 4px;
+        background: #fff;
+        transition: background 0.15s;
+      }
+      .checklist-item:hover { background: #fdfaf5; }
+      .checklist-item.done  {
+        background: #f6faf5;
+        border-color: #d5e8d0;
+        opacity: 0.75;
+      }
+      .checklist-item.done .checklist-item__label {
+        text-decoration: line-through;
+        color: var(--text-muted);
+      }
+
+      .checklist-item__check {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        accent-color: var(--forest);
+        cursor: pointer;
+      }
+
+      .checklist-item__label {
+        flex: 1;
+        font-size: 13.5px;
+        color: var(--text-dark);
+        line-height: 1.4;
+      }
+
+      .checklist-item__actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .checklist-btn {
+        background: none;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 2px 7px;
+        font-size: 12px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .checklist-btn:hover { border-color: var(--forest); color: var(--forest); }
+      .checklist-btn.del:hover { border-color: #c0392b; color: #c0392b; }
+
+      .checklist-add {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 10px;
+        background: #f8f5f0;
+        border-radius: 8px;
+      }
+      .checklist-add input, .checklist-add select {
+        padding: 7px 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-family: var(--font-body);
+        font-size: 13px;
+      }
+      .checklist-add input { flex: 1; }
+      .checklist-add select { width: 140px; flex-shrink: 0; }
+      .checklist-add button {
+        padding: 7px 14px;
+        background: var(--forest);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 600px) {
+        .mgmt-widget { flex-direction: column; }
+        .mgmt-widget__countdown { flex: none; padding: 14px; }
+        .checklist-add { flex-wrap: wrap; }
+        .checklist-add select { width: 100%; }
+      }
+    </style>
+
+    <div id="admin-mgmt">
+
+      <!-- Widget countdown + tâche -->
+      <div class="mgmt-widget">
+        <div class="mgmt-widget__countdown">
+          <div class="mgmt-widget__countdown-label">Compte à rebours</div>
+          <div class="mgmt-widget__countdown-value">${countdown}</div>
+        </div>
+        <div class="mgmt-widget__task">
+          <div class="mgmt-widget__task-period">${taskPeriod ? '🎯 ' + taskPeriod : '🎯 À faire'}</div>
+          <div class="mgmt-widget__task-label">${taskLabel}</div>
+          <div class="mgmt-widget__task-sub">Prochaine tâche non complétée dans votre checklist</div>
+        </div>
       </div>
-    `;
-    if(!document.getElementById('admin-pilot-widget')) document.body.prepend(widget);
 
-    // 3. Check-list en bas de page
-    const container = document.getElementById('admin-tasks-zone') || document.createElement('div');
-    container.id = 'admin-tasks-zone';
-    container.innerHTML = `
-      <h3 style="margin-top:40px;">📋 Check-list de suivi</h3>
-      <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden;">
-        ${WEDDING_TASKS.map(t => `
-          <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:12px; width:100px; color:var(--gold); font-weight:bold;">${t.date}</td>
-            <td style="padding:12px;">${t.label}</td>
-            <td style="padding:12px; text-align:right;">
-              <input type="checkbox" ${savedTasks.includes(t.id) ? 'checked' : ''} onchange="AdminDashboard.toggleTask(${t.id})">
-            </td>
-          </tr>
-        `).join('')}
-      </table>
-    `;
-    const root = document.querySelector('#page-admin-dashboard .container');
-	if (root) root.appendChild(container);
-  },
+      <!-- Checklist -->
+      <div class="checklist-header">
+        <h3>📋 Checklist de préparation</h3>
+        <div class="checklist-progress">
+          <strong>${savedTasks.length}</strong> / ${WEDDING_TASKS.length} tâches complétées
+        </div>
+      </div>
 
-  toggleTask(id) {
+      ${Object.entries(groups).map(([period, tasks]) => `
+        <div class="checklist-group">
+          <div class="checklist-group__title">${period}</div>
+          ${tasks.map(t => {
+            const done = savedTasks.includes(t.id);
+            return `
+              <div class="checklist-item ${done ? 'done' : ''}" id="task-row-${t.id}">
+                <input type="checkbox" class="checklist-item__check"
+                  ${done ? 'checked' : ''}
+                  onchange="window._adminToggleTask(${t.id})">
+                <span class="checklist-item__label" id="task-label-${t.id}">${t.label}</span>
+                <div class="checklist-item__actions">
+                  <button class="checklist-btn" onclick="window._adminEditTask(${t.id})" title="Modifier">✏️</button>
+                  <button class="checklist-btn del" onclick="window._adminDeleteTask(${t.id})" title="Supprimer">×</button>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+
+      <!-- Ajouter une tâche -->
+      <div class="checklist-add">
+        <select id="new-task-period">
+          ${Object.keys(groups).map(p => `<option value="${p}">${p}</option>`).join('')}
+          <option value="Autre">Autre</option>
+        </select>
+        <input type="text" id="new-task-label" placeholder="Nouvelle tâche…">
+        <button onclick="window._adminAddTask()">+ Ajouter</button>
+      </div>
+
+    </div>
+  `;
+
+  // Supprimer l'ancien widget s'il existe
+  const existing = document.getElementById('admin-mgmt');
+  if (existing) existing.remove();
+
+  root.insertAdjacentHTML('beforeend', html);
+
+  // ── Fonctions globales (appelées depuis les onclick inline) ──
+
+  window._adminToggleTask = (id) => {
     let tasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
     if (tasks.includes(id)) tasks = tasks.filter(t => t !== id);
     else tasks.push(id);
     localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
-    this.renderManagementZone(); // Rafraîchit l'affichage
-  },
+    this.renderManagementZone();
+  };
+
+  window._adminEditTask = (id) => {
+    const row = document.getElementById(`task-label-${id}`);
+    if (!row) return;
+    const current = row.textContent;
+    const newLabel = prompt('Modifier la tâche :', current);
+    if (!newLabel || newLabel === current) return;
+    // Mettre à jour dans WEDDING_TASKS
+    const task = WEDDING_TASKS.find(t => t.id === id);
+    if (task) { task.label = newLabel.trim(); this.renderManagementZone(); }
+  };
+
+  window._adminDeleteTask = (id) => {
+    if (!confirm('Supprimer cette tâche ?')) return;
+    const idx = WEDDING_TASKS.findIndex(t => t.id === id);
+    if (idx !== -1) WEDDING_TASKS.splice(idx, 1);
+    let tasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
+    tasks = tasks.filter(t => t !== id);
+    localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
+    this.renderManagementZone();
+  };
+
+  window._adminAddTask = () => {
+    const period = document.getElementById('new-task-period')?.value;
+    const label  = document.getElementById('new-task-label')?.value.trim();
+    if (!label) return;
+    const newId = Math.max(...WEDDING_TASKS.map(t => t.id), 0) + 1;
+    WEDDING_TASKS.push({ id: newId, date: period, label });
+    this.renderManagementZone();
+  };
+},
+
+// toggleTask n'est plus nécessaire (remplacé par window._adminToggleTask)
+// mais on le garde vide pour éviter les erreurs si appelé ailleurs
+toggleTask(id) {
+  window._adminToggleTask && window._adminToggleTask(id);
+},
+
     showLoader() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'block';
