@@ -3,27 +3,28 @@ import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
 
 const WEDDING_TASKS = [
-  { id: 1, date: "J-10 mois", label: "Envoyer contrats, acomptes et chèques caution à la Scie" },
-  { id: 2, date: "J-10 mois", label: "Comparer les devis traiteur" },
-  { id: 3, date: "J-10 mois", label: "Dresser et contacter les logements à proximité" },
-  { id: 4, date: "J-9 mois",  label: "Bloquer la liste des invités (78 max)" },
-  { id: 5, date: "J-9 mois",  label: "Choisir les témoins (2 chacun)" },
-  { id: 6, date: "J-8 mois",  label: "Commencer la préparation au mariage avec Firas" },
-  { id: 7, date: "J-8 mois",  label: "Entamer les démarches mariage civil" },
-  { id: 8, date: "J-7 mois",  label: "Trouver la robe de mariée" },
-  { id: 9, date: "J-6 mois",  label: "Envoyer les faire-parts et invitations officielles" },
-  { id: 10, date: "J-6 mois", label: "Planifier la lune de miel" },
-  { id: 11, date: "J-5 mois", label: "Définir la liste de mariage" },
-  { id: 12, date: "J-4 mois", label: "Transmettre dossier à la chancellerie de St-Etienne" },
-  { id: 13, date: "J-4 mois", label: "Définir programme, menu, boissons et déco" },
-  { id: 14, date: "J-4 mois", label: "Trouver le costume du Renard" },
-  { id: 15, date: "J-3 mois", label: "Checker les réponses invités et prévoir la papeterie" },
-  { id: 16, date: "J-2 mois", label: "Prévoir les cadeaux invités" },
-  { id: 17, date: "J-1 mois", label: "Confirmer les réservations et verser le solde Scie du May" },
-  { id: 18, date: "5 mai",    label: "Courses pratiques (PQ, savon...) + récupérer torchons" },
-  { id: 19, date: "6 mai",    label: "Mise en place salle de réception et décoration" },
-  { id: 20, date: "7 mai",    label: "Préparation église et récupération clefs/vin/osties" }
+  { id:1,  month:'Juillet 2026',   cat:'Lieu',         label:'Envoyer contrats, acomptes et chèques caution à la Scie' },
+  { id:2,  month:'Juillet 2026',   cat:'Traiteur',     label:'Comparer les devis traiteur' },
+  { id:3,  month:'Juillet 2026',   cat:'Hébergement',  label:'Dresser et contacter les logements à proximité' },
+  { id:4,  month:'Août 2026',      cat:'Invitations',  label:'Bloquer la liste des invités (78 max)' },
+  { id:5,  month:'Août 2026',      cat:'Organisation', label:'Choisir les témoins (2 chacun)' },
+  { id:6,  month:'Septembre 2026', cat:'Messe',        label:'Commencer la préparation au mariage avec Firas' },
+  { id:7,  month:'Septembre 2026', cat:'Mariage civil',label:'Entamer les démarches mariage civil' },
+  { id:8,  month:'Octobre 2026',   cat:'Tenue',        label:'Trouver la robe de mariée' },
+  { id:9,  month:'Novembre 2026',  cat:'Invitations',  label:'Envoyer les faire-parts et invitations officielles' },
+  { id:10, month:'Novembre 2026',  cat:'Organisation', label:'Planifier la lune de miel' },
+  { id:11, month:'Décembre 2026',  cat:'Organisation', label:'Définir la liste de mariage' },
+  { id:12, month:'Janvier 2027',   cat:'Mariage civil',label:'Transmettre dossier à la chancellerie de St-Étienne' },
+  { id:13, month:'Janvier 2027',   cat:'Traiteur',     label:'Définir programme, menu, boissons et déco' },
+  { id:14, month:'Janvier 2027',   cat:'Tenue',        label:'Trouver le costume du marié' },
+  { id:15, month:'Février 2027',   cat:'Invitations',  label:'Checker les réponses invités et prévoir la papeterie' },
+  { id:16, month:'Mars 2027',      cat:'Organisation', label:'Prévoir les cadeaux invités' },
+  { id:17, month:'Avril 2027',     cat:'Lieu',         label:'Confirmer les réservations et verser le solde Scie du May' },
+  { id:18, month:'5 mai 2027',     cat:'Logistique',   label:'Courses pratiques (PQ, savon…) + récupérer torchons' },
+  { id:19, month:'6 mai 2027',     cat:'Lieu',         label:'Mise en place salle de réception et décoration' },
+  { id:20, month:'7 mai 2027',     cat:'Messe',        label:'Préparation église et récupération clefs/vin/hosties' },
 ];
+
 
 // Utilitaire pour formater le téléphone (0600000000 -> 06 00 00 00 00)
 const formatPhone = (phone) => {
@@ -131,312 +132,401 @@ async renderDashboard() {
   }
 },
 
-/**
- * REMPLACEMENT des méthodes renderManagementZone() et toggleTask()
- * dans adminDashboard.js
- * 
- * Copiez ces deux méthodes en remplacement des versions existantes.
- * Elles s'insèrent dans l'objet AdminDashboard, séparées par des virgules.
- */
+
 
 // ════════════════════════════════════════════════════════════
-// WIDGET + CHECKLIST
+// renderManagementZone()
 // ════════════════════════════════════════════════════════════
-
 renderManagementZone() {
   const root = document.querySelector('#page-admin-dashboard .container');
   if (!root) return;
-
-  // ── Calcul du compte à rebours ──
+ 
+  // Supprimer l'ancien widget
+  const existing = document.getElementById('admin-mgmt');
+  if (existing) existing.remove();
+ 
+  // ── Compte à rebours ──
   const target = new Date(2027, 4, 8);
   const now    = new Date();
   let months = (target.getFullYear() - now.getFullYear()) * 12
              + (target.getMonth()    - now.getMonth());
   let days   = target.getDate() - now.getDate();
-  if (days < 0) {
-    months -= 1;
-    days += new Date(target.getFullYear(), target.getMonth(), 0).getDate();
-  }
-  const countdown = now >= target
+  if (days < 0) { months -= 1; days += new Date(target.getFullYear(), target.getMonth(), 0).getDate(); }
+  const countdownHtml = now >= target
     ? '🎉 Le grand jour est arrivé !'
     : `Plus que <strong>${months > 0 ? months + ' mois' : ''}${months > 0 && days > 0 ? ' et ' : ''}${days > 0 ? days + ' jour' + (days > 1 ? 's' : '') : ''}</strong> !`;
-
-  // ── Tâche recommandée selon la période ──
+ 
+  // ── Prochaine tâche non cochée ──
   const savedTasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
-  const nextTask = WEDDING_TASKS.find(t => !savedTasks.includes(t.id));
-  const taskLabel = nextTask ? nextTask.label : '✅ Tout est prêt !';
-  const taskPeriod = nextTask ? nextTask.date : '';
-
-  // ── Groupement des tâches par période ──
+  const nextTask   = WEDDING_TASKS.find(t => !savedTasks.includes(t.id));
+ 
+  // ── Toutes les catégories pour le filtre ──
+  const allCats = ['Toutes', ...new Set(WEDDING_TASKS.map(t => t.cat))];
+ 
+  // ── Groupement par mois (ordre d'insertion = ordre chrono) ──
   const groups = {};
   WEDDING_TASKS.forEach(t => {
-    if (!groups[t.date]) groups[t.date] = [];
-    groups[t.date].push(t);
+    if (!groups[t.month]) groups[t.month] = [];
+    groups[t.month].push(t);
   });
-
-  // ── HTML ──
-  let html = `
+ 
+  const done  = savedTasks.length;
+  const total = WEDDING_TASKS.length;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+ 
+  const html = `
     <style>
-      #admin-mgmt { margin-top: 32px; }
-
-      /* Widget */
+      /* ── Widget ── */
       .mgmt-widget {
         display: flex;
         align-items: stretch;
-        gap: 0;
-        background: #fff;
-        border: 1.5px solid var(--sage);
+        border: 1.5px solid var(--sage, #9CAF88);
         border-radius: 12px;
         overflow: hidden;
         margin-bottom: 28px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        background: #fff;
       }
-      .mgmt-widget__countdown {
-        flex: 0 0 200px;
-        background: linear-gradient(135deg, var(--forest), #3a734f);
+      .mgmt-widget__left {
+        flex: 0 0 220px;
+        background: linear-gradient(135deg, var(--sage, #9CAF88), #7a9e68);
         color: #fff;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 20px 16px;
+        padding: 18px 16px;
         text-align: center;
         gap: 4px;
       }
-      .mgmt-widget__countdown-label {
-        font-family: var(--font-body);
-        font-size: 11px;
-        letter-spacing: 0.1em;
+      .mgmt-widget__left-sub {
+        font-size: 10px;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
-        opacity: 0.75;
+        opacity: 0.8;
+        margin-bottom: 4px;
       }
-      .mgmt-widget__countdown-value {
-        font-family: var(--font-display);
-        font-size: 1.05rem;
+      .mgmt-widget__left-count {
+        font-family: var(--font-display, serif);
+        font-size: 1.1rem;
         line-height: 1.3;
       }
-      .mgmt-widget__task {
+      .mgmt-widget__right {
         flex: 1;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 20px 24px;
-        gap: 4px;
+        padding: 18px 24px;
+        gap: 3px;
+        border-left: 1px solid #f0ebe0;
       }
-      .mgmt-widget__task-period {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--gold);
-      }
-      .mgmt-widget__task-label {
-        font-family: var(--font-display);
-        font-size: 1rem;
-        color: var(--forest);
-        font-style: italic;
-      }
-      .mgmt-widget__task-sub {
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 2px;
-      }
-
-      /* Checklist */
-      .checklist-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-      }
-      .checklist-header h3 {
-        font-family: var(--font-display);
-        color: var(--forest);
-        margin: 0;
-        font-size: 1.2rem;
-      }
-      .checklist-progress {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
-      .checklist-progress strong { color: var(--forest); }
-
-      .checklist-group { margin-bottom: 16px; }
-
-      .checklist-group__title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-family: var(--font-body);
-        font-size: 11px;
+      .mgmt-widget__right-cat {
+        font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--gold);
-        padding: 6px 12px;
-        background: #fdfaf5;
-        border-radius: 6px;
-        margin-bottom: 4px;
-        border-left: 3px solid var(--gold);
+        color: var(--gold, #C9A84C);
       }
-
-      .checklist-item {
+      .mgmt-widget__right-month {
+        font-size: 11px;
+        color: var(--text-muted, #6B6B6B);
+      }
+      .mgmt-widget__right-task {
+        font-family: var(--font-display, serif);
+        font-size: 0.95rem;
+        color: var(--forest, #2D5A3D);
+        font-style: italic;
+        margin-top: 2px;
+      }
+      .mgmt-widget__right-none {
+        font-family: var(--font-display, serif);
+        font-size: 0.95rem;
+        color: var(--sage, #9CAF88);
+        font-style: italic;
+      }
+ 
+      /* ── Barre de progression ── */
+      .checklist-progress-bar-wrap {
+        background: #f0ebe0;
+        border-radius: 100px;
+        height: 6px;
+        margin: 12px 0 20px;
+        overflow: hidden;
+      }
+      .checklist-progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--sage), var(--forest));
+        border-radius: 100px;
+        transition: width 0.4s ease;
+      }
+ 
+      /* ── Tableau checklist ── */
+      .checklist-table-wrap {
+        overflow-x: auto;
+        border-radius: 10px;
+        border: 1px solid #ede8df;
+      }
+      .checklist-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: #fff;
+      }
+      .checklist-table thead th {
+        background: #fdfaf5;
+        padding: 10px 14px;
+        font-family: var(--font-body);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        border-bottom: 2px solid #e8e0d0;
+        white-space: nowrap;
+        cursor: pointer;
+        user-select: none;
+      }
+      .checklist-table thead th:hover { color: var(--forest); }
+      .checklist-table thead th .th-inner {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 9px 14px;
-        border-radius: 8px;
-        border: 1px solid #ede8df;
-        margin-bottom: 4px;
-        background: #fff;
-        transition: background 0.15s;
+        gap: 5px;
       }
-      .checklist-item:hover { background: #fdfaf5; }
-      .checklist-item.done  {
-        background: #f6faf5;
-        border-color: #d5e8d0;
-        opacity: 0.75;
-      }
-      .checklist-item.done .checklist-item__label {
-        text-decoration: line-through;
+      .checklist-table thead th select {
+        border: none;
+        background: transparent;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         color: var(--text-muted);
+        cursor: pointer;
+        outline: none;
+        padding: 0;
+        appearance: none;
+        -webkit-appearance: none;
       }
-
-      .checklist-item__check {
-        width: 18px;
-        height: 18px;
+      .checklist-table thead th select:focus { color: var(--forest); }
+ 
+      /* Séparateur de groupe mois */
+      .checklist-table tr.month-sep td {
+        background: #fdfaf5;
+        padding: 6px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+        border-top: 1px solid #e8e0d0;
+        border-bottom: 1px solid #ede8df;
+      }
+      .checklist-table tr.task-row td {
+        padding: 8px 14px;
+        border-bottom: 1px solid #f5f0e8;
+        vertical-align: middle;
+      }
+      .checklist-table tr.task-row:last-child td { border-bottom: none; }
+      .checklist-table tr.task-row:hover td { background: #fdfaf5; }
+      .checklist-table tr.task-row.done td { opacity: 0.55; }
+      .checklist-table tr.task-row.done .task-label { text-decoration: line-through; color: var(--text-muted); }
+ 
+      /* Cellule tâche */
+      .task-check-cell {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        white-space: nowrap;
+      }
+      .task-check-cell input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
         flex-shrink: 0;
         accent-color: var(--forest);
         cursor: pointer;
+        margin: 0;
       }
-
-      .checklist-item__label {
-        flex: 1;
-        font-size: 13.5px;
-        color: var(--text-dark);
-        line-height: 1.4;
+      .task-label { flex: 1; }
+ 
+      /* Badge catégorie */
+      .cat-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        background: #f0f4f0;
+        color: var(--forest);
+        border: 1px solid #d5e0d0;
       }
-
-      .checklist-item__actions {
-        display: flex;
-        gap: 4px;
-        flex-shrink: 0;
-      }
-
-      .checklist-btn {
+ 
+      /* Actions */
+      .task-actions { white-space: nowrap; }
+      .task-btn {
         background: none;
         border: 1px solid #ddd;
-        border-radius: 5px;
-        padding: 2px 7px;
-        font-size: 12px;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 11px;
         cursor: pointer;
         color: var(--text-muted);
+        margin-left: 3px;
         transition: border-color 0.15s, color 0.15s;
       }
-      .checklist-btn:hover { border-color: var(--forest); color: var(--forest); }
-      .checklist-btn.del:hover { border-color: #c0392b; color: #c0392b; }
-
-      .checklist-add {
+      .task-btn:hover            { border-color: var(--forest); color: var(--forest); }
+      .task-btn.del:hover        { border-color: #c0392b; color: #c0392b; }
+ 
+      /* Ajouter une tâche */
+      .checklist-add-row {
         display: flex;
         gap: 8px;
         margin-top: 12px;
         padding: 10px;
         background: #f8f5f0;
         border-radius: 8px;
+        flex-wrap: wrap;
+        align-items: center;
       }
-      .checklist-add input, .checklist-add select {
+      .checklist-add-row select,
+      .checklist-add-row input {
         padding: 7px 10px;
         border: 1px solid #ddd;
         border-radius: 6px;
         font-family: var(--font-body);
-        font-size: 13px;
+        font-size: 12px;
+        color: var(--text-dark);
+        background: #fff;
       }
-      .checklist-add input { flex: 1; }
-      .checklist-add select { width: 140px; flex-shrink: 0; }
-      .checklist-add button {
-        padding: 7px 14px;
+      .checklist-add-row select { flex: 0 0 140px; }
+      .checklist-add-row select.cat-select { flex: 0 0 130px; }
+      .checklist-add-row input  { flex: 1; min-width: 180px; }
+      .checklist-add-row button {
+        padding: 7px 16px;
         background: var(--forest);
         color: #fff;
         border: none;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         flex-shrink: 0;
       }
-
-      @media (max-width: 600px) {
+      .checklist-add-row button:hover { background: #245a32; }
+ 
+      @media (max-width: 640px) {
         .mgmt-widget { flex-direction: column; }
-        .mgmt-widget__countdown { flex: none; padding: 14px; }
-        .checklist-add { flex-wrap: wrap; }
-        .checklist-add select { width: 100%; }
+        .mgmt-widget__left { flex: none; }
       }
     </style>
-
+ 
     <div id="admin-mgmt">
-
-      <!-- Widget countdown + tâche -->
+ 
+      <!-- ── Widget ── -->
       <div class="mgmt-widget">
-        <div class="mgmt-widget__countdown">
-          <div class="mgmt-widget__countdown-label">Compte à rebours</div>
-          <div class="mgmt-widget__countdown-value">${countdown}</div>
+        <div class="mgmt-widget__left">
+          <div class="mgmt-widget__left-sub">Compte à rebours</div>
+          <div class="mgmt-widget__left-count">${countdownHtml}</div>
         </div>
-        <div class="mgmt-widget__task">
-          <div class="mgmt-widget__task-period">${taskPeriod ? '🎯 ' + taskPeriod : '🎯 À faire'}</div>
-          <div class="mgmt-widget__task-label">${taskLabel}</div>
-          <div class="mgmt-widget__task-sub">Prochaine tâche non complétée dans votre checklist</div>
-        </div>
-      </div>
-
-      <!-- Checklist -->
-      <div class="checklist-header">
-        <h3>📋 Checklist de préparation</h3>
-        <div class="checklist-progress">
-          <strong>${savedTasks.length}</strong> / ${WEDDING_TASKS.length} tâches complétées
+        <div class="mgmt-widget__right">
+          ${nextTask ? `
+            <div class="mgmt-widget__right-cat">🎯 ${nextTask.cat}</div>
+            <div class="mgmt-widget__right-month">${nextTask.month}</div>
+            <div class="mgmt-widget__right-task">${nextTask.label}</div>
+          ` : `
+            <div class="mgmt-widget__right-none">✅ Toutes les tâches sont complétées !</div>
+          `}
         </div>
       </div>
-
-      ${Object.entries(groups).map(([period, tasks]) => `
-        <div class="checklist-group">
-          <div class="checklist-group__title">${period}</div>
-          ${tasks.map(t => {
-            const done = savedTasks.includes(t.id);
-            return `
-              <div class="checklist-item ${done ? 'done' : ''}" id="task-row-${t.id}">
-                <input type="checkbox" class="checklist-item__check"
-                  ${done ? 'checked' : ''}
-                  onchange="window._adminToggleTask(${t.id})">
-                <span class="checklist-item__label" id="task-label-${t.id}">${t.label}</span>
-                <div class="checklist-item__actions">
-                  <button class="checklist-btn" onclick="window._adminEditTask(${t.id})" title="Modifier">✏️</button>
-                  <button class="checklist-btn del" onclick="window._adminDeleteTask(${t.id})" title="Supprimer">×</button>
+ 
+      <!-- ── Checklist ── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-family:var(--font-display);color:var(--forest);margin:0;font-size:1.1rem;">📋 Checklist de préparation</h3>
+        <span style="font-size:12px;color:var(--text-muted);">
+          <strong style="color:var(--forest);">${done}</strong> / ${total} complétées
+          &nbsp;·&nbsp; <strong style="color:var(--forest);">${pct}%</strong>
+        </span>
+      </div>
+ 
+      <div class="checklist-progress-bar-wrap">
+        <div class="checklist-progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+ 
+      <div class="checklist-table-wrap">
+        <table class="checklist-table" id="checklist-tbl">
+          <thead>
+            <tr>
+              <th style="width:110px;"><div class="th-inner">Mois</div></th>
+              <th style="width:130px;">
+                <div class="th-inner">
+                  Catégorie
+                  <select id="cat-filter" onchange="window._adminFilterCat(this.value)" title="Filtrer par catégorie">
+                    ${allCats.map(c => `<option value="${c}">${c}</option>`).join('')}
+                  </select>
+                  ▾
                 </div>
-              </div>`;
-          }).join('')}
-        </div>
-      `).join('')}
-
+              </th>
+              <th>Tâche</th>
+              <th style="width:70px;text-align:center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="checklist-tbody">
+            ${this._renderChecklistRows(groups, savedTasks, 'Toutes')}
+          </tbody>
+        </table>
+      </div>
+ 
       <!-- Ajouter une tâche -->
-      <div class="checklist-add">
-        <select id="new-task-period">
-          ${Object.keys(groups).map(p => `<option value="${p}">${p}</option>`).join('')}
+      <div class="checklist-add-row">
+        <select id="new-task-month">
+          ${Object.keys(groups).map(m => `<option value="${m}">${m}</option>`).join('')}
           <option value="Autre">Autre</option>
         </select>
-        <input type="text" id="new-task-label" placeholder="Nouvelle tâche…">
+        <select id="new-task-cat" class="cat-select">
+          ${allCats.filter(c => c !== 'Toutes').map(c => `<option value="${c}">${c}</option>`).join('')}
+          <option value="Autre">Autre</option>
+        </select>
+        <input type="text" id="new-task-label" placeholder="Libellé de la nouvelle tâche…">
         <button onclick="window._adminAddTask()">+ Ajouter</button>
       </div>
-
+ 
     </div>
   `;
-
-  // Supprimer l'ancien widget s'il existe
-  const existing = document.getElementById('admin-mgmt');
-  if (existing) existing.remove();
-
+ 
   root.insertAdjacentHTML('beforeend', html);
-
-  // ── Fonctions globales (appelées depuis les onclick inline) ──
-
+  this._bindChecklistHandlers(groups, savedTasks);
+},
+ 
+// Rendu des lignes du tableau (appelé aussi lors du filtrage)
+_renderChecklistRows(groups, savedTasks, catFilter) {
+  let rows = '';
+  Object.entries(groups).forEach(([month, tasks]) => {
+    const filtered = catFilter === 'Toutes' ? tasks : tasks.filter(t => t.cat === catFilter);
+    if (!filtered.length) return;
+    rows += `<tr class="month-sep"><td colspan="4">${month}</td></tr>`;
+    filtered.forEach(t => {
+      const done = savedTasks.includes(t.id);
+      rows += `
+        <tr class="task-row ${done ? 'done' : ''}" id="task-row-${t.id}">
+          <td></td>
+          <td><span class="cat-badge">${t.cat}</span></td>
+          <td>
+            <div class="task-check-cell">
+              <input type="checkbox" ${done ? 'checked' : ''}
+                onchange="window._adminToggleTask(${t.id})">
+              <span class="task-label" id="task-label-${t.id}">${t.label}</span>
+            </div>
+          </td>
+          <td class="task-actions" style="text-align:center;">
+            <button class="task-btn" onclick="window._adminEditTask(${t.id})" title="Modifier">✏️</button>
+            <button class="task-btn del" onclick="window._adminDeleteTask(${t.id})" title="Supprimer">×</button>
+          </td>
+        </tr>`;
+    });
+  });
+  return rows;
+},
+ 
+_bindChecklistHandlers(groups, savedTasks) {
   window._adminToggleTask = (id) => {
     let tasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
     if (tasks.includes(id)) tasks = tasks.filter(t => t !== id);
@@ -444,43 +534,55 @@ renderManagementZone() {
     localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
     this.renderManagementZone();
   };
-
+ 
   window._adminEditTask = (id) => {
-    const row = document.getElementById(`task-label-${id}`);
-    if (!row) return;
-    const current = row.textContent;
-    const newLabel = prompt('Modifier la tâche :', current);
-    if (!newLabel || newLabel === current) return;
-    // Mettre à jour dans WEDDING_TASKS
     const task = WEDDING_TASKS.find(t => t.id === id);
-    if (task) { task.label = newLabel.trim(); this.renderManagementZone(); }
+    if (!task) return;
+    const newLabel = prompt('Modifier la tâche :', task.label);
+    if (!newLabel || newLabel.trim() === task.label) return;
+    task.label = newLabel.trim();
+    this.renderManagementZone();
   };
-
+ 
   window._adminDeleteTask = (id) => {
-    if (!confirm('Supprimer cette tâche ?')) return;
+    if (!confirm('Supprimer cette tâche définitivement ?')) return;
     const idx = WEDDING_TASKS.findIndex(t => t.id === id);
     if (idx !== -1) WEDDING_TASKS.splice(idx, 1);
     let tasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
-    tasks = tasks.filter(t => t !== id);
-    localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
+    localStorage.setItem('wedding_tasks', JSON.stringify(tasks.filter(t => t !== id)));
     this.renderManagementZone();
   };
-
+ 
   window._adminAddTask = () => {
-    const period = document.getElementById('new-task-period')?.value;
-    const label  = document.getElementById('new-task-label')?.value.trim();
+    const month = document.getElementById('new-task-month')?.value;
+    const cat   = document.getElementById('new-task-cat')?.value;
+    const label = document.getElementById('new-task-label')?.value.trim();
     if (!label) return;
-    const newId = Math.max(...WEDDING_TASKS.map(t => t.id), 0) + 1;
-    WEDDING_TASKS.push({ id: newId, date: period, label });
+    const newId = Math.max(0, ...WEDDING_TASKS.map(t => t.id)) + 1;
+    WEDDING_TASKS.push({ id: newId, month, cat, label });
     this.renderManagementZone();
+  };
+ 
+  window._adminFilterCat = (cat) => {
+    const savedTasks = JSON.parse(localStorage.getItem('wedding_tasks') || '[]');
+    const groups = {};
+    WEDDING_TASKS.forEach(t => {
+      if (!groups[t.month]) groups[t.month] = [];
+      groups[t.month].push(t);
+    });
+    const tbody = document.getElementById('checklist-tbody');
+    if (tbody) tbody.innerHTML = this._renderChecklistRows(groups, savedTasks, cat);
+    this._bindChecklistHandlers(groups, savedTasks);
+    // Rétablir la valeur du filtre
+    const sel = document.getElementById('cat-filter');
+    if (sel) sel.value = cat;
   };
 },
-
-// toggleTask n'est plus nécessaire (remplacé par window._adminToggleTask)
-// mais on le garde vide pour éviter les erreurs si appelé ailleurs
+ 
 toggleTask(id) {
   window._adminToggleTask && window._adminToggleTask(id);
 },
+
 
     showLoader() {
     const el = document.getElementById('admin-loader');
@@ -510,31 +612,6 @@ toggleTask(id) {
                           document.querySelector('.stat-card')?.parentElement;
     const statsContainer = firstStatCard ? (firstStatCard.id ? firstStatCard.parentElement : firstStatCard) : null;
     const dietsContainer = document.getElementById('admin-diets');
-
-    // 4. Injection du Widget Compte à rebours au-dessus des statistiques
-    if (statsContainer) {
-      let countdownEl = document.getElementById('admin-countdown-widget');
-      if (!countdownEl) {
-        countdownEl = document.createElement('div');
-        countdownEl.id = 'admin-countdown-widget';
-        statsContainer.parentNode.insertBefore(countdownEl, statsContainer);
-      }
-      countdownEl.style.cssText = `
-        background: linear-gradient(135deg, var(--forest, #2D5A3D), #3a734f);
-        color: #fff;
-        padding: 14px 20px;
-        border-radius: var(--radius-md, 12px);
-        font-family: var(--font-display, serif);
-        font-size: 20px;
-        font-weight: 600;
-        text-align: center;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.15);
-        margin-bottom: 24px;
-        border: 1px solid var(--gold, #C9A84C);
-      `;
-      countdownEl.innerHTML = getCountdownText();
-    }
 
     // NETTOYAGE FORCE DU FOND BLANC : On vide le CSS parent (index.html) de toute couleur ou bordure !
     const gridStyle = `
@@ -949,112 +1026,113 @@ toggleTask(id) {
 
   // ════════════════════════════════════════════════
   // Covoiturage
-  // ════════════════════════════════════════════════
-
-  async renderCarpools(stats) {
-    const container = document.getElementById('admin-carpools');
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="admin-grid mb-4">
-        <div class="card" style="border-left:4px solid var(--sage);">
-          <h4>🚗 Conducteurs</h4>
-          <p class="text-muted mt-2">
-            ${stats.transport.drivers} voiture(s) — 
-            <strong>${stats.transport.seatsAvailable} place(s)</strong> disponible(s).
-          </p>
-        </div>
-        <div class="card" style="border-left:4px solid var(--gold);">
-          <h4>🙋 Recherche de places</h4>
-          <p class="text-muted mt-2">
-            ${stats.transport.needRide} personne(s) — 
-            <strong>${stats.transport.seatsNeeded} place(s)</strong> recherchée(s).
-          </p>
-        </div>
+// ════════════════════════════════════════════════════════════
+async renderCarpools(stats) {
+  const container = document.getElementById('admin-carpools');
+  if (!container) return;
+ 
+  container.innerHTML = `
+    <div class="admin-grid">
+      <div class="card" style="border-left:4px solid var(--sage);">
+        <h4>🚗 Conducteurs</h4>
+        <p class="text-muted" style="margin-top:8px;">
+          ${stats.transport.drivers} voiture(s) —
+          <strong>${stats.transport.seatsAvailable} place(s)</strong> disponible(s).
+        </p>
       </div>
-      <p class="text-center mt-2">
-        <a href="#/covoiturage" class="btn btn--secondary">
-          Gérer les covoiturages sur la page publique
-        </a>
-      </p>
-    `;
-  },
-
-  // ════════════════════════════════════════════════
-  // Hébergements
-  // ════════════════════════════════════════════════
-
-  async renderAccommodations() {
-    const container = document.getElementById('admin-accommodations');
-    if (!container) return;
-
-    container.innerHTML = '<p class="text-muted text-center mt-2">Chargement…</p>';
-    const accommodations = await Store.getAccommodations();
-
-    let html = `
-      <div class="mb-4">
-        <button class="btn btn--primary" id="add-acc-btn">+ Ajouter un hébergement</button>
+      <div class="card" style="border-left:4px solid var(--gold);">
+        <h4>🙋 Recherche de places</h4>
+        <p class="text-muted" style="margin-top:8px;">
+          ${stats.transport.needRide} personne(s) —
+          <strong>${stats.transport.seatsNeeded} place(s)</strong> recherchée(s).
+        </p>
       </div>
-      <div class="carpool-list" style="margin-top:20px;">
-    `;
-
-    accommodations.forEach(acc => {
-      html += `
-        <div class="card mb-3">
-          <h4>${acc.name}</h4>
-          <p class="text-muted">
-            <small>📍 ${acc.lat}, ${acc.lng} | 🛏️ ${acc.capacity} | 📏 ${acc.distance || '—'}</small>
-          </p>
-          ${acc.bookingUrl
-            ? `<p><a href="${acc.bookingUrl}" target="_blank" style="font-size:13px; color:var(--gold);">Voir le lien de réservation →</a></p>`
-            : ''}
-          <div class="mt-3">
-            <button class="btn btn--outline delete-acc-btn"
-              data-id="${acc.id}"
-              style="padding:4px 8px; font-size:12px; color:red; border-color:red;">
-              Supprimer
-            </button>
-          </div>
-        </div>
-      `;
-    });
-
-    html += '</div>';
-    container.innerHTML = html;
-
-    const addBtn = container.querySelector('#add-acc-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', async () => {
-        const name = prompt("Nom de l'hébergement :");
-        if (!name) return;
-        const lat      = prompt("Latitude (ex: 45.42) :");
-        const lng      = prompt("Longitude (ex: 4.59) :");
-        const capacity = prompt("Capacité (ex: 4 personnes) :");
-        const bookingUrl = prompt("Lien de réservation (optionnel) :") || '';
-
-        await Store.saveAccommodation({
-          name,
-          lat:        parseFloat(lat) || 45.411,
-          lng:        parseFloat(lng) || 4.588,
-          capacity:   capacity || '',
-          bookingUrl,
-          description: '',
-          distance:    '',
-          icon:        'gite'
-        });
-        Animations.showToast("Hébergement ajouté", "success");
-      });
-    }
-
-    container.querySelectorAll('.delete-acc-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (confirm("Supprimer cet hébergement ?")) {
-          await Store.deleteAccommodation(e.target.dataset.id);
-          Animations.showToast("Hébergement supprimé", "success");
-        }
-      });
+    </div>
+  `;
+},
+ 
+// ════════════════════════════════════════════════════════════
+// renderAccommodations() — 3 premiers + "Voir plus"
+// ════════════════════════════════════════════════════════════
+async renderAccommodations() {
+  const container = document.getElementById('admin-accommodations');
+  if (!container) return;
+ 
+  container.innerHTML = '<p class="text-muted" style="padding:12px 0;">Chargement…</p>';
+  const accommodations = await Store.getAccommodations();
+ 
+  const renderCard = (acc) => `
+    <div class="card" style="padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:0;">
+        <strong style="font-size:14px;">${acc.name}</strong>
+        <p class="text-muted" style="font-size:12px;margin:2px 0 0;">
+          📏 ${acc.distance || '—'} &nbsp;·&nbsp; 🛏️ ${acc.capacity || '—'}
+          ${acc.capacityNumber > 0 ? `&nbsp;·&nbsp; <strong>${acc.spotsLeft ?? acc.capacityNumber} place(s) restante(s)</strong>` : ''}
+        </p>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${acc.bookingUrl ? `<a href="${acc.bookingUrl}" target="_blank" class="btn btn--outline btn--sm">🔗</a>` : ''}
+        <button class="btn btn--outline btn--sm delete-acc-btn" data-id="${acc.id}"
+          style="color:red;border-color:red;">×</button>
+      </div>
+    </div>`;
+ 
+  const LIMIT = 3;
+  const first = accommodations.slice(0, LIMIT);
+  const rest  = accommodations.slice(LIMIT);
+ 
+  let html = `
+    <div style="margin-bottom:12px;">
+      <button class="btn btn--primary btn--sm" id="add-acc-btn">+ Ajouter un hébergement</button>
+    </div>
+    ${first.map(renderCard).join('')}
+  `;
+ 
+  if (rest.length > 0) {
+    html += `
+      <div id="acc-more" class="hidden">${rest.map(renderCard).join('')}</div>
+      <button id="acc-toggle-btn" class="btn btn--outline btn--sm" style="margin-top:6px;width:100%;">
+        Voir ${rest.length} hébergement${rest.length > 1 ? 's' : ''} de plus ▾
+      </button>`;
+  }
+ 
+  container.innerHTML = html;
+ 
+  // Toggle voir plus
+  const toggleBtn = container.querySelector('#acc-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const more = document.getElementById('acc-more');
+      const isHidden = more.classList.toggle('hidden');
+      toggleBtn.textContent = isHidden
+        ? `Voir ${rest.length} hébergement${rest.length > 1 ? 's' : ''} de plus ▾`
+        : 'Réduire ▴';
     });
   }
+ 
+  // Ajouter
+  container.querySelector('#add-acc-btn')?.addEventListener('click', async () => {
+    const name     = prompt("Nom de l'hébergement :"); if (!name) return;
+    const lat      = prompt("Latitude (ex: 45.42) :");
+    const lng      = prompt("Longitude (ex: 4.59) :");
+    const capacity = prompt("Capacité (ex: 4 personnes) :") || '';
+    const bookingUrl = prompt("Lien de réservation (optionnel) :") || '';
+    await Store.saveAccommodation({
+      name, lat: parseFloat(lat)||45.411, lng: parseFloat(lng)||4.588,
+      capacity, bookingUrl, description:'', distance:'', icon:'gite'
+    });
+    Animations.showToast("Hébergement ajouté", "success");
+  });
+ 
+  // Supprimer
+  container.querySelectorAll('.delete-acc-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      if (confirm("Supprimer cet hébergement ?")) {
+        await Store.deleteAccommodation(e.currentTarget.dataset.id);
+        Animations.showToast("Hébergement supprimé", "success");
+      }
+    });
+  });
+},
 
-};
 export default AdminDashboard;
