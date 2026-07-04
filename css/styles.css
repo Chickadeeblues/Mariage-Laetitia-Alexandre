@@ -3140,6 +3140,189 @@ body {
   background: #fdfaf5;
   color: var(--forest);
 }
+
+/* ============================================================
+   ALEX BRUSH — Noms des mariés + Logo
+   ============================================================ */
+
+/* ── Dans index.html, ajouter Alex Brush au lien Google Fonts :
+   Remplacer le lien existant par :
+
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+*/
+
+/* ── Variable à ajouter dans :root ── */
+:root {
+  --font-script: 'Alex Brush', cursive;
+}
+
+/* ── Logo L & A ── */
+.nav__logo {
+  font-family: var(--font-script);
+  font-size: 2rem;
+  font-weight: 400;
+  font-style: normal; /* Alex Brush n'a pas d'italique */
+  color: var(--forest);
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+/* ── Noms des mariés dans le hero ── */
+.hero__names {
+  font-family: var(--font-script);
+  font-size: clamp(2.8rem, 10vw, 5.5rem);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  /* Dégradé doré conservé */
+  background: linear-gradient(135deg, var(--forest) 0%, var(--gold) 50%, var(--forest) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerText 6s ease-in-out infinite;
+}
+
+/* L'esperluette reste en script mais légèrement plus petite */
+.hero__ampersand {
+  font-family: var(--font-script);
+  font-size: 0.85em;
+  margin: 0 0.15em;
+}
+
+/* ── Optionnel : signature dans les toasts ou emails ── */
+.signature-script {
+  font-family: var(--font-script);
+  font-size: 1.4rem;
+  color: var(--forest);
+}
+
+
+/* ============================================================
+   CUBES INFOS PRATIQUES — Correction mobile complète
+   ============================================================ */
+
+/* Reset complet de la grille */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto 48px;
+  padding: 0 4px;
+}
+
+.info-card {
+  background: var(--white);
+  border: 1.5px solid rgba(0,0,0,0.05);
+  border-radius: var(--radius-md);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  padding: 20px 12px;
+  /* CRITIQUE : empêche les cubes de déborder */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.info-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--sage);
+}
+
+.info-card__icon {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--forest);
+  margin: 0 0 4px;
+  line-height: 1.25;
+  /* Empêche le texte de déborder */
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.info-card__desc {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ── Tablette ── */
+@media (max-width: 900px) {
+  .info-grid {
+    gap: 14px;
+    max-width: 100%;
+  }
+  .info-card__icon  { font-size: 1.6rem; }
+  .info-card__title { font-size: 0.82rem; }
+  .info-card__desc  { display: none; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .info-grid {
+    /* TOUJOURS 2 colonnes sur mobile, jamais 1 */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 2px;
+    /* Taille totale contrainte à la largeur de l'écran */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto 32px;
+  }
+
+  .info-card {
+    padding: 14px 8px;
+    border-radius: 10px;
+    aspect-ratio: 1 / 1;
+    /* Garantit que le cube ne dépasse pas sa cellule */
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .info-card__icon  { font-size: 1.5rem; margin-bottom: 6px; }
+  .info-card__title { font-size: 0.78rem; }
+  .info-card__desc  { display: none; }
+}
+
+/* ── Très petit mobile (≤ 380px) ── */
+@media (max-width: 380px) {
+  .info-grid { gap: 8px; }
+  .info-card { padding: 10px 6px; border-radius: 8px; }
+  .info-card__icon  { font-size: 1.3rem; margin-bottom: 5px; }
+  .info-card__title { font-size: 0.72rem; }
+}
+
+/* ── S'assurer que le container parent ne déborde pas ── */
+#page-infos .container {
+  overflow: hidden;
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}
  
 
 
