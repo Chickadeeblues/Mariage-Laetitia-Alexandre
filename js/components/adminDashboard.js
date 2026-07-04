@@ -1110,7 +1110,6 @@ async renderAccommodations() {
     });
   }
  
-  // Ajouter
   container.querySelector('#add-acc-btn')?.addEventListener('click', async () => {
     const name     = prompt("Nom de l'hébergement :"); if (!name) return;
     const lat      = prompt("Latitude (ex: 45.42) :");
@@ -1123,7 +1122,7 @@ async renderAccommodations() {
     });
     Animations.showToast("Hébergement ajouté", "success");
   });
- 
+
   // Supprimer
   container.querySelectorAll('.delete-acc-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -1133,6 +1132,8 @@ async renderAccommodations() {
       }
     });
   });
-},
+}          // ← fermeture de renderAccommodations, SANS virgule car dernière méthode
+
+};         // ← fermeture de l'objet AdminDashboard
 
 export default AdminDashboard;
