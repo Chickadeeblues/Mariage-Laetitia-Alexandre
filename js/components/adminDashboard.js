@@ -8,6 +8,23 @@ const formatPhone = (phone) => {
   return phone.replace(/\D/g, '').replace(/(\d{2})(?=\d)/g, '$1 ').trim();
 };
 
+// Utilitaire pour calculer le compte à rebours jusqu'au 8 mai 2027
+const getCountdownText = () => {
+  const target = new Date(2027, 4, 8); // 8 mai 2027 (le mois 4 = mai en JS)
+  const now = new Date();
+  if (now >= target) return "🎉 Le grand jour est arrivé !";
+  
+  let months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+  let days = target.getDate() - now.getDate();
+  
+  if (days < 0) {
+    months -= 1;
+    const prevMonth = new Date(target.getFullYear(), target.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  return `J-${months > 0 ? `${months} mois et ` : ''}${days} jour${days > 1 ? 's' : ''} avant le mariage`;
+};
+
 const AdminDashboard = {
   logoutBtn: null,
 
@@ -72,7 +89,6 @@ const AdminDashboard = {
   async renderDashboard() {
     this.showLoader();
     try {
-      // On récupère les invités en amont pour garantir la précision des calculs
       const guests = await Store.getGuests();
       const stats  = await Store.getStats();
 
@@ -100,11 +116,11 @@ const AdminDashboard = {
   },
 
   // ════════════════════════════════════════════════
-  // 1 & 2 & 3. Grille unifiée (Stats + Régimes : 8 cartes strictes)
+  // 1, 2 & 4. Widget Compte à rebours + Grille 8 cartes (Sauge & sans fond blanc)
   // ════════════════════════════════════════════════
 
   async renderStatsAndDiets(stats, guests) {
-    // 1. Calcul infaillible des participants au Brunch depuis la liste brute
+    // 1. Calcul exact des présents au Brunch (Invités + Accompagnants)
     const exactBrunchCount = guests.reduce((total, g) => {
       const isAttending = g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1;
       const wantsBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
@@ -116,15 +132,57 @@ const AdminDashboard = {
 
     const confirmedCount = stats.confirmedPeople !== undefined ? stats.confirmedPeople : stats.confirmed || 0;
 
-    // Localisation des conteneurs dans le DOM
+    // Repérage des conteneurs
     const firstStatCard = document.getElementById('stat-total') || 
                           document.getElementById('stat-confirmed') ||
                           document.querySelector('.stat-card')?.parentElement;
     const statsContainer = firstStatCard ? (firstStatCard.id ? firstStatCard.parentElement : firstStatCard) : null;
     const dietsContainer = document.getElementById('admin-diets');
 
-    // Style commun et strict pour garantir 8 cartes absolument identiques
-    const cardStyle = `
+    // 4. Injection du Widget Compte à rebours au-dessus des statistiques
+    if (statsContainer) {
+      let countdownEl = document.getElementById('admin-countdown-widget');
+      if (!countdownEl) {
+        countdownEl = document.createElement('div');
+        countdownEl.id = 'admin-countdown-widget';
+        statsContainer.parentNode.insertBefore(countdownEl, statsContainer);
+      }
+      countdownEl.style.cssText = `
+        background: linear-gradient(135deg, var(--forest, #2D5A3D), #3a734f);
+        color: #fff;
+        padding: 14px 20px;
+        border-radius: var(--radius-md, 12px);
+        font-family: var(--font-display, serif);
+        font-size: 20px;
+        font-weight: 600;
+        text-align: center;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.15);
+        margin-bottom: 24px;
+        border: 1px solid var(--gold, #C9A84C);
+      `;
+      countdownEl.innerHTML = getCountdownText();
+    }
+
+    // NETTOYAGE FORCE DU FOND BLANC : On vide le CSS parent (index.html) de toute couleur ou bordure !
+    const gridStyle = `
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+      gap: 16px !important;
+      margin-bottom: 16px !important;
+      width: 100% !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    `;
+
+    if (statsContainer) statsContainer.style.cssText = gridStyle;
+    if (dietsContainer) dietsContainer.style.cssText = gridStyle;
+
+    // Style de base pour les cartes
+    const baseCardStyle = `
       background: var(--white, #fff);
       border-radius: var(--radius-lg, 16px);
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -139,61 +197,55 @@ const AdminDashboard = {
       overflow: hidden;
     `;
 
-    const gridStyle = `
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 16px;
-      width: 100%;
-    `;
+    // 2. Rebord SAUGE pour les 4 cartes de statistiques
+    const statCardStyle = `${baseCardStyle} border: 1.5px solid var(--sage, #9CAF88);`;
+    // Rebord neutre discret pour les 4 cartes régimes
+    const dietCardStyle = `${baseCardStyle} border: 1px solid #EAEAEA;`;
 
-    // ── Rangée 1 : Statistiques de présence ──
+    // ── Rangée 1 : Statistiques d'invités (Bordure Sauge) ──
     if (statsContainer) {
-      statsContainer.style.cssText = gridStyle;
       statsContainer.innerHTML = `
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="${statCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${confirmedCount}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Confirmés</div>
         </div>
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="${statCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${exactBrunchCount}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Présents au Brunch</div>
         </div>
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="${statCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--sage);">${stats.maybe || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Peut-être</div>
         </div>
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="${statCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#e06666;">${stats.declined || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Déclinés</div>
         </div>
       `;
     }
 
-    // ── Rangée 2 : Régimes alimentaires (Chiffres colorés & format identique) ──
+    // ── Rangée 2 : Régimes alimentaires (Sans fond blanc derrière, couleurs distinctes) ──
     if (dietsContainer) {
-      dietsContainer.style.cssText = gridStyle;
-      
       const allergiesCount = stats.diets.allergies?.length || 0;
       const allergiesTooltip = allergiesCount > 0 
         ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ') 
         : 'Aucune allergie';
 
       dietsContainer.innerHTML = `
-        <div class="card" style="${cardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--sage);">${stats.diets.vegetarian || 0}</div>
+        <div class="card" style="${dietCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#3B7A57;">${stats.diets.vegetarian || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végétariens</div>
         </div>
-        <div class="card" style="${cardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--forest);">${stats.diets.vegan || 0}</div>
+        <div class="card" style="${dietCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--forest, #2D5A3D);">${stats.diets.vegan || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végans</div>
         </div>
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="${dietCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#4A779D;">${stats.diets.noAlcohol || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sans alcool</div>
         </div>
-        <div class="card" style="${cardStyle}" title="${allergiesTooltip}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--gold);">${allergiesCount}</div>
+        <div class="card" style="${dietCardStyle}" title="${allergiesTooltip}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--gold, #C9A84C);">${allergiesCount}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Allergies déclarées</div>
           ${allergiesCount > 0 ? `<div style="font-size:10px; color:var(--gold); margin-top:2px; max-width:90%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${allergiesTooltip}</div>` : ''}
         </div>
@@ -269,7 +321,6 @@ const AdminDashboard = {
       const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
-      // Ligne de l'invité principal
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
           <td style="padding:10px;">
@@ -288,7 +339,6 @@ const AdminDashboard = {
         </tr>
       `;
 
-      // Lignes des accompagnants (alignement gauche exact)
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
@@ -324,7 +374,7 @@ const AdminDashboard = {
       });
     });
 
-    // Action : Modifier (✏️) via Modale interactive ergonomique
+    // Action : Modifier (✏️) via Modale complète
     container.querySelectorAll('.edit-guest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.dataset.id;
@@ -335,56 +385,133 @@ const AdminDashboard = {
   },
 
   // ════════════════════════════════════════════════
-  // 4. Modale interactive d'édition (Adieu les prompt!)
+  // 3. Modale de modification complète et ergonomique (Oui/Non)
   // ════════════════════════════════════════════════
 
   openEditModal(guest) {
-    // Supprime une ancienne modale si existante
     const existingModal = document.getElementById('admin-edit-modal');
     if (existingModal) existingModal.remove();
 
     const isBrunch = guest.brunch === true || guest.brunch === 'true' || guest.brunch === 'oui' || guest.brunch === 1;
     const currentAcc = guest.accommodationName || guest.accommodation_name || guest.accommodation || '';
     const currentMode = guest.transport?.mode || '';
+    const currentCarpool = guest.transport?.carpoolRole || 'none';
+    const allergiesText = guest.allergies || guest.allergyDetails || guest.allergy_details || '';
 
-    // Construction HTML de la fenêtre modale
     const modalHtml = `
-      <div id="admin-edit-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
-        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:90%; max-width:450px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.2); border:1px solid var(--gold);">
+      <div id="admin-edit-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:550px; max-height:85vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
           
-          <h3 style="margin:0 0 16px 0; font-family:var(--font-display); color:var(--forest); font-size:24px; border-bottom:1px solid var(--gold-light); padding-bottom:8px;">
-            ✏️ Modifier : ${guest.firstName} ${guest.lastName}
-          </h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gold-light); padding-bottom:12px; margin-bottom:16px;">
+            <h3 style="margin:0; font-family:var(--font-display); color:var(--forest); font-size:22px;">
+              ✏️ Modifier la fiche invité
+            </h3>
+            <button type="button" id="edit-close-x" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);">×</button>
+          </div>
 
-          <form id="admin-edit-form">
-            <label style="display:block; font-size:14px; font-weight:600; color:var(--text-dark); margin-bottom:4px;">Présence au mariage</label>
-            <select id="edit-attending" style="width:100%; padding:10px; border-radius:var(--radius-sm, 8px); border:1px solid #ccc; margin-bottom:14px; font-family:var(--font-body);">
-              <option value="true" ${guest.attending === true || guest.attending === 'true' ? 'selected' : ''}>✓ Confirmé (Oui)</option>
-              <option value="false" ${guest.attending === false || guest.attending === 'false' ? 'selected' : ''}>✗ Décliné (Non)</option>
-              <option value="maybe" ${guest.attending === 'maybe' ? 'selected' : ''}>? Peut-être</option>
-              <option value="null" ${guest.attending == null ? 'selected' : ''}>En attente</option>
-            </select>
+          <form id="admin-edit-form" style="display:flex; flex-direction:column; gap:16px; text-align:left;">
+            
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">👤 Identité</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Prénom</label>
+                  <input type="text" id="edit-firstname" value="${guest.firstName || ''}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Nom</label>
+                  <input type="text" id="edit-lastname" value="${guest.lastName || ''}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Téléphone</label>
+                <input type="text" id="edit-phone" value="${guest.phone || ''}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              </div>
+            </fieldset>
 
-            <label style="display:block; font-size:14px; font-weight:600; color:var(--text-dark); margin-bottom:4px;">Présence au Brunch du dimanche</label>
-            <select id="edit-brunch" style="width:100%; padding:10px; border-radius:var(--radius-sm, 8px); border:1px solid #ccc; margin-bottom:14px; font-family:var(--font-body);">
-              <option value="true" ${isBrunch ? 'selected' : ''}>☕ Oui, sera présent</option>
-              <option value="false" ${!isBrunch ? 'selected' : ''}>🙏 Non, ne vient pas</option>
-            </select>
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">💒 Présence</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Mariage (8 mai)</label>
+                  <select id="edit-attending" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="true" ${guest.attending === true || guest.attending === 'true' ? 'selected' : ''}>✓ Oui (Confirmé)</option>
+                    <option value="false" ${guest.attending === false || guest.attending === 'false' ? 'selected' : ''}>✗ Non (Décliné)</option>
+                    <option value="maybe" ${guest.attending === 'maybe' ? 'selected' : ''}>? Peut-être</option>
+                    <option value="null" ${guest.attending == null ? 'selected' : ''}>En attente</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Brunch (9 mai)</label>
+                  <select id="edit-brunch" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="true" ${isBrunch ? 'selected' : ''}>☕ Oui</option>
+                    <option value="false" ${!isBrunch ? 'selected' : ''}>🙏 Non</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
 
-            <label style="display:block; font-size:14px; font-weight:600; color:var(--text-dark); margin-bottom:4px;">Mode de transport</label>
-            <select id="edit-transport" style="width:100%; padding:10px; border-radius:var(--radius-sm, 8px); border:1px solid #ccc; margin-bottom:14px; font-family:var(--font-body);">
-              <option value="" ${!currentMode ? 'selected' : ''}>— Non renseigné —</option>
-              <option value="car" ${currentMode === 'car' ? 'selected' : ''}>🚗 Voiture</option>
-              <option value="train" ${currentMode === 'train' ? 'selected' : ''}>🚆 Train</option>
-              <option value="other" ${currentMode === 'other' ? 'selected' : ''}>✈️ Autre</option>
-            </select>
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">🥗 Régimes alimentaires</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Végétarien</label>
+                  <select id="edit-vege" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!guest.vegetarian ? 'selected' : ''}>Non</option>
+                    <option value="true" ${guest.vegetarian ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Végan</label>
+                  <select id="edit-vegan" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!guest.vegan ? 'selected' : ''}>Non</option>
+                    <option value="true" ${guest.vegan ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Sans alcool</label>
+                  <select id="edit-noalc" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!guest.noAlcohol ? 'selected' : ''}>Non</option>
+                    <option value="true" ${guest.noAlcohol ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Détails allergies</label>
+                <input type="text" id="edit-allergies" value="${allergiesText}" placeholder="Ex: Gluten, fruits à coque..." style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              </div>
+            </fieldset>
 
-            <label style="display:block; font-size:14px; font-weight:600; color:var(--text-dark); margin-bottom:4px;">Lieu d'hébergement</label>
-            <input type="text" id="edit-acc" value="${currentAcc}" placeholder="Ex: Domaine de la Scie du May" style="width:100%; padding:10px; border-radius:var(--radius-sm, 8px); border:1px solid #ccc; margin-bottom:20px; box-sizing:border-box; font-family:var(--font-body);" />
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">🚗 Transport & Logement</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Mode de transport</label>
+                  <select id="edit-transport" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="" ${!currentMode ? 'selected' : ''}>— Non renseigné —</option>
+                    <option value="car" ${currentMode === 'car' ? 'selected' : ''}>🚗 Voiture</option>
+                    <option value="train" ${currentMode === 'train' ? 'selected' : ''}>🚆 Train</option>
+                    <option value="other" ${currentMode === 'other' ? 'selected' : ''}>✈️ Autre</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Covoiturage</label>
+                  <select id="edit-carpool" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="none" ${currentCarpool === 'none' ? 'selected' : ''}>Aucun</option>
+                    <option value="offer" ${currentCarpool === 'offer' ? 'selected' : ''}>🟢 Propose des places</option>
+                    <option value="need" ${currentCarpool === 'need' ? 'selected' : ''}>🟡 Cherche des places</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Lieu d'hébergement</label>
+                <input type="text" id="edit-acc" value="${currentAcc}" placeholder="Ex: Domaine de la Scie du May" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              </div>
+            </fieldset>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-              <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:8px 16px;">Annuler</button>
-              <button type="submit" class="btn btn--primary" style="padding:8px 16px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm);">Enregistrer</button>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+              <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
             </div>
           </form>
 
@@ -396,32 +523,39 @@ const AdminDashboard = {
 
     const modal = document.getElementById('admin-edit-modal');
     const cancelBtn = document.getElementById('edit-cancel-btn');
+    const closeX = document.getElementById('edit-close-x');
     const form = document.getElementById('admin-edit-form');
 
-    // Fermeture de la modale
     const closeModal = () => modal.remove();
     cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // Soumission de la modification
+    // Soumission du formulaire complet
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const attVal = document.getElementById('edit-attending').value;
       const newAttending = attVal === 'true' ? true : attVal === 'false' ? false : attVal === 'maybe' ? 'maybe' : null;
-      const newBrunch    = document.getElementById('edit-brunch').value === 'true';
-      const newTransport = document.getElementById('edit-transport').value;
-      const newAcc       = document.getElementById('edit-acc').value.trim();
 
       const updatedGuest = {
         ...guest,
+        firstName: document.getElementById('edit-firstname').value.trim(),
+        lastName: document.getElementById('edit-lastname').value.trim(),
+        phone: document.getElementById('edit-phone').value.trim(),
         attending: newAttending,
-        brunch: newBrunch,
-        accommodation_name: newAcc,
-        accommodationName: newAcc,
+        brunch: document.getElementById('edit-brunch').value === 'true',
+        vegetarian: document.getElementById('edit-vege').value === 'true',
+        vegan: document.getElementById('edit-vegan').value === 'true',
+        noAlcohol: document.getElementById('edit-noalc').value === 'true',
+        allergyDetails: document.getElementById('edit-allergies').value.trim(),
+        allergy_details: document.getElementById('edit-allergies').value.trim(),
+        accommodationName: document.getElementById('edit-acc').value.trim(),
+        accommodation_name: document.getElementById('edit-acc').value.trim(),
         transport: {
           ...(guest.transport || {}),
-          mode: newTransport || undefined
+          mode: document.getElementById('edit-transport').value || undefined,
+          carpoolRole: document.getElementById('edit-carpool').value
         }
       };
 
@@ -431,7 +565,7 @@ const AdminDashboard = {
         } else if (typeof Store.saveGuest === 'function') {
           await Store.saveGuest(updatedGuest);
         }
-        Animations.showToast("Modification enregistrée", "success");
+        Animations.showToast("Modifications enregistrées", "success");
         closeModal();
         this.renderDashboard();
       } catch (err) {
