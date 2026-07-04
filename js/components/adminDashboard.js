@@ -97,35 +97,51 @@ const AdminDashboard = {
   },
 
   // ════════════════════════════════════════════════
-  // Stats
+  // Stats (Correction : injection dynamique de la grille)
   // ════════════════════════════════════════════════
 
   async renderStats() {
     const stats = await Store.getStats();
 
-    const setStat = (id, number, label) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = `
-        <div class="stat-card__number">${number}</div>
-        <div class="stat-card__label">${label}</div>`;
-    };
+    // On cherche le conteneur parent des cartes pour s'affranchir des anciens ID de index.html
+    const firstStatCard = document.getElementById('stat-total') || 
+                          document.getElementById('stat-confirmed') ||
+                          document.querySelector('.stat-card')?.parentElement;
+                          
+    const container = firstStatCard ? (firstStatCard.id ? firstStatCard.parentElement : firstStatCard) : null;
 
-    // A. Suppression de stat-total (on ignore l'appel)
-    // B. Modification Confirmés : uniquement le nombre total de personnes
-    setStat('stat-confirmed', stats.confirmedPeople, 'Personnes confirmées');
-    
-    // C. Ajout de la stat Brunch en 2e position
-    // (Assure-toi que stats.brunchPeople est retourné par ton Store.getStats(), sinon fallback à 0)
+    const confirmedCount = stats.confirmedPeople !== undefined ? stats.confirmedPeople : stats.confirmed || 0;
     const brunchCount = stats.brunchPeople !== undefined ? stats.brunchPeople : stats.brunch || 0;
-    setStat('stat-brunch', brunchCount, 'Présents au Brunch');
 
-    setStat('stat-maybe',     stats.maybe,        'Peut-être');
-    setStat('stat-declined',  stats.declined,     'Déclinés');
-    setStat('stat-pending',   stats.pending,      'En attente');
+    if (container) {
+      // Réécriture complète du HTML de la grille (résout la carte vide et ajoute le Brunch)
+      container.innerHTML = `
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${confirmedCount}</div>
+          <div class="stat-card__label">Personnes confirmées</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${brunchCount}</div>
+          <div class="stat-card__label">Présents au Brunch</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.maybe || 0}</div>
+          <div class="stat-card__label">Peut-être</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.declined || 0}</div>
+          <div class="stat-card__label">Déclinés</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.pending || 0}</div>
+          <div class="stat-card__label">En attente</div>
+        </div>
+      `;
+    }
   },
 
   // ════════════════════════════════════════════════
-  // Régimes alimentaires
+  // Régimes alimentaires (Correction : pastel, sans émoji, même ligne)
   // ════════════════════════════════════════════════
 
   async renderDiets() {
@@ -133,42 +149,45 @@ const AdminDashboard = {
     if (!container) return;
     const stats = await Store.getStats();
 
-    let html = `
-      <div class="admin-grid mb-4">
-        <div class="card">
-          <h4>🥗 Végétariens</h4>
-          <div class="stat-card__number" style="color: var(--sage)">${stats.diets.vegetarian}</div>
+    const html = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        
+        <!-- Végétariens -->
+        <div class="card" style="background: #EFF3EC; border: 1px solid #D5E0D0; text-align: left; padding: 16px; border-radius: var(--radius-md);">
+          <h4 style="margin: 0 0 8px 0; color: var(--forest); font-family: var(--font-body); font-size: 16px; font-weight: 600;">Végétariens</h4>
+          <div class="stat-card__number" style="color: var(--forest); font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.vegetarian || 0}</div>
         </div>
-        <div class="card">
-          <h4>🌱 Végans</h4>
-          <div class="stat-card__number" style="color: var(--forest)">${stats.diets.vegan}</div>
+
+        <!-- Végans -->
+        <div class="card" style="background: #E8EFEA; border: 1px solid #C4D6C8; text-align: left; padding: 16px; border-radius: var(--radius-md);">
+          <h4 style="margin: 0 0 8px 0; color: var(--forest); font-family: var(--font-body); font-size: 16px; font-weight: 600;">Végans</h4>
+          <div class="stat-card__number" style="color: var(--forest); font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.vegan || 0}</div>
         </div>
-        <div class="card">
-          <h4>🧃 Sans alcool</h4>
-          <div class="stat-card__number" style="color: #6a9bd8">${stats.diets.noAlcohol}</div>
+
+        <!-- Sans alcool -->
+        <div class="card" style="background: #EDF4FB; border: 1px solid #CADDED; text-align: left; padding: 16px; border-radius: var(--radius-md);">
+          <h4 style="margin: 0 0 8px 0; color: #4A779D; font-family: var(--font-body); font-size: 16px; font-weight: 600;">Sans alcool</h4>
+          <div class="stat-card__number" style="color: #4A779D; font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.noAlcohol || 0}</div>
         </div>
+
+        <!-- Allergies (s'aligne sur la même ligne ou en dessous selon la largeur) -->
+        <div class="card" style="background: #FDF9EE; border: 1px solid #E8D5A3; text-align: left; padding: 16px; border-radius: var(--radius-md);">
+          <h4 style="margin: 0 0 8px 0; color: #8C7326; font-family: var(--font-body); font-size: 16px; font-weight: 600;">Allergies déclarées (${stats.diets.allergies?.length || 0})</h4>
+          ${stats.diets.allergies && stats.diets.allergies.length > 0 ? `
+            <ul style="margin: 8px 0 0 0; padding-left: 16px; font-size: 14px; color: var(--text-dark);">
+              ${stats.diets.allergies.map(a => `<li><strong>${a.name} :</strong> ${a.details}</li>`).join('')}
+            </ul>
+          ` : `<p style="margin: 8px 0 0 0; font-size: 14px; color: var(--text-muted);">Aucune allergie</p>`}
+        </div>
+
       </div>
     `;
-
-    if (stats.diets.allergies.length > 0) {
-      html += `
-        <div class="card">
-          <h4>⚠️ Allergies déclarées</h4>
-          <ul style="margin-top: 10px; padding-left: 20px;">
-            ${stats.diets.allergies.map(a =>
-              `<li><strong>${a.name} :</strong> ${a.details}</li>`
-            ).join('')}
-          </ul>
-        </div>`;
-    } else {
-      html += `<div class="card"><p class="text-muted">Aucune allergie déclarée pour le moment.</p></div>`;
-    }
 
     container.innerHTML = html;
   },
 
   // ════════════════════════════════════════════════
-  // Liste des invités (Refactorisée)
+  // Liste des invités (Correction : police et hauteur uniformes, badge identique)
   // ════════════════════════════════════════════════
 
   async renderGuestsList() {
@@ -190,7 +209,6 @@ const AdminDashboard = {
       return '<span class="badge badge--pending">En attente</span>';
     };
 
-    // D. Fusion Nom/Contact et Suppression des colonnes "Accomp." et "Contact"
     let html = `
       <div class="table-responsive">
         <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
@@ -207,10 +225,8 @@ const AdminDashboard = {
     `;
 
     guests.forEach((g, idx) => {
-      // D.b) Même couleur de fond pour l'invité et ses accompagnants
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
       
-      // D.c) Transport en toutes lettres + Badges Covoiturage
       let transportText = '—';
       if (g.transport?.mode) {
         const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
@@ -226,7 +242,7 @@ const AdminDashboard = {
       const brunch = g.brunch === true ? '☕ Oui' : g.brunch === false ? '🙏 Non' : '—';
       const formattedPhone = formatPhone(g.phone);
 
-      // Ligne principale de l'invité
+      // Ligne de l'invité principal
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
           <td style="padding:10px;">
@@ -246,20 +262,22 @@ const AdminDashboard = {
         </tr>
       `;
 
-      // D.b) Lignes des accompagnants (sous l'invité, même couleur, signe + à cheval)
+      // Lignes des accompagnants (Même police, même hauteur/padding, même badge de réponse)
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:0 10px 10px 25px; position:relative;">
-                <span style="position:absolute; left:8px; top:-10px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.1);">+</span>
-                <span style="color:var(--text-dark);">${comp.name}</span>
+              <td style="padding:10px; position:relative;">
+                <!-- Signe + doré à cheval entre les deux lignes -->
+                <span style="position:absolute; left:6px; top:-11px; background:var(--gold); color:#fff; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
+                <strong style="padding-left: 16px;">${comp.name}</strong>
               </td>
-              <td style="padding:0 10px 10px 10px;"><small class="text-muted">Accompagnant</small></td>
-              <td style="padding:0 10px 10px 10px;">${brunch}</td>
-              <td style="padding:0 10px 10px 10px;">—</td>
-              <td style="padding:0 10px 10px 10px;"></td>
+              <!-- Affiche le badge Exactement comme l'invité principal -->
+              <td style="padding:10px;">${badgeFor(g.attending)}</td>
+              <td style="padding:10px;">${brunch}</td>
+              <td style="padding:10px;"><span style="color:var(--text-muted);">—</span></td>
+              <td style="padding:10px;"></td>
             </tr>
           `;
         });
