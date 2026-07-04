@@ -157,52 +157,50 @@ const RSVP = {
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   },
 
-  renderStep1() {
-    const v = this.currentStep === 1;
-    const att = this.guestData.attending;
-    const companions = this.guestData.companions || [];
-    return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-1">
-        <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="Prénom *" required>
-        <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="Nom *" required>
-        <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="Téléphone portable *" required>
-        <div style="height:1px;background:#f5f2eb;margin:1rem 0;"></div>
+renderStep1() {
+  const v = this.currentStep === 1;
+  const att = this.guestData.attending;
+  const companions = this.guestData.companions || [];
+  return `
+    <div class="form-step ${v ? 'active' : ''}" id="step-1">
+      <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="Prénom *" required>
+      <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="Nom *" required>
+      <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="Téléphone portable *" required>
+      <div style="height:1px;background:#f5f2eb;margin:1rem 0;"></div>
 
-        <div class="attendance-options">
-          <button type="button" class="choice-btn ${att === true    ? 'selected' : ''}" data-val="true">  <span>🎉</span> <strong>Je viens avec joie !</strong></button>
-          <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>Je viens peut-être</strong></button>
-          <button type="button" class="choice-btn ${att === false   ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>Je ne peux pas venir</strong></button>
-        </div>
+      <div class="attendance-options">
+        <button type="button" class="choice-btn ${att === true    ? 'selected' : ''}" data-val="true">  <span>🎉</span> <strong>Je viens avec joie !</strong></button>
+        <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>Je viens peut-être</strong></button>
+        <button type="button" class="choice-btn ${att === false   ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>Je ne peux pas venir</strong></button>
+      </div>
 
-        ${att === true ? `
-          <div id="companions-section" style="margin-top:14px;">
-            <div class="companion-warning" style="background:#fdf8ee;border-left:3px solid #d4aa5a;border-radius:6px;padding:10px 14px;font-size:13px;color:#7a6135;margin-bottom:12px;">
-              Le nombre d'invités étant strictement limité, merci de ne pas ajouter quelqu'un que nous n'avons pas prévu !
-            </div>
-            <select id="guest-companions-count" class="compact-input">
-              <option value="0" ${companions.length === 0 ? 'selected' : ''}>Je viens seul(e)</option>
-              ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>Avec ${n} accompagnant${n>1?'s':''}</option>`).join('')}
-            </select>
-            <div id="companions-list">
-              ${companions.map((c, idx) => `
-                <div style="margin-bottom:8px;">
-                  <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(c.name)}" placeholder="Prénom et Nom accompagnant ${idx+1} *">
-                </div>`).join('')}
-            </div>
-          </div>` : ''}
+      ${att === true ? `
+        <div id="companions-section" style="margin-top:14px;">
+          <div class="companion-warning" style="background:#fdf8ee;border-left:3px solid #d4aa5a;border-radius:6px;padding:10px 14px;font-size:13px;color:#7a6135;margin-bottom:12px;">
+            Le nombre d'invités étant strictement limité, merci de ne pas ajouter quelqu'un que nous n'avons pas prévu !
+          </div>
+          <select id="guest-companions-count" class="compact-input">
+            <option value="0" ${companions.length === 0 ? 'selected' : ''}>Je viens seul(e)</option>
+            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>Avec ${n} accompagnant${n>1?'s':''}</option>`).join('')}
+          </select>
+          <div id="companions-list">
+            ${companions.map((c, idx) => `
+              <div style="margin-bottom:8px;">
+                <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(c.name)}" placeholder="Prénom et Nom accompagnant ${idx+1} *">
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
 
-		const DEADLINE_BLOCK = `
-		<div class="rsvp-deadline">
-		<span class="rsvp-deadline__icon">📅</span>
-		<p>Merci de confirmer votre présence <strong>avant le 30 novembre 2026</strong>.</p>
-		</div>
-`		;
+      <div class="rsvp-deadline">
+        <span class="rsvp-deadline__icon">📅</span>
+        <p>Merci de confirmer votre présence <strong>avant le 30 novembre 2026</strong>.</p>
+      </div>
 
-        <div class="form-actions">
+      <div class="form-actions">
         <button type="button" class="btn btn--primary next-btn" style="width:100%;">Suivant →</button>
-        </div>
-      </div>`;
-  },
+      </div>
+    </div>`;
+},
 
   renderStep2() {
     const v = this.currentStep === 2;
