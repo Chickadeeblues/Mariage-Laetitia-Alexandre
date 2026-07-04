@@ -126,7 +126,6 @@ const AdminDashboard = {
       console.error('[Admin] Erreur renderDashboard :', e);
       Animations.showToast("Erreur de chargement des données", "error");
     } finally {
-      // Puis on cache le loader une fois que TOUT est affiché
       this.hideLoader();
     }
   },
@@ -178,9 +177,7 @@ renderManagementZone() {
     localStorage.setItem('wedding_tasks', JSON.stringify(tasks));
     this.renderManagementZone(); // Rafraîchit l'affichage
   }
-};
-
-  showLoader() {
+    showLoader() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'block';
   },
