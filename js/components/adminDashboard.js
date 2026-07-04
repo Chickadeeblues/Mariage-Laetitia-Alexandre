@@ -185,7 +185,6 @@ renderManagementZone() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'none';
   }
-};
 
   // ════════════════════════════════════════════════
   // 1, 2 & 4. Widget Compte à rebours + Grille 8 cartes (Sauge & sans fond blanc)
@@ -756,4 +755,5 @@ renderManagementZone() {
     });
   }
 
+};
 export default AdminDashboard;
