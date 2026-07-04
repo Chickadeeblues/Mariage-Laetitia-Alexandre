@@ -2,6 +2,12 @@ import Store from '../store.js';
 import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
 
+// Utilitaire pour formater le téléphone (0600000000 -> 06 00 00 00 00)
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  return phone.replace(/\D/g, '').replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+};
+
 const AdminDashboard = {
   logoutBtn: null,
 
@@ -104,8 +110,15 @@ const AdminDashboard = {
         <div class="stat-card__label">${label}</div>`;
     };
 
-    setStat('stat-total',     stats.totalGuests,  `Foyers invités (${stats.totalPeople} pers.)`);
-    setStat('stat-confirmed', stats.confirmed,    `Confirmés (${stats.confirmedPeople} pers.)`);
+    // A. Suppression de stat-total (on ignore l'appel)
+    // B. Modification Confirmés : uniquement le nombre total de personnes
+    setStat('stat-confirmed', stats.confirmedPeople, 'Personnes confirmées');
+    
+    // C. Ajout de la stat Brunch en 2e position
+    // (Assure-toi que stats.brunchPeople est retourné par ton Store.getStats(), sinon fallback à 0)
+    const brunchCount = stats.brunchPeople !== undefined ? stats.brunchPeople : stats.brunch || 0;
+    setStat('stat-brunch', brunchCount, 'Présents au Brunch');
+
     setStat('stat-maybe',     stats.maybe,        'Peut-être');
     setStat('stat-declined',  stats.declined,     'Déclinés');
     setStat('stat-pending',   stats.pending,      'En attente');
@@ -155,7 +168,7 @@ const AdminDashboard = {
   },
 
   // ════════════════════════════════════════════════
-  // Liste des invités
+  // Liste des invités (Refactorisée)
   // ════════════════════════════════════════════════
 
   async renderGuestsList() {
@@ -177,16 +190,15 @@ const AdminDashboard = {
       return '<span class="badge badge--pending">En attente</span>';
     };
 
+    // D. Fusion Nom/Contact et Suppression des colonnes "Accomp." et "Contact"
     let html = `
       <div class="table-responsive">
         <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding:10px;">Nom</th>
+              <th style="padding:10px;">Nom & Téléphone</th>
               <th style="padding:10px;">Présence</th>
               <th style="padding:10px;">Brunch</th>
-              <th style="padding:10px;">Accomp.</th>
-              <th style="padding:10px;">Contact</th>
               <th style="padding:10px;">Transport</th>
               <th style="padding:10px;">Actions</th>
             </tr>
@@ -195,20 +207,35 @@ const AdminDashboard = {
     `;
 
     guests.forEach((g, idx) => {
+      // D.b) Même couleur de fond pour l'invité et ses accompagnants
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
-      const transport = g.transport?.mode
-        ? { car: '🚗', train: '🚆', other: '✈️' }[g.transport.mode] || '—'
-        : '—';
-      const brunch = g.brunch === true ? '☕ Oui' : g.brunch === false ? '🙏 Non' : '—';
+      
+      // D.c) Transport en toutes lettres + Badges Covoiturage
+      let transportText = '—';
+      if (g.transport?.mode) {
+        const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
+        transportText = modes[g.transport.mode] || g.transport.mode;
+      }
+      
+      if (g.transport?.carpoolRole === 'offer') {
+        transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:11px; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">Propose covoiturage</span>`;
+      } else if (g.transport?.carpoolRole === 'need') {
+        transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:11px; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">Demande covoiturage</span>`;
+      }
 
+      const brunch = g.brunch === true ? '☕ Oui' : g.brunch === false ? '🙏 Non' : '—';
+      const formattedPhone = formatPhone(g.phone);
+
+      // Ligne principale de l'invité
       html += `
-        <tr style="background:${bg}; border-bottom:1px solid #eee;">
-          <td style="padding:10px;"><strong>${g.firstName} ${g.lastName}</strong></td>
+        <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
+          <td style="padding:10px;">
+            <strong>${g.firstName} ${g.lastName}</strong>
+            ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+          </td>
           <td style="padding:10px;">${badgeFor(g.attending)}</td>
           <td style="padding:10px;">${brunch}</td>
-          <td style="padding:10px;">${g.companions.length}</td>
-          <td style="padding:10px;">${g.email || ''}<br><small>${g.phone || ''}</small></td>
-          <td style="padding:10px;">${transport}</td>
+          <td style="padding:10px;">${transportText}</td>
           <td style="padding:10px;">
             <button class="btn btn--outline delete-guest-btn"
               data-id="${g.id}"
@@ -218,6 +245,25 @@ const AdminDashboard = {
           </td>
         </tr>
       `;
+
+      // D.b) Lignes des accompagnants (sous l'invité, même couleur, signe + à cheval)
+      if (g.companions && g.companions.length > 0) {
+        g.companions.forEach((comp, cIdx) => {
+          const isLast = cIdx === g.companions.length - 1;
+          html += `
+            <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
+              <td style="padding:0 10px 10px 25px; position:relative;">
+                <span style="position:absolute; left:8px; top:-10px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.1);">+</span>
+                <span style="color:var(--text-dark);">${comp.name}</span>
+              </td>
+              <td style="padding:0 10px 10px 10px;"><small class="text-muted">Accompagnant</small></td>
+              <td style="padding:0 10px 10px 10px;">${brunch}</td>
+              <td style="padding:0 10px 10px 10px;">—</td>
+              <td style="padding:0 10px 10px 10px;"></td>
+            </tr>
+          `;
+        });
+      }
     });
 
     html += '</tbody></table></div>';
