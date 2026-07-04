@@ -3,7 +3,7 @@
  * Composant Hero — Page d'accueil du site mariage
  * ============================================================
  * Gère l'interactivité et la mise en page de la section hero :
- * - Layout grand écran centré sans vide ni rognage de contenu
+ * - Layout UNIFIÉ en 1 colonne centrée (compatible à 100% avec styles.css)
  * - Typographie Playfair Display (Prénoms, esperluette, logo .nav__logo)
  * - Boutons Vert Sauge compacts ("Répondre à l'invitation" en gras)
  * - Émojis étoiles droits (non italique)
@@ -38,10 +38,10 @@ const Hero = {
       || this._elements.page.querySelector('.hero') 
       || this._elements.page;
 
-    // 1. Injection des styles CSS corrigés (Fin des coupures et de la distorsion)
+    // 1. Injection des styles CSS (Layout centré unifié, Playfair Display, Vert Sauge)
     this._injectCustomStyles();
 
-    // 2. Restructuration du DOM (Prénoms, Bouton en gras, Émojis droits, Layout)
+    // 2. Restructuration du DOM (Prénoms, Bouton en gras, Émojis droits)
     this._restructureHeroDOM();
 
     // 3. Lancement des animations et listeners
@@ -102,7 +102,7 @@ const Hero = {
       }
     });
 
-    // 3. Layout grand écran fluide et regroupé au centre
+    // 3. Regroupement dans un conteneur UNIFIÉ (1 seule colonne PC et Mobile)
     const detailsEl = hero.querySelector('.hero__details');
     const actionsEl = hero.querySelector('.hero__actions');
 
@@ -136,7 +136,7 @@ const Hero = {
   },
 
   /**
-   * Injecte dynamiquement Playfair Display et les règles de mise en page.
+   * Injecte dynamiquement Playfair Display et le layout unifié en 1 colonne.
    */
   _injectCustomStyles() {
     if (document.getElementById('hero-custom-design-styles')) return;
@@ -146,7 +146,7 @@ const Hero = {
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 
-      /* 0. Correction logo entête (.nav__logo) + autres marques : Playfair Display */
+      /* 0. Correction garantie pour le logo de l'entête (.nav__logo) : Playfair Display */
       .nav__logo, header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo {
         font-family: 'Playfair Display', serif !important;
         font-weight: 600 !important;
@@ -154,27 +154,39 @@ const Hero = {
         letter-spacing: 0.02em;
         color: var(--forest, #2D5A3D) !important;
         text-decoration: none !important;
+        font-style: normal !important;
       }
 
-      /* 1. Fond blanc cassé et conteneur Hero (SANS rognage ni déformation) */
-      #page-home, .hero, .hero-section {
+      /* 1. Fond blanc cassé lumineux — Conteneur parfaitement centré */
+      #page-home {
         background-color: #FDFCF7 !important;
         color: #2C2C2C;
         min-height: calc(100vh - 70px);
         width: 100% !important;
         display: flex !important;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 40px 20px !important;
+        padding: 20px 15px !important;
         box-sizing: border-box !important;
-        /* Suppression de max-height et overflow: hidden qui coupaient les données */
       }
 
-      /* 2. Prénoms et Esperluette proportionnés pour tout écran */
+      .hero, .hero-section {
+        background-color: transparent !important;
+        width: 100% !important;
+        max-width: 580px !important; /* Respecte strictement le CSS natif */
+        margin: 0 auto !important;
+        padding: 10px 0 !important;
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* 2. Prénoms et Esperluette (Playfair Display) proportionnés */
       .hero__title {
-        margin: 10px 0 !important;
+        margin: 5px 0 10px 0 !important;
         text-align: center;
+        width: 100%;
       }
       .hero__names {
         display: flex !important;
@@ -185,78 +197,57 @@ const Hero = {
       }
       .hero-name-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(2.5rem, 4.5vw, 3.8rem) !important;
+        font-size: clamp(2.4rem, 6vw, 3.6rem) !important;
         font-weight: 500;
         color: #3F4B34; /* Vert sauge profond */
         text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
       }
       .hero-ampersand-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(1.8rem, 3.5vw, 2.6rem) !important;
+        font-size: clamp(1.8rem, 4vw, 2.4rem) !important;
         color: #8A9A76; /* Vert sauge intermédiaire */
         font-style: italic;
-        margin: 6px 0;
+        margin: 4px 0;
       }
 
-      /* 3. Layout Grand Écran : Groupé et centré sans marges géantes ni distorsion */
+      /* 3. Layout UNIFIÉ (1 seule colonne centrée PC & Mobile) pour éviter tout conflit */
       .hero__body-split {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 25px;
-        width: 100%;
-        max-width: 1000px !important; /* Limite propre pour éviter l'éparpillement */
-        margin: 25px auto 0;
-        box-sizing: border-box;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 20px !important;
+        width: 100% !important;
+        max-width: 480px !important;
+        margin: 15px auto 0 !important;
+        text-align: center !important;
       }
 
-      /* Sur grand écran (≥ 900px) : Regroupé au centre-gauche et centre-droit */
-      @media (min-width: 900px) {
-        .hero__body-split {
-          flex-direction: row;
-          justify-content: center !important; /* Centré ensemble, pas dispersé aux bords */
-          align-items: center;
-          gap: clamp(40px, 6vw, 80px); /* Écart proportionné mais contenu */
-          margin-top: 35px;
-        }
-        .hero__details {
-          text-align: left !important;
-          margin: 0 !important;
-          flex: 0 1 auto; /* Prend juste sa place sans s'étirer anormalement */
-          font-size: 1.08rem;
-          line-height: 1.6;
-        }
-        .hero__actions {
-          align-items: flex-start !important;
-          flex: 0 1 auto;
-          margin: 0 !important;
-        }
+      .hero__details {
+        text-align: center !important;
+        margin: 0 !important;
+        width: 100% !important;
+        font-size: 1.05rem;
+        line-height: 1.5;
       }
 
-      @media (max-width: 899px) {
-        .hero__details {
-          text-align: center !important;
-        }
-        .hero__actions {
-          align-items: center !important;
-          width: 100% !important;
-        }
-      }
-
-      /* 4. Boutons Vert Sauge harmonisés sur une seule ligne */
+      /* 4. Boutons Vert Sauge : Même format, sur une seule ligne (nowrap) */
       .hero__actions {
         display: flex !important;
         flex-direction: column !important;
-        gap: 14px !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 320px !important;
+        margin: 0 auto !important;
       }
       
       .hero-btn-standard {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: auto !important;
-        min-width: 250px;
-        padding: 13px 26px !important;
+        width: 100% !important;
+        padding: 13px 24px !important;
         font-family: var(--font-body, 'Outfit', sans-serif) !important;
         font-size: 0.95rem !important;
         font-weight: 500 !important;
