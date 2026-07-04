@@ -3,9 +3,10 @@
  * Composant Hero — Page d'accueil du site mariage
  * ============================================================
  * Gère l'interactivité et la mise en page de la section hero :
- * - Typographie Playfair Display (Prénoms, esperluette, logo nav)
- * - Palette vert sauge et boutons compacts sur une seule ligne
- * - Layout optimisé pour l'effet "Tout d'un coup d'œil" (sans scroll)
+ * - Typographie Playfair Display rééquilibrée (prénoms affinés, & agrandi)
+ * - Largeur optimisée sur grand écran (espace respirant, infos non écrasées)
+ * - Bouton "Répondre à l'invitation" en gras
+ * - Émojis étoiles en style droit (non italique)
  * - Animations d'entrée et particules flottantes
  */
 
@@ -37,10 +38,10 @@ const Hero = {
       || this._elements.page.querySelector('.hero') 
       || this._elements.page;
 
-    // 1. Injection de la police Playfair Display et des styles corrigés
+    // 1. Injection des styles CSS corrigés (Tailles, Layout large, Vert sauge)
     this._injectCustomStyles();
 
-    // 2. Restructuration du DOM (prénoms, boutons compacts, layout visuel en 1 coup d'œil)
+    // 2. Restructuration du DOM (Prénoms, Bouton en gras, Émojis droits, Layout)
     this._restructureHeroDOM();
 
     // 3. Lancement des animations et listeners
@@ -78,7 +79,7 @@ const Hero = {
   _restructureHeroDOM() {
     const hero = this._elements.heroSection;
 
-    // 1. Superposition des prénoms avec Playfair Display
+    // 1. Superposition des prénoms (tailles rééquilibrées via CSS)
     const namesEl = hero.querySelector('.hero__names');
     if (namesEl && !namesEl.dataset.restructured) {
       namesEl.innerHTML = `
@@ -89,7 +90,19 @@ const Hero = {
       namesEl.dataset.restructured = "true";
     }
 
-    // 2. Optimisation du layout pour tenir sur 1 seul écran ("Tout d'un coup d'œil")
+    // 2. Correction des émojis étoiles pour qu'ils ne soient JAMAIS en italique
+    const textContainers = hero.querySelectorAll('.hero__prelude, .hero__details, .hero__date, h1, h2, h3, p');
+    textContainers.forEach(container => {
+      if (container && !container.dataset.emojisFixed) {
+        container.innerHTML = container.innerHTML.replace(
+          /(✦|★|✨|✧|✳|✴|•)/g, 
+          '<span style="font-style: normal !important; display: inline-block; margin: 0 2px;">$1</span>'
+        );
+        container.dataset.emojisFixed = "true";
+      }
+    });
+
+    // 3. Layout grand écran élargi et aéré
     const detailsEl = hero.querySelector('.hero__details');
     const actionsEl = hero.querySelector('.hero__actions');
 
@@ -106,18 +119,25 @@ const Hero = {
       splitContainer.appendChild(actionsEl);
     }
 
-    // 3. Application des classes standardisées pour les boutons vert sauge
+    // 4. Harmonisation des boutons & Modification "Répondre à l'invitation" en gras
     if (actionsEl) {
       const buttons = actionsEl.querySelectorAll('a');
       buttons.forEach((btn, index) => {
         btn.removeAttribute('style');
         btn.className = `hero-btn-standard hero-btn--sage-${index + 1}`;
+
+        // Modification spécifique du 1er bouton ou du bouton RSVP
+        const href = btn.getAttribute('href') || '';
+        if (index === 0 || href.includes('rsvp')) {
+          btn.textContent = "Répondre à l'invitation";
+          btn.classList.add('hero-btn--bold');
+        }
       });
     }
   },
 
   /**
-   * Injecte dynamiquement Playfair Display et la palette Vert Sauge.
+   * Injecte dynamiquement Playfair Display et les règles de mise en page.
    */
   _injectCustomStyles() {
     if (document.getElementById('hero-custom-design-styles')) return;
@@ -127,14 +147,14 @@ const Hero = {
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 
-      /* 0. Police Playfair Display pour les lettres en haut à gauche (Onglets / Logo) */
+      /* 0. Police Playfair Display pour les lettres en haut à gauche */
       header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo, .header__title {
         font-family: 'Playfair Display', serif !important;
         font-weight: 600 !important;
         letter-spacing: 0.02em;
       }
 
-      /* 1. Fond blanc cassé lumineux et conteneur Hero compact ("Tout d'un coup d'œil") */
+      /* 1. Fond blanc cassé lumineux et conteneur Hero */
       #page-home, .hero, .hero-section {
         background-color: #FDFCF7 !important;
         color: #2C2C2C;
@@ -147,7 +167,7 @@ const Hero = {
         padding: 10px 0 !important;
       }
 
-      /* 2. Prénoms et esperluette (Playfair Display) - Tailles ajustées pour ne pas déborder */
+      /* 2. Prénoms moins immenses et Esperluette (&) plus grande */
       .hero__title {
         margin: 10px 0 !important;
       }
@@ -160,51 +180,55 @@ const Hero = {
       }
       .hero-name-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(2.8rem, 6.5vw, 4.5rem) !important;
+        font-size: clamp(2.4rem, 5vw, 3.6rem) !important; /* Réduit pour plus d'élégance */
         font-weight: 500;
         color: #3F4B34; /* Vert sauge profond */
         text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
       }
       .hero-ampersand-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(1.5rem, 3.5vw, 2.2rem) !important;
+        font-size: clamp(2rem, 4.5vw, 2.8rem) !important; /* Agrandie et bien visible */
         color: #8A9A76; /* Vert sauge intermédiaire */
         font-style: italic;
-        margin: 4px 0;
+        margin: 6px 0;
       }
 
-      /* 3. Layout Grand Écran vs Mobile : Compact, équilibré et sans espace vide excessif */
+      /* 3. Layout Grand Écran : Largeur augmentée et informations non écrasées */
       .hero__body-split {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 24px;
+        gap: 25px;
         width: 100%;
-        max-width: 950px;
-        margin: 15px auto 0;
-        padding: 0 20px;
+        max-width: 1150px !important; /* Largeur augmentée pour respirer */
+        margin: 20px auto 0;
+        padding: 0 25px;
         box-sizing: border-box;
       }
 
-      /* Sur grand écran (≥ 900px) : Côte à côte ultra compact pour tout voir en un coup d'œil */
+      /* Sur grand écran (≥ 900px) : Côte à côte aéré et confortable */
       @media (min-width: 900px) {
         .hero__body-split {
           flex-direction: row;
-          justify-content: center;
+          justify-content: space-between;
           align-items: center;
-          gap: 50px;
-          margin-top: 25px;
+          gap: 60px; /* Bel espace entre infos et boutons */
+          margin-top: 35px;
+          padding: 0 40px;
         }
         .hero__details {
-          text-align: right !important;
+          text-align: left !important;
           margin: 0 !important;
-          flex: 0 1 auto;
-          border-right: 2px solid #E8ECE3;
-          padding-right: 40px !important;
+          flex: 1 1 auto; /* Prend l'espace nécessaire sans être écrasé */
+          border-right: none !important; /* Suppression de la bordure qui oppressait */
+          padding-right: 0 !important;
+          font-size: 1.08rem;
+          line-height: 1.6;
         }
         .hero__actions {
-          align-items: flex-start !important;
-          flex: 0 1 auto;
+          align-items: stretch !important;
+          flex: 0 0 auto;
+          min-width: 280px;
           margin: 0 !important;
         }
       }
@@ -213,33 +237,32 @@ const Hero = {
         .hero__details {
           text-align: center !important;
           border-right: none;
-          padding-right: 0 !important;
         }
         .hero__actions {
           align-items: center !important;
+          width: 100% !important;
         }
       }
 
-      /* 4. Boutons : Vert Sauge, Texte sur une seule ligne (nowrap) et largeur ajustée */
+      /* 4. Boutons Vert Sauge harmonisés sur une seule ligne */
       .hero__actions {
         display: flex !important;
         flex-direction: column !important;
-        gap: 12px !important;
-        width: auto !important;
+        gap: 14px !important;
       }
       
       .hero-btn-standard {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: auto !important; /* Fini les boutons trop larges */
-        min-width: 240px;
-        padding: 12px 24px !important;
+        width: auto !important;
+        min-width: 250px;
+        padding: 13px 26px !important;
         font-family: var(--font-body, 'Outfit', sans-serif) !important;
         font-size: 0.95rem !important;
         font-weight: 500 !important;
         text-decoration: none !important;
-        white-space: nowrap !important; /* Empêche strictement le retour à la ligne */
+        white-space: nowrap !important; /* Empêche le retour à la ligne */
         border-radius: 6px !important;
         transition: all 0.25s ease !important;
         box-shadow: 0 4px 12px rgba(63, 75, 52, 0.08) !important;
@@ -247,6 +270,12 @@ const Hero = {
         text-align: center;
         box-sizing: border-box;
         letter-spacing: 0.02em;
+      }
+
+      /* Bouton "Répondre à l'invitation" en gras */
+      .hero-btn--bold {
+        font-weight: 700 !important;
+        letter-spacing: 0.03em;
       }
 
       /* Nuances harmonieuses de Vert Sauge */
@@ -474,7 +503,7 @@ const Hero = {
       top: ${particleData.y}%;
       font-size: ${config.size}px;
       opacity: ${config.opacity};
-      color: #9CAF88; /* Particules vert sauge / dorées douces */
+      color: #9CAF88;
       pointer-events: none;
       will-change: transform, opacity;
       filter: ${type === 'dot' ? 'blur(0.5px)' : 'none'};
