@@ -97,13 +97,12 @@ const AdminDashboard = {
   },
 
   // ════════════════════════════════════════════════
-  // Stats (Correction : injection dynamique de la grille)
+  // Stats (Correction : 4 cartes alignées, couleurs ciblées)
   // ════════════════════════════════════════════════
 
   async renderStats() {
     const stats = await Store.getStats();
 
-    // On cherche le conteneur parent des cartes pour s'affranchir des anciens ID de index.html
     const firstStatCard = document.getElementById('stat-total') || 
                           document.getElementById('stat-confirmed') ||
                           document.querySelector('.stat-card')?.parentElement;
@@ -114,7 +113,11 @@ const AdminDashboard = {
     const brunchCount = stats.brunchPeople !== undefined ? stats.brunchPeople : stats.brunch || 0;
 
     if (container) {
-      // Réécriture complète du HTML de la grille (résout la carte vide et ajoute le Brunch)
+      container.style.display = 'grid';
+      container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))';
+      container.style.gap = '16px';
+      container.style.marginBottom = '24px';
+      
       container.innerHTML = `
         <div class="card" style="text-align: center;">
           <div class="stat-card__number">${confirmedCount}</div>
@@ -125,23 +128,19 @@ const AdminDashboard = {
           <div class="stat-card__label">Présents au Brunch</div>
         </div>
         <div class="card" style="text-align: center;">
-          <div class="stat-card__number">${stats.maybe || 0}</div>
+          <div class="stat-card__number" style="color: var(--sage);">${stats.maybe || 0}</div>
           <div class="stat-card__label">Peut-être</div>
         </div>
         <div class="card" style="text-align: center;">
-          <div class="stat-card__number">${stats.declined || 0}</div>
+          <div class="stat-card__number" style="color: #e06666;">${stats.declined || 0}</div>
           <div class="stat-card__label">Déclinés</div>
-        </div>
-        <div class="card" style="text-align: center;">
-          <div class="stat-card__number">${stats.pending || 0}</div>
-          <div class="stat-card__label">En attente</div>
         </div>
       `;
     }
   },
 
   // ════════════════════════════════════════════════
-  // Régimes alimentaires (Correction : pastel, sans émoji, même ligne)
+  // Régimes alimentaires (Correction : Même format épuré, aligné au dessus)
   // ════════════════════════════════════════════════
 
   async renderDiets() {
@@ -149,45 +148,39 @@ const AdminDashboard = {
     if (!container) return;
     const stats = await Store.getStats();
 
-    const html = `
+    container.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
         
-        <!-- Végétariens -->
-        <div class="card" style="background: #EFF3EC; border: 1px solid #D5E0D0; text-align: left; padding: 16px; border-radius: var(--radius-md);">
-          <h4 style="margin: 0 0 8px 0; color: var(--forest); font-family: var(--font-body); font-size: 16px; font-weight: 600;">Végétariens</h4>
-          <div class="stat-card__number" style="color: var(--forest); font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.vegetarian || 0}</div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.diets.vegetarian || 0}</div>
+          <div class="stat-card__label">Végétariens</div>
         </div>
 
-        <!-- Végans -->
-        <div class="card" style="background: #E8EFEA; border: 1px solid #C4D6C8; text-align: left; padding: 16px; border-radius: var(--radius-md);">
-          <h4 style="margin: 0 0 8px 0; color: var(--forest); font-family: var(--font-body); font-size: 16px; font-weight: 600;">Végans</h4>
-          <div class="stat-card__number" style="color: var(--forest); font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.vegan || 0}</div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.diets.vegan || 0}</div>
+          <div class="stat-card__label">Végans</div>
         </div>
 
-        <!-- Sans alcool -->
-        <div class="card" style="background: #EDF4FB; border: 1px solid #CADDED; text-align: left; padding: 16px; border-radius: var(--radius-md);">
-          <h4 style="margin: 0 0 8px 0; color: #4A779D; font-family: var(--font-body); font-size: 16px; font-weight: 600;">Sans alcool</h4>
-          <div class="stat-card__number" style="color: #4A779D; font-size: 28px; font-weight: 700; margin: 0;">${stats.diets.noAlcohol || 0}</div>
+        <div class="card" style="text-align: center;">
+          <div class="stat-card__number">${stats.diets.noAlcohol || 0}</div>
+          <div class="stat-card__label">Sans alcool</div>
         </div>
 
-        <!-- Allergies (s'aligne sur la même ligne ou en dessous selon la largeur) -->
-        <div class="card" style="background: #FDF9EE; border: 1px solid #E8D5A3; text-align: left; padding: 16px; border-radius: var(--radius-md);">
-          <h4 style="margin: 0 0 8px 0; color: #8C7326; font-family: var(--font-body); font-size: 16px; font-weight: 600;">Allergies déclarées (${stats.diets.allergies?.length || 0})</h4>
+        <div class="card" style="text-align: left;">
+          <h4 style="margin: 0 0 8px 0; font-family: var(--font-body); font-size: 14px; font-weight: 600;">Allergies déclarées (${stats.diets.allergies?.length || 0})</h4>
           ${stats.diets.allergies && stats.diets.allergies.length > 0 ? `
-            <ul style="margin: 8px 0 0 0; padding-left: 16px; font-size: 14px; color: var(--text-dark);">
+            <ul style="margin: 4px 0 0 0; padding-left: 16px; font-size: 13px; color: var(--text-dark);">
               ${stats.diets.allergies.map(a => `<li><strong>${a.name} :</strong> ${a.details}</li>`).join('')}
             </ul>
-          ` : `<p style="margin: 8px 0 0 0; font-size: 14px; color: var(--text-muted);">Aucune allergie</p>`}
+          ` : `<p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Aucune allergie</p>`}
         </div>
 
       </div>
     `;
-
-    container.innerHTML = html;
   },
 
   // ════════════════════════════════════════════════
-  // Liste des invités (Correction : police et hauteur uniformes, badge identique)
+  // Liste des invités (Colonnes Régime/Hébergement + Alignement & Modif)
   // ════════════════════════════════════════════════
 
   async renderGuestsList() {
@@ -209,6 +202,16 @@ const AdminDashboard = {
       return '<span class="badge badge--pending">En attente</span>';
     };
 
+    // Fonction interne pour générer les pastilles de régimes
+    const getDietBadges = (person) => {
+      let badges = [];
+      if (person.vegetarian) badges.push('<span class="badge" style="background:#EFF3EC; color:var(--forest); border:1px solid #D5E0D0;">Végé</span>');
+      if (person.vegan)      badges.push('<span class="badge" style="background:#E8EFEA; color:var(--forest); border:1px solid #C4D6C8;">Végan</span>');
+      if (person.noAlcohol)  badges.push('<span class="badge" style="background:#EDF4FB; color:#4A779D; border:1px solid #CADDED;">Sans Alc.</span>');
+      if (person.allergies)  badges.push(`<span class="badge" style="background:#FDF9EE; color:#8C7326; border:1px solid #E8D5A3;" title="${person.allergies}">Allergie</span>`);
+      return badges.length > 0 ? badges.join(' ') : '—';
+    };
+
     let html = `
       <div class="table-responsive">
         <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
@@ -217,8 +220,10 @@ const AdminDashboard = {
               <th style="padding:10px;">Nom & Téléphone</th>
               <th style="padding:10px;">Présence</th>
               <th style="padding:10px;">Brunch</th>
+              <th style="padding:10px;">Régime</th>
               <th style="padding:10px;">Transport</th>
-              <th style="padding:10px;">Actions</th>
+              <th style="padding:10px;">Hébergement</th>
+              <th style="padding:10px; width: 90px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -240,9 +245,10 @@ const AdminDashboard = {
       }
 
       const brunch = g.brunch === true ? '☕ Oui' : g.brunch === false ? '🙏 Non' : '—';
+      const accommodation = g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
-      // Ligne de l'invité principal
+      // Ligne invité principal
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
           <td style="padding:10px;">
@@ -251,32 +257,31 @@ const AdminDashboard = {
           </td>
           <td style="padding:10px;">${badgeFor(g.attending)}</td>
           <td style="padding:10px;">${brunch}</td>
+          <td style="padding:10px;">${getDietBadges(g)}</td>
           <td style="padding:10px;">${transportText}</td>
-          <td style="padding:10px;">
-            <button class="btn btn--outline delete-guest-btn"
-              data-id="${g.id}"
-              style="padding:4px 8px; font-size:12px; color:red; border-color:red;">
-              Supprimer
-            </button>
+          <td style="padding:10px;"><strong>${accommodation}</strong></td>
+          <td style="padding:10px; display:flex; gap:6px;">
+            <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 6px; font-size:12px; color:var(--gold); border-color:var(--gold);" title="Modifier">✏️</button>
+            <button class="btn btn--outline delete-guest-btn" data-id="${g.id}" style="padding:2px 6px; font-size:12px; color:red; border-color:red; font-weight:bold;" title="Supprimer">×</button>
           </td>
         </tr>
       `;
 
-      // Lignes des accompagnants (Même police, même hauteur/padding, même badge de réponse)
+      // Lignes des accompagnants
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
               <td style="padding:10px; position:relative;">
-                <!-- Signe + doré à cheval entre les deux lignes -->
-                <span style="position:absolute; left:6px; top:-11px; background:var(--gold); color:#fff; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
-                <strong style="padding-left: 16px;">${comp.name}</strong>
+                <span style="position:absolute; left:-6px; top:-11px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
+                <strong>${comp.name}</strong>
               </td>
-              <!-- Affiche le badge Exactement comme l'invité principal -->
               <td style="padding:10px;">${badgeFor(g.attending)}</td>
               <td style="padding:10px;">${brunch}</td>
-              <td style="padding:10px;"><span style="color:var(--text-muted);">—</span></td>
+              <td style="padding:10px;">${getDietBadges(comp)}</td>
+              <td style="padding:10px;"><span class="text-muted">—</span></td>
+              <td style="padding:10px;"><span class="text-muted">—</span></td>
               <td style="padding:10px;"></td>
             </tr>
           `;
@@ -287,11 +292,59 @@ const AdminDashboard = {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
+    // Action : Supprimer (×)
     container.querySelectorAll('.delete-guest-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
         if (confirm("Supprimer cet invité et toutes ses données ?")) {
-          await Store.deleteGuest(e.target.dataset.id);
+          await Store.deleteGuest(id);
           Animations.showToast("Invité supprimé", "success");
+        }
+      });
+    });
+
+    // Action : Modifier (✏️) manuellement
+    container.querySelectorAll('.edit-guest-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const targetGuest = guests.find(g => g.id == id);
+        if (!targetGuest) return;
+
+        // 1. Présence
+        const pInput = prompt("Présence (oui / non / maybe) :", targetGuest.attending === true ? 'oui' : targetGuest.attending === false ? 'non' : 'maybe');
+        if (pInput === null) return; // Annulation globale
+
+        let newAttending = targetGuest.attending;
+        if (pInput.toLowerCase() === 'oui') newAttending = true;
+        else if (pInput.toLowerCase() === 'non') newAttending = false;
+        else if (pInput.toLowerCase() === 'maybe') newAttending = 'maybe';
+
+        // 2. Brunch
+        const bInput = prompt("Présence au Brunch (oui / non) :", targetGuest.brunch === true ? 'oui' : 'non');
+        const newBrunch = bInput ? (bInput.toLowerCase() === 'oui') : targetGuest.brunch;
+
+        // 3. Hébergement
+        const newAcc = prompt("Lieu d'hébergement :", targetGuest.accommodation || '');
+
+        // Sauvegarde des modifications via le Store
+        try {
+          const updatedData = {
+            ...targetGuest,
+            attending: newAttending,
+            brunch: newBrunch,
+            accommodation: newAcc !== null ? newAcc : targetGuest.accommodation
+          };
+          
+          if (Store.saveGuest) {
+            await Store.saveGuest(updatedData);
+          } else if (Store.updateGuest) {
+            await Store.updateGuest(updatedData);
+          }
+          Animations.showToast("Données mises à jour", "success");
+          this.renderDashboard();
+        } catch (err) {
+          console.error(err);
+          Animations.showToast("Erreur lors de la modification", "error");
         }
       });
     });
@@ -373,7 +426,6 @@ const AdminDashboard = {
     html += '</div>';
     container.innerHTML = html;
 
-    // Ajouter un hébergement
     const addBtn = container.querySelector('#add-acc-btn');
     if (addBtn) {
       addBtn.addEventListener('click', async () => {
@@ -398,7 +450,6 @@ const AdminDashboard = {
       });
     }
 
-    // Supprimer un hébergement
     container.querySelectorAll('.delete-acc-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         if (confirm("Supprimer cet hébergement ?")) {
