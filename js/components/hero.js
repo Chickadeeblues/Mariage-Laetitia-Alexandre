@@ -3,10 +3,10 @@
  * Composant Hero — Page d'accueil du site mariage
  * ============================================================
  * Gère l'interactivité et la mise en page de la section hero :
- * - Typographie Playfair Display rééquilibrée (prénoms affinés, & agrandi)
- * - Largeur optimisée sur grand écran (espace respirant, infos non écrasées)
- * - Bouton "Répondre à l'invitation" en gras
- * - Émojis étoiles en style droit (non italique)
+ * - Layout grand écran centré sans vide ni rognage de contenu
+ * - Typographie Playfair Display (Prénoms, esperluette, logo .nav__logo)
+ * - Boutons Vert Sauge compacts ("Répondre à l'invitation" en gras)
+ * - Émojis étoiles droits (non italique)
  * - Animations d'entrée et particules flottantes
  */
 
@@ -38,7 +38,7 @@ const Hero = {
       || this._elements.page.querySelector('.hero') 
       || this._elements.page;
 
-    // 1. Injection des styles CSS corrigés (Tailles, Layout large, Vert sauge)
+    // 1. Injection des styles CSS corrigés (Fin des coupures et de la distorsion)
     this._injectCustomStyles();
 
     // 2. Restructuration du DOM (Prénoms, Bouton en gras, Émojis droits, Layout)
@@ -79,7 +79,7 @@ const Hero = {
   _restructureHeroDOM() {
     const hero = this._elements.heroSection;
 
-    // 1. Superposition des prénoms (tailles rééquilibrées via CSS)
+    // 1. Superposition des prénoms
     const namesEl = hero.querySelector('.hero__names');
     if (namesEl && !namesEl.dataset.restructured) {
       namesEl.innerHTML = `
@@ -102,7 +102,7 @@ const Hero = {
       }
     });
 
-    // 3. Layout grand écran élargi et aéré
+    // 3. Layout grand écran fluide et regroupé au centre
     const detailsEl = hero.querySelector('.hero__details');
     const actionsEl = hero.querySelector('.hero__actions');
 
@@ -126,7 +126,6 @@ const Hero = {
         btn.removeAttribute('style');
         btn.className = `hero-btn-standard hero-btn--sage-${index + 1}`;
 
-        // Modification spécifique du 1er bouton ou du bouton RSVP
         const href = btn.getAttribute('href') || '';
         if (index === 0 || href.includes('rsvp')) {
           btn.textContent = "Répondre à l'invitation";
@@ -147,29 +146,35 @@ const Hero = {
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 
-      /* 0. Police Playfair Display pour les lettres en haut à gauche */
-      header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo, .header__title {
+      /* 0. Correction logo entête (.nav__logo) + autres marques : Playfair Display */
+      .nav__logo, header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo {
         font-family: 'Playfair Display', serif !important;
         font-weight: 600 !important;
+        font-size: 1.6rem !important;
         letter-spacing: 0.02em;
+        color: var(--forest, #2D5A3D) !important;
+        text-decoration: none !important;
       }
 
-      /* 1. Fond blanc cassé lumineux et conteneur Hero */
+      /* 1. Fond blanc cassé et conteneur Hero (SANS rognage ni déformation) */
       #page-home, .hero, .hero-section {
         background-color: #FDFCF7 !important;
         color: #2C2C2C;
-        max-height: 100vh !important;
         min-height: calc(100vh - 70px);
+        width: 100% !important;
         display: flex !important;
         flex-direction: column;
         justify-content: center;
-        overflow: hidden;
-        padding: 10px 0 !important;
+        align-items: center;
+        padding: 40px 20px !important;
+        box-sizing: border-box !important;
+        /* Suppression de max-height et overflow: hidden qui coupaient les données */
       }
 
-      /* 2. Prénoms moins immenses et Esperluette (&) plus grande */
+      /* 2. Prénoms et Esperluette proportionnés pour tout écran */
       .hero__title {
         margin: 10px 0 !important;
+        text-align: center;
       }
       .hero__names {
         display: flex !important;
@@ -180,55 +185,50 @@ const Hero = {
       }
       .hero-name-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(2.4rem, 5vw, 3.6rem) !important; /* Réduit pour plus d'élégance */
+        font-size: clamp(2.5rem, 4.5vw, 3.8rem) !important;
         font-weight: 500;
         color: #3F4B34; /* Vert sauge profond */
         text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
       }
       .hero-ampersand-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(2rem, 4.5vw, 2.8rem) !important; /* Agrandie et bien visible */
+        font-size: clamp(1.8rem, 3.5vw, 2.6rem) !important;
         color: #8A9A76; /* Vert sauge intermédiaire */
         font-style: italic;
         margin: 6px 0;
       }
 
-      /* 3. Layout Grand Écran : Largeur augmentée et informations non écrasées */
+      /* 3. Layout Grand Écran : Groupé et centré sans marges géantes ni distorsion */
       .hero__body-split {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 25px;
         width: 100%;
-        max-width: 1150px !important; /* Largeur augmentée pour respirer */
-        margin: 20px auto 0;
-        padding: 0 25px;
+        max-width: 1000px !important; /* Limite propre pour éviter l'éparpillement */
+        margin: 25px auto 0;
         box-sizing: border-box;
       }
 
-      /* Sur grand écran (≥ 900px) : Côte à côte aéré et confortable */
+      /* Sur grand écran (≥ 900px) : Regroupé au centre-gauche et centre-droit */
       @media (min-width: 900px) {
         .hero__body-split {
           flex-direction: row;
-          justify-content: space-between;
+          justify-content: center !important; /* Centré ensemble, pas dispersé aux bords */
           align-items: center;
-          gap: 60px; /* Bel espace entre infos et boutons */
+          gap: clamp(40px, 6vw, 80px); /* Écart proportionné mais contenu */
           margin-top: 35px;
-          padding: 0 40px;
         }
         .hero__details {
           text-align: left !important;
           margin: 0 !important;
-          flex: 1 1 auto; /* Prend l'espace nécessaire sans être écrasé */
-          border-right: none !important; /* Suppression de la bordure qui oppressait */
-          padding-right: 0 !important;
+          flex: 0 1 auto; /* Prend juste sa place sans s'étirer anormalement */
           font-size: 1.08rem;
           line-height: 1.6;
         }
         .hero__actions {
-          align-items: stretch !important;
-          flex: 0 0 auto;
-          min-width: 280px;
+          align-items: flex-start !important;
+          flex: 0 1 auto;
           margin: 0 !important;
         }
       }
@@ -236,7 +236,6 @@ const Hero = {
       @media (max-width: 899px) {
         .hero__details {
           text-align: center !important;
-          border-right: none;
         }
         .hero__actions {
           align-items: center !important;
@@ -262,7 +261,7 @@ const Hero = {
         font-size: 0.95rem !important;
         font-weight: 500 !important;
         text-decoration: none !important;
-        white-space: nowrap !important; /* Empêche le retour à la ligne */
+        white-space: nowrap !important; /* Empêche strictement le retour à la ligne */
         border-radius: 6px !important;
         transition: all 0.25s ease !important;
         box-shadow: 0 4px 12px rgba(63, 75, 52, 0.08) !important;
