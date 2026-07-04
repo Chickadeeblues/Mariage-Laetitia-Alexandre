@@ -2,13 +2,11 @@
  * ============================================================
  * Composant Hero — Page d'accueil du site mariage
  * ============================================================
- * * Gère l'interactivité et la mise en page avancée de la section hero :
- * - Injection de styles personnalisés (Island Moments, layout, boutons)
- * - Restructuration du DOM pour la disposition des prénoms et du responsive
- * - Animations d'entrée (fade-in échelonnés)
- * - Effet parallaxe subtil au scroll
- * - Particules dorées flottantes décoratives
- * - Listeners sur les boutons CTA
+ * Gère l'interactivité et la mise en page de la section hero :
+ * - Typographie Playfair Display (Prénoms, esperluette, logo nav)
+ * - Palette vert sauge et boutons compacts sur une seule ligne
+ * - Layout optimisé pour l'effet "Tout d'un coup d'œil" (sans scroll)
+ * - Animations d'entrée et particules flottantes
  */
 
 import Animations from '../utils/animations.js';
@@ -30,7 +28,6 @@ const Hero = {
 
   /**
    * Initialise le composant Hero.
-   * Appelé quand la page d'accueil devient visible.
    */
   init() {
     this._elements.page = document.getElementById('page-home');
@@ -40,10 +37,10 @@ const Hero = {
       || this._elements.page.querySelector('.hero') 
       || this._elements.page;
 
-    // 1. Injection des styles CSS esthétiques et de la police Google
+    // 1. Injection de la police Playfair Display et des styles corrigés
     this._injectCustomStyles();
 
-    // 2. Restructuration du DOM (prénoms, boutons harmonisés, layout responsive PC/Mobile)
+    // 2. Restructuration du DOM (prénoms, boutons compacts, layout visuel en 1 coup d'œil)
     this._restructureHeroDOM();
 
     // 3. Lancement des animations et listeners
@@ -55,7 +52,6 @@ const Hero = {
 
   /**
    * Nettoie les listeners et animations.
-   * Appelé quand on quitte la page.
    */
   destroy() {
     if (this._animationFrameId) {
@@ -79,14 +75,10 @@ const Hero = {
 
   // ─── RESTRUCTURATION ESTHÉTIQUE DU DOM ────────────────
 
-  /**
-   * Modifie la structure HTML pour superposer les prénoms,
-   * harmoniser les boutons et permettre le layout côte à côte sur PC.
-   */
   _restructureHeroDOM() {
     const hero = this._elements.heroSection;
 
-    // 1. Superposition et formatage des prénoms avec Island Moments
+    // 1. Superposition des prénoms avec Playfair Display
     const namesEl = hero.querySelector('.hero__names');
     if (namesEl && !namesEl.dataset.restructured) {
       namesEl.innerHTML = `
@@ -97,38 +89,35 @@ const Hero = {
       namesEl.dataset.restructured = "true";
     }
 
-    // 2. Restructuration pour le responsive (Détails à gauche, Boutons à droite sur PC)
+    // 2. Optimisation du layout pour tenir sur 1 seul écran ("Tout d'un coup d'œil")
     const detailsEl = hero.querySelector('.hero__details');
     const actionsEl = hero.querySelector('.hero__actions');
 
     if (detailsEl && actionsEl && !hero.querySelector('.hero__body-split')) {
-      // Nettoyage des styles inline qui bloquent le responsive
       actionsEl.removeAttribute('style');
       const innerActionDiv = actionsEl.querySelector('div');
       if (innerActionDiv) innerActionDiv.removeAttribute('style');
 
-      // Création du conteneur flexible Split
       const splitContainer = document.createElement('div');
       splitContainer.className = 'hero__body-split animate-on-scroll';
       
-      // Insertion dans le DOM
       hero.insertBefore(splitContainer, detailsEl);
       splitContainer.appendChild(detailsEl);
       splitContainer.appendChild(actionsEl);
     }
 
-    // 3. Harmonisation totale des 3 boutons (format et relief identiques)
+    // 3. Application des classes standardisées pour les boutons vert sauge
     if (actionsEl) {
       const buttons = actionsEl.querySelectorAll('a');
       buttons.forEach((btn, index) => {
-        btn.removeAttribute('style'); // Enlève les anciens paddings/font-sizes disparates
-        btn.className = `hero-btn-standard hero-btn--color-${index + 1}`;
+        btn.removeAttribute('style');
+        btn.className = `hero-btn-standard hero-btn--sage-${index + 1}`;
       });
     }
   },
 
   /**
-   * Injecte dynamiquement la police Island Moments et les règles CSS du nouveau design.
+   * Injecte dynamiquement Playfair Display et la palette Vert Sauge.
    */
   _injectCustomStyles() {
     if (document.getElementById('hero-custom-design-styles')) return;
@@ -136,125 +125,160 @@ const Hero = {
     const style = document.createElement('style');
     style.id = 'hero-custom-design-styles';
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Island+Moments&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 
-      /* 1. Code couleur : Blanc cassé moins crème pour le Hero */
-      #page-home, .hero {
-        background-color: #FDFCF7 !important;
-        color: var(--text-dark, #2C2C2C);
+      /* 0. Police Playfair Display pour les lettres en haut à gauche (Onglets / Logo) */
+      header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo, .header__title {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.02em;
       }
 
-      /* 2. Superposition et centrage des prénoms (Island Moments) */
+      /* 1. Fond blanc cassé lumineux et conteneur Hero compact ("Tout d'un coup d'œil") */
+      #page-home, .hero, .hero-section {
+        background-color: #FDFCF7 !important;
+        color: #2C2C2C;
+        max-height: 100vh !important;
+        min-height: calc(100vh - 70px);
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+        padding: 10px 0 !important;
+      }
+
+      /* 2. Prénoms et esperluette (Playfair Display) - Tailles ajustées pour ne pas déborder */
       .hero__title {
-        margin: 20px 0 !important;
+        margin: 10px 0 !important;
       }
       .hero__names {
         display: flex !important;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        line-height: 0.85;
+        line-height: 0.95;
       }
       .hero-name-stacked {
-        font-family: 'Island Moments', cursive !important;
-        font-size: clamp(4.5rem, 10vw, 7.5rem);
-        font-weight: 400;
-        color: var(--forest, #2D5A3D);
-        text-shadow: 0 2px 10px rgba(45, 90, 61, 0.08);
+        font-family: 'Playfair Display', serif !important;
+        font-size: clamp(2.8rem, 6.5vw, 4.5rem) !important;
+        font-weight: 500;
+        color: #3F4B34; /* Vert sauge profond */
+        text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
       }
       .hero-ampersand-stacked {
-        font-family: var(--font-display, 'Cormorant Garamond', serif);
-        font-size: clamp(1.8rem, 4vw, 2.8rem);
-        color: var(--gold, #C9A84C);
+        font-family: 'Playfair Display', serif !important;
+        font-size: clamp(1.5rem, 3.5vw, 2.2rem) !important;
+        color: #8A9A76; /* Vert sauge intermédiaire */
         font-style: italic;
-        margin: 5px 0;
+        margin: 4px 0;
       }
 
-      /* 3. Layout Responsive : Emploi de l'espace PC vs Mobile */
+      /* 3. Layout Grand Écran vs Mobile : Compact, équilibré et sans espace vide excessif */
       .hero__body-split {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 35px;
+        gap: 24px;
         width: 100%;
-        max-width: 1000px;
-        margin: 30px auto 0;
-        padding: 0 15px;
+        max-width: 950px;
+        margin: 15px auto 0;
+        padding: 0 20px;
         box-sizing: border-box;
       }
 
-      /* Sur grand écran (≥ 900px) : Détails à gauche, Boutons à droite */
+      /* Sur grand écran (≥ 900px) : Côte à côte ultra compact pour tout voir en un coup d'œil */
       @media (min-width: 900px) {
         .hero__body-split {
           flex-direction: row;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 0 40px;
-          margin-top: 40px;
+          gap: 50px;
+          margin-top: 25px;
         }
         .hero__details {
-          text-align: left !important;
+          text-align: right !important;
           margin: 0 !important;
-          flex: 1;
+          flex: 0 1 auto;
+          border-right: 2px solid #E8ECE3;
+          padding-right: 40px !important;
         }
         .hero__actions {
-          align-items: flex-end !important;
-          flex: 1;
-          max-width: 340px !important;
+          align-items: flex-start !important;
+          flex: 0 1 auto;
+          margin: 0 !important;
         }
       }
 
-      /* 4. Harmonisation des boutons (Même format, même relief) */
+      @media (max-width: 899px) {
+        .hero__details {
+          text-align: center !important;
+          border-right: none;
+          padding-right: 0 !important;
+        }
+        .hero__actions {
+          align-items: center !important;
+        }
+      }
+
+      /* 4. Boutons : Vert Sauge, Texte sur une seule ligne (nowrap) et largeur ajustée */
       .hero__actions {
         display: flex !important;
         flex-direction: column !important;
-        gap: 16px !important;
-        width: 100%;
-        max-width: 320px;
+        gap: 12px !important;
+        width: auto !important;
       }
+      
       .hero-btn-standard {
-        display: flex !important;
+        display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: 100% !important;
-        padding: 16px 28px !important;
+        width: auto !important; /* Fini les boutons trop larges */
+        min-width: 240px;
+        padding: 12px 24px !important;
         font-family: var(--font-body, 'Outfit', sans-serif) !important;
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
         font-weight: 500 !important;
         text-decoration: none !important;
-        border-radius: var(--radius-sm, 8px) !important;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        box-shadow: 0 6px 16px rgba(45, 90, 61, 0.12) !important;
+        white-space: nowrap !important; /* Empêche strictement le retour à la ligne */
+        border-radius: 6px !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 4px 12px rgba(63, 75, 52, 0.08) !important;
         cursor: pointer;
         text-align: center;
         box-sizing: border-box;
         letter-spacing: 0.02em;
       }
 
-      /* Couleurs distinctes mais structure et relief strictement identiques */
-      .hero-btn--color-1 {
-        background-color: var(--forest, #2D5A3D) !important;
-        color: var(--white, #FFFFFF) !important;
-        border: 2px solid var(--forest, #2D5A3D) !important;
+      /* Nuances harmonieuses de Vert Sauge */
+      .hero-btn--sage-1 {
+        background-color: #7A8B69 !important; /* Sauge soutenu */
+        color: #FFFFFF !important;
+        border: 1.5px solid #7A8B69 !important;
       }
-      .hero-btn--color-2 {
-        background-color: var(--gold, #C9A84C) !important;
-        color: var(--white, #FFFFFF) !important;
-        border: 2px solid var(--gold, #C9A84C) !important;
+      .hero-btn--sage-2 {
+        background-color: #DCE2D5 !important; /* Sauge pastel doux */
+        color: #3F4B34 !important;
+        border: 1.5px solid #C8D1BE !important;
       }
-      .hero-btn--color-3 {
-        background-color: var(--white, #FFFFFF) !important;
-        color: var(--forest, #2D5A3D) !important;
-        border: 2px solid var(--sage, #9CAF88) !important;
+      .hero-btn--sage-3 {
+        background-color: #FFFFFF !important;
+        color: #5E6E4E !important;
+        border: 1.5px solid #9CAF88 !important; /* Bordure sauge */
       }
 
-      /* Effet au survol (Relief accentué) */
+      /* Effet au survol délicat */
       .hero-btn-standard:hover {
-        transform: translateY(-3px) !important;
-        box-shadow: 0 10px 22px rgba(45, 90, 61, 0.22) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 16px rgba(63, 75, 52, 0.16) !important;
       }
-      .hero-btn--color-3:hover {
-        background-color: var(--cream, #FAF8F5) !important;
+      .hero-btn--sage-1:hover {
+        background-color: #6B7B5A !important;
+      }
+      .hero-btn--sage-2:hover {
+        background-color: #CFD7C6 !important;
+      }
+      .hero-btn--sage-3:hover {
+        background-color: #F4F6F1 !important;
       }
     `;
     document.head.appendChild(style);
@@ -262,9 +286,6 @@ const Hero = {
 
   // ─── ANIMATIONS D'ENTRÉE ──────────────────────────────
 
-  /**
-   * Applique un fade-in échelonné sur les éléments du hero.
-   */
   _animateEntrance() {
     const selectors = [
       '.hero__prelude',
@@ -276,15 +297,15 @@ const Hero = {
     ];
 
     let delay = 0;
-    const baseDelay = 150;
+    const baseDelay = 120;
 
     selectors.forEach((selector) => {
       const elements = this._elements.heroSection.querySelectorAll(selector);
       elements.forEach((el) => {
         el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, 
-                               transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`;
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = `opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, 
+                               transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`;
 
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -345,7 +366,7 @@ const Hero = {
       left: ${x}px;
       top: ${y}px;
       border-radius: 50%;
-      background: rgba(201, 168, 76, 0.3);
+      background: rgba(156, 175, 136, 0.3);
       transform: scale(0);
       animation: hero-ripple 0.6s ease-out;
       pointer-events: none;
@@ -377,11 +398,10 @@ const Hero = {
 
       if (scrollY > heroHeight) return;
 
-      // Translation parallaxe uniquement — PAS de modification d'opacité
-      heroContent.style.transform = `translateY(${scrollY * 0.2}px)`;
+      heroContent.style.transform = `translateY(${scrollY * 0.15}px)`;
 
       if (this._elements.particlesContainer) {
-        this._elements.particlesContainer.style.transform = `translateY(${scrollY * 0.1}px)`;
+        this._elements.particlesContainer.style.transform = `translateY(${scrollY * 0.08}px)`;
       }
     };
 
@@ -407,7 +427,7 @@ const Hero = {
     this._elements.heroSection.style.position = 'relative';
     this._elements.heroSection.appendChild(this._elements.particlesContainer);
 
-    const particleCount = Math.min(25, Math.floor(window.innerWidth / 60));
+    const particleCount = Math.min(20, Math.floor(window.innerWidth / 70));
     const particleTypes = ['leaf', 'star', 'dot', 'sparkle'];
 
     for (let i = 0; i < particleCount; i++) {
@@ -423,10 +443,10 @@ const Hero = {
   _createParticle(type) {
     const particle = document.createElement('div');
     const configs = {
-      leaf: { content: '🌿', size: Math.random() * 16 + 10, opacity: Math.random() * 0.4 + 0.1 },
-      star: { content: '✦', size: Math.random() * 12 + 8, opacity: Math.random() * 0.5 + 0.2 },
-      dot: { content: '•', size: Math.random() * 8 + 4, opacity: Math.random() * 0.6 + 0.2 },
-      sparkle: { content: '✧', size: Math.random() * 14 + 8, opacity: Math.random() * 0.4 + 0.15 },
+      leaf: { content: '🌿', size: Math.random() * 14 + 10, opacity: Math.random() * 0.35 + 0.1 },
+      star: { content: '✦', size: Math.random() * 10 + 8, opacity: Math.random() * 0.4 + 0.15 },
+      dot: { content: '•', size: Math.random() * 6 + 4, opacity: Math.random() * 0.5 + 0.2 },
+      sparkle: { content: '✧', size: Math.random() * 12 + 8, opacity: Math.random() * 0.35 + 0.1 },
     };
 
     const config = configs[type] || configs.dot;
@@ -435,10 +455,10 @@ const Hero = {
       element: particle,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      speedX: (Math.random() - 0.5) * 0.3,
-      speedY: -(Math.random() * 0.2 + 0.05),
+      speedX: (Math.random() - 0.5) * 0.25,
+      speedY: -(Math.random() * 0.15 + 0.05),
       rotation: Math.random() * 360,
-      rotationSpeed: (Math.random() - 0.5) * 1.5,
+      rotationSpeed: (Math.random() - 0.5) * 1.2,
       scale: 1,
       scaleSpeed: Math.random() * 0.005,
       scaleDirection: 1,
@@ -454,11 +474,10 @@ const Hero = {
       top: ${particleData.y}%;
       font-size: ${config.size}px;
       opacity: ${config.opacity};
-      color: #C9A84C;
+      color: #9CAF88; /* Particules vert sauge / dorées douces */
       pointer-events: none;
       will-change: transform, opacity;
       filter: ${type === 'dot' ? 'blur(0.5px)' : 'none'};
-      text-shadow: ${type === 'star' || type === 'sparkle' ? '0 0 6px rgba(201, 168, 76, 0.4)' : 'none'};
     `;
 
     this._elements.particlesContainer.appendChild(particle);
