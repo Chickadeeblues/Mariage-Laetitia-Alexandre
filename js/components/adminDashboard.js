@@ -109,26 +109,27 @@ const AdminDashboard = {
   // Dashboard principal
   // ════════════════════════════════════════════════
 
-  async renderDashboard() {
-    this.showLoader();
-    try {
-      const guests = await Store.getGuests();
-      const stats  = await Store.getStats();
+async renderDashboard() {
+  this.showLoader();
+  try {
+    const guests = await Store.getGuests();
+    const stats  = await Store.getStats();
 
-      await Promise.all([
-        this.renderStatsAndDiets(stats, guests),
-        this.renderGuestsList(guests),
-        this.renderCarpools(stats),
-        this.renderAccommodations()
-      ]);
-    this.renderManagementZone();
-    } catch (e) {
-      console.error('[Admin] Erreur renderDashboard :', e);
-      Animations.showToast("Erreur de chargement des données", "error");
-    } finally {
-      this.hideLoader();
-    }
-  },
+    await Promise.all([
+      this.renderStatsAndDiets(stats, guests),
+      this.renderGuestsList(guests),
+      this.renderCarpools(stats),
+      this.renderAccommodations()
+    ]);
+
+    this.renderManagementZone(); // ← ici, après le Promise.all, même niveau
+  } catch (e) {
+    console.error('[Admin] Erreur renderDashboard :', e);
+    Animations.showToast("Erreur de chargement des données", "error");
+  } finally {
+    this.hideLoader();
+  }
+},
 
 renderManagementZone() {
     // 1. Récupérer l'état des tâches
@@ -167,7 +168,8 @@ renderManagementZone() {
         `).join('')}
       </table>
     `;
-    document.getElementById('admin-dashboard-root').appendChild(container);
+    const root = document.querySelector('#page-admin-dashboard .container');
+	if (root) root.appendChild(container);
   },
 
   toggleTask(id) {
@@ -184,11 +186,7 @@ renderManagementZone() {
   hideLoader() {
     const el = document.getElementById('admin-loader');
     if (el) el.style.display = 'none';
-  }
-
-  // ════════════════════════════════════════════════
-  // 1, 2 & 4. Widget Compte à rebours + Grille 8 cartes (Sauge & sans fond blanc)
-  // ════════════════════════════════════════════════
+  },
 
   async renderStatsAndDiets(stats, guests) {
     // 1. Calcul exact des présents au Brunch (Invités + Accompagnants)
