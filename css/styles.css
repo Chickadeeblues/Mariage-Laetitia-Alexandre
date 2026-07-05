@@ -3769,6 +3769,61 @@ h4 { font-size: clamp(0.95rem, 1.5vw, 1.15rem); }
     font-size: 0.82rem;
   }
 }
+
+/* ============================================================
+   CORRECTIF DÉFINITIF : HARMONIE LOGO & HERO SANS SCROLL
+   ============================================================ */
+
+/* 1. Élimination instantanée du saut de police sur le logo */
+.nav__logo {
+  font-family: 'Playfair Display', serif !important;
+  font-weight: 600 !important;
+  font-size: 1.6rem !important;
+  letter-spacing: 0.02em;
+  color: var(--forest, #2D5A3D) !important;
+  font-style: normal !important;
+}
+
+/* 2. Cadrage strict du Hero : 100% de la hauteur visible, 0 scroll */
+#page-home.page.active {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: calc(100vh - 68px) !important; /* Hauteur exacte sous la nav */
+  max-height: calc(100vh - 68px) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 68px !important; /* Compensation fixe de la nav */
+  overflow: hidden !important; /* Interdit l'apparition de la scrollbar */
+}
+
+/* 3. Nettoyage des paddings géants qui poussent le contenu vers le bas */
+#page-home .hero,
+#page-home .hero-section {
+  padding: 0 20px !important;
+  margin: 0 auto !important;
+  max-width: 580px !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important; /* Rapprochement harmonieux des blocs */
+}
+
+/* Ajustement millimétré pour les écrans mobiles */
+@media (max-width: 768px) {
+  #page-home.page.active {
+    height: calc(100vh - 60px) !important;
+    max-height: calc(100vh - 60px) !important;
+    margin-top: 60px !important;
+  }
+  #page-home .hero {
+    padding: 0 16px !important;
+    gap: 6px !important;
+  }
+}
  
 
 

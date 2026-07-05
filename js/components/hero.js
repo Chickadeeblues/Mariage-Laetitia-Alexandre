@@ -138,53 +138,25 @@ const Hero = {
   /**
    * Injecte dynamiquement Playfair Display et le layout unifié en 1 colonne.
    */
+/**
+   * Injecte dynamiquement le layout unifié en 1 colonne (version compacte sans scroll).
+   */
   _injectCustomStyles() {
     if (document.getElementById('hero-custom-design-styles')) return;
 
     const style = document.createElement('style');
     style.id = 'hero-custom-design-styles';
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
-
-      /* 0. Correction garantie pour le logo de l'entête (.nav__logo) : Playfair Display */
-      .nav__logo, header .logo, .nav__brand, .navbar__brand, .header__brand, .brand, .nav-logo {
-        font-family: 'Playfair Display', serif !important;
-        font-weight: 600 !important;
-        font-size: 1.6rem !important;
-        letter-spacing: 0.02em;
-        color: var(--forest, #2D5A3D) !important;
-        text-decoration: none !important;
-        font-style: normal !important;
-      }
-
-      /* 1. Fond blanc cassé lumineux — Conteneur parfaitement centré */
+      /* Le logo et le fond sont désormais gérés nativement et sans latence dans styles.css */
+      
       #page-home {
         background-color: #FDFCF7 !important;
         color: #2C2C2C;
-        min-height: calc(100vh - 70px);
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center;
-        align-items: center;
-        padding: 20px 15px !important;
-        box-sizing: border-box !important;
       }
 
-      .hero, .hero-section {
-        background-color: transparent !important;
-        width: 100% !important;
-        max-width: 580px !important; /* Respecte strictement le CSS natif */
-        margin: 0 auto !important;
-        padding: 10px 0 !important;
-        display: flex !important;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      /* 2. Prénoms et Esperluette (Playfair Display) proportionnés */
+      /* 1. Prénoms et Esperluette proportionnés et compacts */
       .hero__title {
-        margin: 5px 0 10px 0 !important;
+        margin: 0 0 6px 0 !important;
         text-align: center;
         width: 100%;
       }
@@ -193,33 +165,33 @@ const Hero = {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        line-height: 0.95;
+        line-height: 0.92;
       }
       .hero-name-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(2.4rem, 6vw, 3.6rem) !important;
+        font-size: clamp(2.2rem, 5.5vw, 3.4rem) !important;
         font-weight: 500;
-        color: #3F4B34; /* Vert sauge profond */
+        color: #3F4B34;
         text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
       }
       .hero-ampersand-stacked {
         font-family: 'Playfair Display', serif !important;
-        font-size: clamp(1.8rem, 4vw, 2.4rem) !important;
-        color: #8A9A76; /* Vert sauge intermédiaire */
+        font-size: clamp(1.5rem, 3.5vw, 2rem) !important;
+        color: #8A9A76;
         font-style: italic;
-        margin: 4px 0;
+        margin: 2px 0;
       }
 
-      /* 3. Layout UNIFIÉ (1 seule colonne centrée PC & Mobile) pour éviter tout conflit */
+      /* 2. Layout UNIFIÉ resserré pour garantir le zéro-scroll */
       .hero__body-split {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 20px !important;
+        gap: 14px !important;
         width: 100% !important;
         max-width: 480px !important;
-        margin: 15px auto 0 !important;
+        margin: 8px auto 0 !important;
         text-align: center !important;
       }
 
@@ -227,18 +199,18 @@ const Hero = {
         text-align: center !important;
         margin: 0 !important;
         width: 100% !important;
-        font-size: 1.05rem;
-        line-height: 1.5;
+        font-size: 1rem;
+        line-height: 1.4;
       }
 
-      /* 4. Boutons Vert Sauge : Même format, sur une seule ligne (nowrap) */
+      /* 3. Boutons Vert Sauge compacts */
       .hero__actions {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        gap: 12px !important;
+        gap: 10px !important;
         width: 100% !important;
-        max-width: 320px !important;
+        max-width: 300px !important;
         margin: 0 auto !important;
       }
       
@@ -247,12 +219,12 @@ const Hero = {
         align-items: center;
         justify-content: center;
         width: 100% !important;
-        padding: 13px 24px !important;
+        padding: 11px 22px !important;
         font-family: var(--font-body, 'Outfit', sans-serif) !important;
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
         font-weight: 500 !important;
         text-decoration: none !important;
-        white-space: nowrap !important; /* Empêche strictement le retour à la ligne */
+        white-space: nowrap !important;
         border-radius: 6px !important;
         transition: all 0.25s ease !important;
         box-shadow: 0 4px 12px rgba(63, 75, 52, 0.08) !important;
@@ -262,47 +234,38 @@ const Hero = {
         letter-spacing: 0.02em;
       }
 
-      /* Bouton "Répondre à l'invitation" en gras */
       .hero-btn--bold {
         font-weight: 700 !important;
         letter-spacing: 0.03em;
       }
 
-      /* Nuances harmonieuses de Vert Sauge */
       .hero-btn--sage-1 {
-        background-color: #7A8B69 !important; /* Sauge soutenu */
+        background-color: #7A8B69 !important;
         color: #FFFFFF !important;
         border: 1.5px solid #7A8B69 !important;
       }
       .hero-btn--sage-2 {
-        background-color: #DCE2D5 !important; /* Sauge pastel doux */
+        background-color: #DCE2D5 !important;
         color: #3F4B34 !important;
         border: 1.5px solid #C8D1BE !important;
       }
       .hero-btn--sage-3 {
         background-color: #FFFFFF !important;
         color: #5E6E4E !important;
-        border: 1.5px solid #9CAF88 !important; /* Bordure sauge */
+        border: 1.5px solid #9CAF88 !important;
       }
 
-      /* Effet au survol délicat */
       .hero-btn-standard:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 16px rgba(63, 75, 52, 0.16) !important;
       }
-      .hero-btn--sage-1:hover {
-        background-color: #6B7B5A !important;
-      }
-      .hero-btn--sage-2:hover {
-        background-color: #CFD7C6 !important;
-      }
-      .hero-btn--sage-3:hover {
-        background-color: #F4F6F1 !important;
-      }
+      .hero-btn--sage-1:hover { background-color: #6B7B5A !important; }
+      .hero-btn--sage-2:hover { background-color: #CFD7C6 !important; }
+      .hero-btn--sage-3:hover { background-color: #F4F6F1 !important; }
     `;
     document.head.appendChild(style);
   },
-
+  
   // ─── ANIMATIONS D'ENTRÉE ──────────────────────────────
 
   _animateEntrance() {
