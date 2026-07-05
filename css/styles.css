@@ -479,17 +479,23 @@ span.hero-ampersand-stacked,
   line-height: 1 !important;
 }
 
-/* NOUVEAU : TEXTE RSVP */
+/* Style du RSVP aligné sur les boutons (280px) */
 .hero__rsvp {
-  font-family: var(--font-body);
-  font-size: clamp(0.75rem, 1.8vw, 0.88rem);
-  font-weight: 400;
-  color: var(--forest);
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  margin: 14px 0 8px 0 !important;
-  text-align: center;
-  width: 100%;
+  font-family: var(--font-body) !important;
+  font-size: 0.85rem !important; /* Taille de base lisible */
+  color: var(--text-muted) !important; /* Même couleur que le prélude */
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important; /* Espacement réduit pour la lisibilité */
+  margin: 20px auto 15px auto !important;
+  text-align: center !important;
+  width: 100% !important;
+  max-width: 280px !important; /* Aligné sur les boutons */
+  line-height: 1.4 !important;
+}
+
+/* Mise en gras sélective de la date */
+.hero__rsvp b, .hero__rsvp strong {
+  font-weight: 500 !important; /* Très léger gras */
 }
 
 .hero__body-split {
@@ -1586,4 +1592,28 @@ span.hero-ampersand-stacked,
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* GESTION FORMAT TELEPHONE - PETIT ECRAN */
+
+@media (max-width: 480px) {
+  /* On agrandit légèrement les éléments du Hero pour le mobile */
+  .hero__prelude {
+    font-size: 0.9rem !important; /* Un peu plus grand que 0.8rem */
+    letter-spacing: 0.15em !important;
+  }
+
+  .hero__names {
+    font-size: clamp(2.5rem, 10vw, 3rem) !important; /* Plus imposant sur petit écran */
+  }
+
+  .hero__rsvp {
+    font-size: 0.9rem !important; /* Plus lisible sur téléphone */
+    padding: 0 15px !important;
+  }
+  
+  /* On redonne un peu de souffle vertical */
+  #page-home.page.active {
+    padding-top: 100px !important;
+  }
 }
