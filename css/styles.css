@@ -2911,12 +2911,11 @@ body {
 
 /* ── Navigation ── */
 .nav__logo {
-  font-family: var(--font-display);
+  font-family: var(--font-fairplay);
   font-size: 1.5rem;
   font-weight: 700;
-  font-style: italic;
-  color: var(--forest);
-  letter-spacing: 0.04em;
+  color: var(--sage);
+  letter-spacing: 0.01em;
 }
 
 .nav__link,
