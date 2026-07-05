@@ -61,15 +61,7 @@ const AdminDashboard = {
       });
     }
 
-    // ── Logout ─────────────────────────────────────
-    this.logoutBtn = document.getElementById('admin-logout-btn');
-    if (this.logoutBtn) {
-      this.logoutBtn.addEventListener('click', () => {
-        Store.adminLogout();
-        Animations.showToast("Déconnexion", "success");
-        Router.navigate('#/admin');
-      });
-    }
+
 
     // ── Auto-refresh sur changement de données ─────
     const refreshIfActive = () => {
