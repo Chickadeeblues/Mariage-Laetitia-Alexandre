@@ -108,9 +108,10 @@ async _loadTasks() {
     this._sb('wedding_tasks?select=*&order=id.asc'),
     this._sb('wedding_subtasks?select=*&order=task_id.asc,position.asc')
   ]);
-  const tasks    = await tRes.json();
-  const subtasks = await sRes.json();
-  // Attacher les sous-tâches à chaque tâche
+  const tasksRaw    = await tRes.json();
+  const subtasksRaw = await sRes.json();
+  const tasks    = Array.isArray(tasksRaw)    ? tasksRaw    : [];
+  const subtasks = Array.isArray(subtasksRaw) ? subtasksRaw : [];
   tasks.forEach(t => { t.subtasks = subtasks.filter(s => s.task_id === t.id); });
   return tasks;
 },
