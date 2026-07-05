@@ -1255,7 +1255,7 @@ async renderAccommodations() {
           .seating-grid { grid-template-columns: repeat(5, 1fr); }
         }
         .seating-table-card {
-          background: #fff;
+          background: #FAF8F5;
           border: 1.5px solid var(--sage, #9CAF88);
           border-radius: 8px;
           padding: 6px;
