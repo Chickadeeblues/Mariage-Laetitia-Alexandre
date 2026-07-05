@@ -61,8 +61,6 @@ const AdminDashboard = {
       });
     }
 
-
-
     // ── Auto-refresh sur changement de données ─────
     const refreshIfActive = () => {
       if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
@@ -439,7 +437,7 @@ async renderManagementZone(tasks) {
         <div class="mgmt-banner__right">
           ${nextTask
             ? `${nextTask.label} <em>→ ${nextTask.month}</em>`
-            : `<em>✅ Toutes les tâches sont complétées !</em>`}
+            : `<em>Tout est prêt !</em>`}
         </div>
       </div>
  
