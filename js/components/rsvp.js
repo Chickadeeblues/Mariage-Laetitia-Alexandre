@@ -177,24 +177,24 @@ renderStep1() {
       ${att === true ? `
         <div id="companions-section" style="margin-top:14px;">
           <div class="companion-warning" style="background:#fdf8ee;border-left:3px solid #d4aa5a;border-radius:6px;padding:10px 14px;font-size:13px;color:#7a6135;margin-bottom:12px;">
-            Le nombre d'invités étant strictement limité, merci de ne pas ajouter quelqu'un que nous n'avons pas prévu !
+            Si vous souhaitez venir avec quelqu'un que nous n'avions pas prévu, demandez-nous !
           </div>
-          <select id="guest-companions-count" class="compact-input">
-            <option value="0" ${companions.length === 0 ? 'selected' : ''}>Je viens seul(e)</option>
-            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>Avec ${n} accompagnant${n>1?'s':''}</option>`).join('')}
+          
+          <label for="guest-companions-count" style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
+            Nombre d'accompagnants <span style="font-weight:normal; font-style:italic;">(optionnel)</span>
+          </label>
+          <select id="guest-companions-count" class="compact-input" style="width:100%;">
+            <option value="0" ${companions.length === 0 ? 'selected' : ''}>0 (Aucun accompagnant)</option>
+            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n} accompagnant${n>1?'s':''}</option>`).join('')}
           </select>
-          <div id="companions-list">
+
+          <div id="companions-list" style="margin-top:8px;">
             ${companions.map((c, idx) => `
               <div style="margin-bottom:8px;">
-                <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(c.name)}" placeholder="Prénom et Nom accompagnant ${idx+1} *">
+                <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(c.name)}" placeholder="Prénom et Nom de l'accompagnant ${idx+1}">
               </div>`).join('')}
           </div>
         </div>` : ''}
-
-      <div class="rsvp-deadline">
-        <span class="rsvp-deadline__icon">📅</span>
-        <p>Merci de confirmer votre présence <strong>avant le 30 novembre 2026</strong>.</p>
-      </div>
 
       <div class="form-actions">
         <button type="button" class="btn btn--primary next-btn" style="width:100%;">Suivant →</button>
