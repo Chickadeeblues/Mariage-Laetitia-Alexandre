@@ -418,76 +418,68 @@ p {
   line-height: 1.2;
 }
 
-/* 1. Réinitialisation du H1 */
+/* 1. Réinitialisation du conteneur H1 */
 .hero__title {
   margin: 0;
   font-weight: 400;
 }
 
-/* 2. Prénoms : taille maîtrisée sur PC + Reflet doré mouvant */
-/* 2. Prénoms : Reflet doré mouvant sur base Vert Sauge / Forest */
+/* 2. Prénoms : Votre grand format + Votre balayage doré 135deg intact */
 .hero__names {
   display: flex !important;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1.15;
-  font-family: var(--font-playfair);
-  font-size: clamp(1.8rem, 3.2vw, 2.6rem); /* Taille maîtrisée sur écran PC */
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  line-height: 1.1;
+  font-family: var(--font-playfair); /* Ou var(--font-display) selon votre préférence */
+  font-size: clamp(2.2rem, 7vw, 4rem); /* Retour à votre grande taille majestueuse (4rem max) */
+  font-weight: 400; /* On garde la finesse pour éviter le côté "mastoc" */
+  letter-spacing: 0.03em;
   
-  /* Balayage doré sur écriture vert profond/sauge */
-  background: linear-gradient(
-    120deg,
-    var(--forest) 0%,
-    var(--forest) 35%,
-    var(--gold) 50%,
-    var(--gold-light) 58%,
-    var(--forest) 68%,
-    var(--forest) 100%
-  );
+  /* VOTRE balayage d'origine qui fonctionnait à merveille */
+  background: linear-gradient(135deg, var(--forest) 0%, var(--gold) 50%, var(--forest) 100%);
   background-size: 200% auto;
-  color: transparent;
   -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; /* Indispensable pour l'effet sur WebKit/Chrome/Safari */
   background-clip: text;
-  animation: shimmerText 10s ease-in-out infinite; /* Légèrement ralenti (7s) pour plus de majesté */
+  animation: shimmerText 6s ease-in-out infinite;
 }
 
-/* 3. Esperluette : petite, délicate et dorée */
+/* 3. Esperluette (&) : Délicate, plus petite et dorée */
 .hero__ampersand {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 0.55em;
+  font-size: 0.55em; /* Reste proportionnellement plus fine que les prénoms */
   font-weight: 400;
   color: var(--gold-light) !important;
   
-  /* Isolation du dégradé parent pour qu'elle reste fixe et lisible */
+  /* On annule le découpage du dégradé uniquement pour l'esperluette afin qu'elle reste fixe et claire */
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
   -webkit-text-fill-color: var(--gold-light) !important;
   
-  margin: 8px 0;
-  opacity: 0.95;
+  margin: 10px 0;
 }
-/* 4. Date : proportionnée par rapport aux nouveaux prénoms */
+
+/* 4. Date : Bien proportionnée sous les grands prénoms */
 .hero__date {
   font-family: var(--font-display);
-  font-size: clamp(1rem, 1.8vw, 1.3rem);
-  font-weight: 600;
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 400;
   color: var(--text-dark);
   letter-spacing: 0.08em;
   margin-bottom: 4px;
 }
 
-/* 5. Étoiles (✦) : retour du doré chic */
+/* 5. Étoiles de la date (✦) */
 .hero__date-icon {
-  font-size: 0.8rem;
+  display: inline-block;
+  color: var(--gold);
+  font-size: 0.75rem;
   vertical-align: middle;
-  color: var(--gold); /* Rétablissement de la couleur dorée */
+  margin: 0 10px;
   opacity: 0.9;
-  margin: 0 8px;
 }
 
 .hero__body-split {
