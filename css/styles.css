@@ -382,15 +382,21 @@ p {
 #page-home.page.active {
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  justify-content: center !important; /* Reste centré si l'écran est assez grand */
   align-items: center !important;
-  height: calc(100vh - var(--nav-height)) !important;
-  max-height: calc(100vh - var(--nav-height)) !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  
+  /* Sécurité anti-écrasement : min-height au lieu de height strict */
+  min-height: calc(100vh - var(--nav-height)) !important; 
+  
+  /* Zone de respiration en haut et en bas pour éviter les collisions */
+  padding-top: 30px !important; 
+  padding-bottom: 30px !important;
+  
   margin-top: var(--nav-height) !important;
   background-color: var(--cream-light) !important;
-  overflow: hidden !important;
+  
+  /* Si l'écran est minuscule (ex: vieux smartphone), on autorise le défilement */
+  overflow-y: auto !important; 
 }
 
 #page-home .hero,
@@ -479,13 +485,8 @@ p {
 }
 
 .hero__body-split {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 16px !important;
-  width: 100% !important;
-  max-width: 480px !important;
-  margin: 8px auto 0 !important;
+  margin: 12px auto 0 !important; /* Légèrement réduit pour compacter l'ensemble */
+  gap: 12px !important; /* Gaps harmonisés */
 }
 
 .hero__details {
@@ -504,7 +505,7 @@ p {
   justify-content: center !important;
   width: 100% !important;
   gap: 12px !important;
-  margin-top: 24px;
+  margin-top: 16px !important;
 }
 
 /* Neutralise et empile les boutons peu importe les sous-conteneurs (div) du HTML */
