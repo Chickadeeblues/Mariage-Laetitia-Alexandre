@@ -434,7 +434,7 @@ p {
   line-height: 1.15;
   font-family: var(--font-playfair);
   font-size: clamp(1.8rem, 3.2vw, 2.6rem); /* Taille maîtrisée sur écran PC */
-  font-weight: 400;
+  font-weight: 800;
   letter-spacing: 0.04em;
   
   /* Balayage doré sur écriture vert profond/sauge */
@@ -451,7 +451,7 @@ p {
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: shimmerText 7s ease-in-out infinite; /* Légèrement ralenti (7s) pour plus de majesté */
+  animation: shimmerText 10s ease-in-out infinite; /* Légèrement ralenti (7s) pour plus de majesté */
 }
 
 /* 3. Esperluette : petite, délicate et dorée */
