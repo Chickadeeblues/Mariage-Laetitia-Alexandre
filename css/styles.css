@@ -418,24 +418,53 @@ p {
   line-height: 1.2;
 }
 
+/* 1. On réinitialise le comportement brut du H1 */
+.hero__title {
+  margin: 0;
+  font-weight: 400; 
+}
+
+/* 2. On affine et on donne du style aux prénoms */
 .hero__names {
   display: flex !important;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 0.92;
+  line-height: 1.1; /* Un peu plus d'air pour laisser respirer les lettres */
+  font-family: var(--font-display); /* Idéalement Playfair Display ici */
+  font-size: clamp(2.2rem, 5vw, 3.5rem); /* Taille fluide, chic sans être agressive */
+  font-weight: 400; /* On force le style régulier/fin au lieu du gras */
+  color: var(--text-dark);
+  letter-spacing: 0.03em; /* Un léger espacement pour le côté haut de gamme */
 }
 
+/* 3. L'astuce élégante : l'esperluette en italique */
+.hero__ampersand {
+  font-family: "Libre Baskerville", serif; /* Une police Serif classique */
+  font-style: italic;
+  font-size: 0.85em; /* Légèrement plus petite que les prénoms */
+  color: var(--text-muted); /* Plus douce visuellement */
+  margin: 8px 0;
+}
 
+/* 4. On adoucit la date (taille et épaisseur réduites) */
 .hero__date {
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, 3vw, 1.8rem); /* Équilibré par rapport aux prénoms */
-  font-weight: 500;
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem); /* Réduit pour respecter la hiérarchie visuelle */
+  font-weight: 400; /* Passage de 500 à 400 pour plus de finesse */
   color: var(--text-dark);
+  letter-spacing: 0.08em;
   margin-bottom: 4px;
 }
 
-/* Conteneur unifié généré par hero.js (1 colonne PC et Mobile) */
+/* Optionnel : On affine aussi les petits éclats (✦) autour de la date */
+.hero__date-icon {
+  font-size: 0.75rem;
+  vertical-align: middle;
+  opacity: 0.7;
+  margin: 0 6px;
+}
+
 .hero__body-split {
   display: flex !important;
   flex-direction: column !important;
