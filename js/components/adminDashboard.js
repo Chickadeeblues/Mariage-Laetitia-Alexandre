@@ -969,114 +969,76 @@ toggleTask(id) {},
   },
 
   async renderStatsAndDiets(stats, guests) {
-    // 1. Calcul exact des présents au Brunch (Invités + Accompagnants)
-    const exactBrunchCount = guests.reduce((total, g) => {
-      const isAttending = g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1;
-      const wantsBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
-      if (isAttending && wantsBrunch) {
-        return total + 1 + (Array.isArray(g.companions) ? g.companions.length : 0);
-      }
-      return total;
-    }, 0);
+  // Conteneurs directs par ID — fiable quoi qu'il arrive
+  const statTotal     = document.getElementById('stat-total');
+  const statConfirmed = document.getElementById('stat-confirmed');
+  const statMaybe     = document.getElementById('stat-maybe');
+  const statDeclined  = document.getElementById('stat-declined');
+  const statPending   = document.getElementById('stat-pending');
+  const dietsContainer = document.getElementById('admin-diets');
 
-    const confirmedCount = stats.confirmedPeople !== undefined ? stats.confirmedPeople : stats.confirmed || 0;
+  // Brunch
+  const exactBrunchCount = guests.reduce((total, g) => {
+    const isAttending = g.attending === true || g.attending === 'true';
+    const wantsBrunch = g.brunch === true || g.brunch === 'true';
+    if (isAttending && wantsBrunch)
+      return total + 1 + (Array.isArray(g.companions) ? g.companions.length : 0);
+    return total;
+  }, 0);
 
-    // Repérage des conteneurs
-    const firstStatCard = document.getElementById('stat-total') || 
-                          document.getElementById('stat-confirmed') ||
-                          document.querySelector('.stat-card')?.parentElement;
-    const statsContainer = firstStatCard ? (firstStatCard.id ? firstStatCard.parentElement : firstStatCard) : null;
-    const dietsContainer = document.getElementById('admin-diets');
+  const confirmedCount = stats.confirmedPeople ?? stats.confirmed ?? 0;
 
-    // NETTOYAGE FORCE DU FOND BLANC : On vide le CSS parent (index.html) de toute couleur ou bordure !
-    const gridStyle = `
-      display: grid !important;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
-      gap: 16px !important;
-      margin-bottom: 16px !important;
-      width: 100% !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      box-sizing: border-box !important;
-    `;
+  const cardStyle = `
+    background:#fff;border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+    height:110px;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    text-align:center;padding:10px;box-sizing:border-box;
+    border:1.5px solid var(--sage,#9CAF88);`;
 
-    if (statsContainer) statsContainer.style.cssText = gridStyle;
-    if (dietsContainer) dietsContainer.style.cssText = gridStyle;
+  const numStyle  = `font-size:28px;font-weight:700;`;
+  const lblStyle  = `font-size:13px;color:var(--text-muted);margin-top:4px;`;
 
-    // Style de base pour les cartes
-    const baseCardStyle = `
-      background: var(--white, #fff);
-      border-radius: var(--radius-lg, 16px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      height: 110px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 10px;
-      box-sizing: border-box;
-      overflow: hidden;
-    `;
+  const setCard = (el, number, label, color) => {
+    if (!el) return;
+    el.style.cssText = cardStyle;
+    el.innerHTML = `
+      <div style="${numStyle}color:${color};">${number}</div>
+      <div style="${lblStyle}">${label}</div>`;
+  };
 
-    // 2. Rebord SAUGE pour les 4 cartes de statistiques
-    const statCardStyle = `${baseCardStyle} border: 1.5px solid var(--sage, #9CAF88);`;
-    // Rebord neutre discret pour les 4 cartes régimes
-    const dietCardStyle = `${baseCardStyle} border: 1px solid #EAEAEA;`;
+  setCard(statTotal,     guests.length,   'Foyers invités',   'var(--text-dark)');
+  setCard(statConfirmed, confirmedCount,   'Confirmés',        'var(--forest)');
+  setCard(statMaybe,     stats.maybe ?? 0,'Peut-être',        'var(--sage)');
+  setCard(statDeclined,  stats.declined ?? 0,'Déclinés',      '#e06666');
+  setCard(statPending,   exactBrunchCount,'Au brunch',        'var(--gold)');
 
-    // ── Rangée 1 : Statistiques d'invités (Bordure Sauge) ──
-    if (statsContainer) {
-      statsContainer.innerHTML = `
-        <div class="card" style="${statCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${confirmedCount}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Confirmés</div>
-        </div>
-        <div class="card" style="${statCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${exactBrunchCount}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Présents au Brunch</div>
-        </div>
-        <div class="card" style="${statCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--sage);">${stats.maybe || 0}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Peut-être</div>
-        </div>
-        <div class="card" style="${statCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#e06666;">${stats.declined || 0}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Déclinés</div>
-        </div>
-      `;
-    }
+  // Régimes
+  if (!dietsContainer) return;
+  const allergiesCount   = stats.diets?.allergies?.length ?? 0;
+  const allergiesTooltip = allergiesCount > 0
+    ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ')
+    : 'Aucune allergie';
 
-    // ── Rangée 2 : Régimes alimentaires (Sans fond blanc derrière, couleurs distinctes) ──
-    if (dietsContainer) {
-      const allergiesCount = stats.diets.allergies?.length || 0;
-      const allergiesTooltip = allergiesCount > 0 
-        ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ') 
-        : 'Aucune allergie';
+  const dietCard = (num, label, color) => `
+    <div style="${cardStyle.replace('var(--sage,#9CAF88)', '#EAEAEA')}">
+      <div style="${numStyle}color:${color};">${num}</div>
+      <div style="${lblStyle}">${label}</div>
+    </div>`;
 
-      dietsContainer.innerHTML = `
-        <div class="card" style="${dietCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#3B7A57;">${stats.diets.vegetarian || 0}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végétariens</div>
-        </div>
-        <div class="card" style="${dietCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--forest, #2D5A3D);">${stats.diets.vegan || 0}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végans</div>
-        </div>
-        <div class="card" style="${dietCardStyle}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#4A779D;">${stats.diets.noAlcohol || 0}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sans alcool</div>
-        </div>
-        <div class="card" style="${dietCardStyle}" title="${allergiesTooltip}">
-          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--gold, #C9A84C);">${allergiesCount}</div>
-          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Allergies déclarées</div>
-          ${allergiesCount > 0 ? `<div style="font-size:10px; color:var(--gold); margin-top:2px; max-width:90%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${allergiesTooltip}</div>` : ''}
-        </div>
-      `;
-    }
-  },
-
+  dietsContainer.style.cssText = `
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:16px;margin-bottom:16px;`;
+  dietsContainer.innerHTML =
+    dietCard(stats.diets?.vegetarian ?? 0, 'Végétariens', '#3B7A57') +
+    dietCard(stats.diets?.vegan      ?? 0, 'Végans',      'var(--forest)') +
+    dietCard(stats.diets?.noAlcohol  ?? 0, 'Sans alcool', '#4A779D') +
+    `<div style="${cardStyle.replace('var(--sage,#9CAF88)', '#EAEAEA')}"
+          title="${allergiesTooltip}">
+      <div style="${numStyle}color:var(--gold);">${allergiesCount}</div>
+      <div style="${lblStyle}">Allergies</div>
+    </div>`;
+},
   // ════════════════════════════════════════════════
   // Liste des invités
   // ════════════════════════════════════════════════
