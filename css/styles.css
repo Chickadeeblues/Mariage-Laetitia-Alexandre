@@ -3,12 +3,15 @@
    Premium, élégant, minimaliste — Mobile First
    ============================================================ */
 
-/* ===================== CUSTOM PROPERTIES ===================== */
+/* ===================== PROPRIETES GENERALES  ===================== */
 :root {
   /* Palette */
   --white: #FFFFFF;
   --cream: #FAF8F5;
+  --cream-light: #FDFCF7;
   --sage: #9CAF88;
+  --sage-dark: #7A8B69;
+  --sage-light: #DCE2D5;
   --forest: #2D5A3D;
   --gold: #C9A84C;
   --gold-light: #E8D5A3;
@@ -18,8 +21,9 @@
   --text-muted: #6B6B6B;
 
   /* Typography */
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-playfair: 'Playfair Display', Georgia, serif; /* Exclusif L&A et Prénoms */
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif; /* Titres */
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -36,7 +40,6 @@
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
 
 /* ===================== RESET & BASE ===================== */
 *,
@@ -96,7 +99,6 @@ input, select, textarea, button {
   font-size: inherit;
 }
 
-
 /* ===================== TYPOGRAPHY ===================== */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
@@ -127,7 +129,6 @@ p {
   margin-bottom: 0.5em;
 }
 
-
 /* ===================== CONTAINER ===================== */
 .container {
   width: 100%;
@@ -138,14 +139,12 @@ p {
   padding-right: 20px;
 }
 
-
 /* ===================== NAVIGATION ===================== */
-/* ── fond opaque sur mobile, dropdown robuste ── */
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-  background: #FAF8F5; /* opaque — plus de backdrop-filter */
+  background: #FAF8F5; 
   border-bottom: 1px solid rgba(201, 168, 76, 0.15);
   transition: box-shadow 0.3s ease;
 }
@@ -358,7 +357,6 @@ p {
   }
 }
 
-
 /* ===================== PAGES ===================== */
 .page {
   display: none;
@@ -371,7 +369,6 @@ p {
   display: block;
   animation: fadeIn 0.6s var(--transition) forwards;
 }
-
 
 /* ===================== HERO (HOME) ===================== */
 #page-home {
@@ -393,63 +390,6 @@ p {
   margin: 0 auto;
 }
 
-.hero__ornament {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 40px;
-  opacity: 0.4;
-}
-
-.hero__ornament--top {
-  top: 60px;
-}
-
-.hero__ornament--top::before,
-.hero__ornament--top::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 50px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-
-.hero__ornament--top::before {
-  right: 55%;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-
-.hero__ornament--top::after {
-  left: 55%;
-  background: linear-gradient(270deg, transparent, var(--gold));
-}
-
-.hero__ornament--bottom {
-  bottom: 40px;
-}
-
-.hero__ornament--bottom::before,
-.hero__ornament--bottom::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 50px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-
-.hero__ornament--bottom::before {
-  right: 55%;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-
-.hero__ornament--bottom::after {
-  left: 55%;
-  background: linear-gradient(270deg, transparent, var(--gold));
-}
-
 .hero__prelude {
   font-family: var(--font-body);
   font-size: clamp(0.85rem, 2vw, 1rem);
@@ -461,24 +401,9 @@ p {
   line-height: 1.2;
 }
 
-.hero__title {
-  margin-bottom: 0;
-}
-
-.hero__title-line {
-  display: block;
-  font-size: clamp(1rem, 2.5vw, 1.3rem);
-  font-weight: 400;
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
 .hero__names {
   display: block;
-  font-family: var(--font-display);
+  font-family: var(--font-fairplay);
   font-size: clamp(2rem, 8vw, 4rem);
   font-weight: 600;
   line-height: 1.1;
@@ -1919,30 +1844,15 @@ body {
   color: var(--text-dark);
 }
  
-/* Italique Baskerville pour les accents décoratifs */
-.hero__names,
-.italic-accent {
-  font-style: italic;
-  font-weight: 400;
-}
- 
-/* ── Hero ── */
 .hero__prelude {
-  font-family: var(--font-body);
-  font-size: clamp(0.78rem, 1.8vw, 0.92rem);
-  font-weight: 300;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
- 
-.hero__title-line {
   font-family: var(--font-body);
   font-size: clamp(0.85rem, 2vw, 1rem);
   font-weight: 300;
-  text-transform: uppercase;
-  letter-spacing: 0.28em;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.20em;
+  margin-bottom: 10px;
+  line-height: 1.2;
 }
  
 .hero__names {
@@ -1978,12 +1888,11 @@ body {
  
 /* ── Navigation ── */
 .nav__logo {
-  font-family: var(--font-display);
+  font-family: var(--font-playfair);
   font-size: 1.5rem;
   font-weight: 700;
-  font-style: italic;
-  color: var(--forest);
-  letter-spacing: 0.04em;
+  color: var(--sage);
+  letter-spacing: 0.02em;
 }
  
 .nav__link,
