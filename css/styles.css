@@ -1,9 +1,9 @@
 /* ============================================================
-   MARIAGE LAETITIA & ALEXANDRE — DESIGN SYSTEM
-   Version nettoyée, dédoublonnée et harmonisée
+   MARIAGE LAETITIA & ALEXANDRE — DESIGN SYSTEM COMPLET
+   Version complète : Éléments graphiques restaurés & Hero Zéro-Scroll
    ============================================================ */
 
-/* ===================== CUSTOM PROPERTIES ===================== */
+/* ===================== 1. CUSTOM PROPERTIES ===================== */
 :root {
   /* Palette de couleurs */
   --white: #FFFFFF;
@@ -16,24 +16,28 @@
   --gold: #C9A84C;
   --gold-light: #E8D5A3;
 
-  /* Textes */
+  /* Couleurs de texte */
   --text-dark: #2C2C2C;
   --text-muted: #6B6B6B;
+  --border-color: #DCD6CD;
 
-  /* Typographie harmonisée selon vos directives */
+  /* Typographie harmonisée */
   --font-playfair: 'Playfair Display', Georgia, serif; /* Exclusif L&A et Prénoms */
   --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif; /* Titres */
   --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; /* Corps et UI */
 
-  /* Ombres et Transitions */
+  /* Ombres et Dimensions */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
   --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   --nav-height: 68px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 }
 
-/* ===================== RESET & BASE ===================== */
+/* ===================== 2. RESET & BASE ===================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -54,7 +58,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ===================== TYPOGRAPHIE GÉNÉRALE ===================== */
+/* ===================== 3. TYPOGRAPHIE GÉNÉRALE ===================== */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -65,9 +69,32 @@ h1, h2, h3, h4, h5, h6 {
 h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); }
 h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 1.5rem; }
 h3 { font-size: clamp(1.3rem, 3vw, 1.75rem); margin-bottom: 1rem; }
+h4 { font-size: clamp(1.1rem, 2.5vw, 1.3rem); margin-bottom: 0.75rem; }
 p { margin-bottom: 1rem; font-family: var(--font-body); }
 
-/* ===================== NAVIGATION ===================== */
+/* En-têtes de sections (restaurés) */
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 0 1rem;
+}
+
+.section-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  color: var(--forest);
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin: 0 auto;
+  max-width: 580px;
+}
+
+/* ===================== 4. NAVIGATION ===================== */
 .nav {
   position: fixed;
   top: 0;
@@ -116,7 +143,6 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   color: var(--forest);
 }
 
-/* Menu Mobile Hamburger */
 .nav__toggle {
   display: none;
   background: none;
@@ -126,27 +152,7 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
-  .nav__toggle { display: block; }
-  .nav__links {
-    position: fixed;
-    top: var(--nav-height);
-    left: 0;
-    width: 100%;
-    background-color: var(--cream);
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem 0;
-    gap: 1.5rem;
-    box-shadow: var(--shadow-md);
-    transform: translateY(-150%);
-    transition: transform var(--transition);
-    z-index: 999;
-  }
-  .nav__links.open { transform: translateY(0); }
-}
-
-/* ===================== STRUCTURE DES PAGES ===================== */
+/* ===================== 5. STRUCTURE DES PAGES & HERO ===================== */
 .page {
   display: none;
   padding-top: var(--nav-height);
@@ -166,9 +172,7 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   padding: 4rem 2rem;
 }
 
-/* ============================================================
-   HERO SECTION (PAGE D'ACCUEIL) 
-   ============================================================ */
+/* --- HERO SECTION (ZÉRO SCROLL) --- */
 #page-home.page.active {
   display: flex !important;
   flex-direction: column !important;
@@ -180,7 +184,7 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   padding-bottom: 0 !important;
   margin-top: var(--nav-height) !important;
   background-color: var(--cream-light) !important;
-  overflow: hidden !important; /* Interdit la scrollbar verticale */
+  overflow: hidden !important;
 }
 
 #page-home .hero,
@@ -197,7 +201,6 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   gap: 12px !important;
 }
 
-/* Prénoms et Esperluette : Strictement en Playfair Display */
 .hero__title {
   margin: 0 0 6px 0 !important;
   width: 100%;
@@ -227,7 +230,6 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   margin: 4px 0;
 }
 
-/* Détails logistiques dans le Hero */
 .hero__body-split {
   display: flex !important;
   flex-direction: column !important;
@@ -246,7 +248,7 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   margin: 0 !important;
 }
 
-/* ===================== BOUTONS & ACTIONS ===================== */
+/* ===================== 6. BOUTONS & BADGES (RESTAURÉS) ===================== */
 .hero__actions,
 .btn-group {
   display: flex;
@@ -269,7 +271,7 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   font-size: 0.95rem;
   font-weight: 500;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition);
   box-shadow: var(--shadow-sm);
@@ -278,7 +280,6 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
 
 .hero-btn--bold { font-weight: 700 !important; letter-spacing: 0.03em; }
 
-/* Boutons Vert Sauge (Dernière version refactorisée) */
 .btn--primary,
 .hero-btn--sage-1 {
   background-color: var(--sage-dark);
@@ -306,11 +307,87 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
   box-shadow: var(--shadow-md);
 }
 
-.hero-btn--sage-1:hover { background-color: #6B7B5A; }
-.hero-btn--sage-2:hover { background-color: #CFD7C6; }
-.hero-btn--sage-3:hover { background-color: #F4F6F1; }
+.hero-btn--sage-1:hover, .btn--primary:hover { background-color: #6B7B5A; }
+.hero-btn--sage-2:hover, .btn--secondary:hover { background-color: #CFD7C6; }
+.hero-btn--sage-3:hover, .btn--outline:hover { background-color: #F4F6F1; }
 
-/* ===================== FORMULAIRES & RSVP ===================== */
+/* Badges graphiques */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 20px;
+  background-color: var(--sage-light);
+  color: var(--forest);
+}
+
+.badge--success { background-color: #D4EDDA; color: #155724; }
+.badge--warning { background-color: #FFF3CD; color: #856404; }
+.badge--danger  { background-color: #F8D7DA; color: #721C24; }
+
+/* ===================== 7. CARTES & INFOS LOGISTIQUES ===================== */
+.card,
+.info-card {
+  background-color: var(--white);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.card:hover,
+.info-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.info-card__title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--forest);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-card__title::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--gold);
+  border-radius: 50%;
+}
+
+.info-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* Grille pour les sections logistiques (2 colonnes sur desktop) */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* ===================== 8. FORMULAIRES & RSVP ===================== */
+.form-container {
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-width: 650px;
+  margin: 0 auto 3rem;
+}
+
 .form-group {
   margin-bottom: 1.5rem;
   text-align: left;
@@ -330,77 +407,68 @@ p { margin-bottom: 1rem; font-family: var(--font-body); }
 .form-control,
 input[type="text"],
 input[type="email"],
+input[type="number"],
 select,
 textarea {
   width: 100%;
   padding: 12px 16px;
   font-family: var(--font-body);
   font-size: 1rem;
-  border: 1px solid #DCD6CD;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   background-color: var(--white);
   color: var(--text-dark);
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.form-control:focus {
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--forest);
   box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.1);
 }
 
-/* Règle spécifique RSVP (Nettoyée de l'ancien bug JS) */
 .rsvp-deadline {
   background-color: var(--gold-light);
   color: var(--forest);
-  padding: 12px;
-  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   text-align: center;
   margin-bottom: 2rem;
+  border-left: 4px solid var(--gold);
 }
 
-/* ===================== CARTES & COMPOSANTS ===================== */
-.card,
-.info-card {
-  background-color: var(--white);
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 2rem;
-  border: 1px solid rgba(0,0,0,0.03);
-}
-
-.info-card__title {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  color: var(--forest);
-  margin-bottom: 0.5rem;
-}
-
-/* Grille Admin & Stats */
+/* ===================== 9. ADMINISTRATION & STATS ===================== */
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .stat-card {
   background: var(--white);
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   text-align: center;
   box-shadow: var(--shadow-sm);
   border-top: 4px solid var(--forest);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .stat-card__number {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-size: clamp(2rem, 4vw, 2.6rem);
   font-weight: 700;
   font-style: italic;
   color: var(--forest);
+  line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
 .stat-card__label {
@@ -412,7 +480,21 @@ textarea {
   color: var(--text-muted);
 }
 
-/* ===================== UTILITAIRES & PARTICULES ===================== */
+.admin-section {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2.5rem;
+}
+
+.admin-section h3 {
+  border-bottom: 2px solid var(--cream);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ===================== 10. UTILITAIRES & PARTICULES ===================== */
 #toast-container {
   position: fixed;
   bottom: 20px;
@@ -423,11 +505,15 @@ textarea {
 .toast {
   background-color: var(--forest);
   color: var(--white);
-  padding: 12px 20px;
-  border-radius: 6px;
-  box-shadow: var(--shadow-md);
+  padding: 14px 22px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
   margin-top: 10px;
-  animation: slideIn 0.3s ease-forward;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
 
 @keyframes slideIn {
@@ -435,12 +521,13 @@ textarea {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* ===================== RESPONSIVE FINEMENT AJUSTÉ ===================== */
+/* ===================== 11. RESPONSIVE MOBILE FIRST ===================== */
 @media (max-width: 768px) {
   :root { --nav-height: 60px; }
   
   .container { padding: 2.5rem 1.2rem; }
   
+  /* Cadrage Hero sur Mobile */
   #page-home.page.active {
     height: calc(100vh - 60px) !important;
     max-height: calc(100vh - 60px) !important;
@@ -451,4 +538,28 @@ textarea {
     padding: 0 16px !important;
     gap: 8px !important;
   }
+
+  /* Navigation Mobile avec fond plein (sans backdrop-filter selon specs.md) */
+  .nav__toggle { display: block; }
+  
+  .nav__links {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    width: 100%;
+    background-color: #FAF8F5; /* Fond opaque strict */
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 0;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-150%);
+    transition: transform var(--transition);
+    z-index: 1010;
+  }
+  
+  .nav__links.open { transform: translateY(0); }
+  
+  .form-container { padding: 1.5rem; }
+  .grid-2 { grid-template-columns: 1fr; gap: 1.5rem; }
 }
