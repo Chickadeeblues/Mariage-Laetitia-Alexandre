@@ -62,22 +62,24 @@ const AdminDashboard = {
     }
 
     // ── Auto-refresh sur changement de données ─────
-    const refreshIfActive = () => {
-      if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
-        this.renderDashboard();
-      }
-    };
+    const self = this;
+const refreshIfActive = () => {
+  if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
+    self.renderDashboard();
+  }
+};
     Store.on('guests-changed',         refreshIfActive);
     Store.on('carpools-changed',       refreshIfActive);
     Store.on('accommodations-changed', refreshIfActive);
 
     // ── Rendu au changement de route ───────────────
-    window.addEventListener('route-changed', (e) => {
-      if (e.detail.route === '#/admin/dashboard') {
-        if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
-        this.renderDashboard();
-      }
-    });
+const self = this;
+window.addEventListener('route-changed', (e) => {
+  if (e.detail.route === '#/admin/dashboard') {
+    if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
+    self.renderDashboard();
+  }
+});
   },
 
 // ════════════════════════════════════════════════════════════
@@ -166,7 +168,30 @@ async _deleteSubtask(id) {
     headers: { Prefer: 'return=minimal' }
   });
 },
- 
+
+async renderDashboard() {
+  this.showLoader();
+  try {
+    const [guests, stats, tasks] = await Promise.all([
+      Store.getGuests(),
+      Store.getStats(),
+      this._loadTasks()
+    ]);
+    await this.renderManagementZone(tasks);
+    await Promise.all([
+      this.renderStatsAndDiets(stats, guests),
+      this.renderGuestsList(guests),
+      this.renderCarpools(stats),
+      this.renderAccommodations()
+    ]);
+  } catch (e) {
+    console.error('[Admin] Erreur renderDashboard :', e);
+    Animations.showToast("Erreur de chargement des données", "error");
+  } finally {
+    this.hideLoader();
+  }
+},
+
 // ════════════════════════════════════════════════════════════
 // renderManagementZone(tasks)
 // ════════════════════════════════════════════════════════════
