@@ -115,21 +115,6 @@ const Hero = {
       splitContainer.appendChild(detailsEl);
       splitContainer.appendChild(actionsEl);
     }
-
-    // 4. Harmonisation des boutons & Modification "Répondre à l'invitation" en gras
-    if (actionsEl) {
-      const buttons = actionsEl.querySelectorAll('a');
-      buttons.forEach((btn, index) => {
-        btn.removeAttribute('style');
-        btn.className = `hero-btn-standard hero-btn--sage-${index + 1}`;
-
-        const href = btn.getAttribute('href') || '';
-        if (index === 0 || href.includes('rsvp')) {
-          btn.textContent = "Répondre à l'invitation";
-          btn.classList.add('hero-btn--bold');
-        }
-      });
-    }
   },
 
   // ─── ANIMATIONS D'ENTRÉE ──────────────────────────────
