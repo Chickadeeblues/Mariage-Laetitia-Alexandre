@@ -379,100 +379,97 @@ p {
 }
 
 /* ===================== HERO (HOME) ===================== */
-#page-home {
-  display: none;
-  padding-top: 0;
+#page-home.page.active {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: calc(100vh - var(--nav-height)) !important;
+  max-height: calc(100vh - var(--nav-height)) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: var(--nav-height) !important;
+  background-color: var(--cream-light) !important;
+  overflow: hidden !important;
 }
 
-#page-home.active {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero {
-  text-align: center;
-  padding: 60px 12px 40px;
-  position: relative;
-  max-width: 600px;
-  margin: 0 auto;
+#page-home .hero,
+#page-home .hero-section {
+  width: 100% !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  padding: 0 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 12px !important;
 }
 
 .hero__prelude {
   font-family: var(--font-body);
-  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem); /* Légèrement réduit pour maximiser le contraste avec les prénoms */
   font-weight: 300;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.20em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   line-height: 1.2;
 }
 
 .hero__names {
-  display: block;
-  font-family: var(--font-fairplay);
-  font-size: clamp(2rem, 8vw, 4rem);
-  font-weight: 600;
-  line-height: 1.1;
-  background: linear-gradient(135deg, var(--forest) 0%, var(--gold) 50%, var(--forest) 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmerText 6s ease-in-out infinite;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 0.92;
 }
 
-.hero__ampersand {
+/* Typographie Playfair Display requise par hero.js */
+.hero-name-stacked {
+  font-family: var(--font-playfair), serif !important;
+  font-size: clamp(2.5rem, 6.5vw, 4rem) !important; /* Légèrement augmenté pour l'impact visuel principal */
+  font-weight: 500;
+  color: #3F4B34; /* Vert sauge sombre */
+  text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
+}
+
+/* Typographie Playfair Display requise par hero.js */
+.hero-ampersand-stacked {
+  font-family: var(--font-playfair), serif !important;
+  font-size: clamp(1.8rem, 4.5vw, 2.4rem) !important;
+  color: var(--sage);
   font-style: italic;
-  font-weight: 400;
-  margin: 0 0.1em;
-}
-
-.hero__details {
-  margin-top: 12px;
-  margin-bottom: 48px;
+  margin: 4px 0;
 }
 
 .hero__date {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.3rem, 3vw, 1.8rem); /* Équilibré par rapport aux prénoms */
   font-weight: 500;
   color: var(--text-dark);
-  margin-bottom: 8px;
-}
-
-.hero__date-icon {
-  display: inline-block;
-  color: var(--gold);
-  font-size: 0.6em;
-  vertical-align: middle;
-  margin: 0 12px;
-}
-
-.hero__venue {
-  font-family: var(--font-display);
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  font-weight: 500;
-  color: var(--forest);
   margin-bottom: 4px;
 }
 
-.hero__location {
-  font-size: 0.9rem;
-  font-weight: 300;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
+/* Conteneur unifié généré par hero.js (1 colonne PC et Mobile) */
+.hero__body-split {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 8px auto 0 !important;
 }
 
-.hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
+.hero__details {
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 2vw, 1.1rem); /* Fluide et lisible sur tous les écrans */
+  color: var(--text-dark);
+  line-height: 1.5;
+  margin: 0 !important;
 }
-
-
 /* ===================== GOLD LINE / ORNAMENTS ===================== */
 .gold-line {
   border: none;
