@@ -436,7 +436,7 @@ async renderManagementZone(tasks) {
         <div class="mgmt-banner__left">${countdown}</div>
         <div class="mgmt-banner__right">
           ${nextTask
-            ? `${nextTask.label} <em>→ ${nextTask.month}</em>`
+            ? `${nextTask.label} <em> </em>`
             : `<em>Tout est prêt !</em>`}
         </div>
       </div>
