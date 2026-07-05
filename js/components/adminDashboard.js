@@ -36,51 +36,51 @@ const getCountdownText = () => {
 
 const AdminDashboard = {
   logoutBtn: null,
-  init() {
-    // ── Login ──────────────────────────────────────
-    const loginForm = document.getElementById('admin-login-form');
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const password = document.getElementById('admin-password').value;
-        const errDiv   = document.getElementById('admin-error');
-        if (await Store.adminLogin(password)) {
-          if (errDiv) errDiv.style.display = 'none';
-          document.getElementById('admin-password').value = '';
-          Animations.showToast("Connexion réussie", "success");
-          Router.navigate('#/admin/dashboard');
-        } else {
-          if (errDiv) {
-            errDiv.textContent   = "Mot de passe incorrect";
-            errDiv.style.display = 'block';
-            errDiv.style.color   = 'red';
-            errDiv.style.marginTop = '10px';
-          }
-          Animations.showToast("Mot de passe incorrect", "error");
+init() {
+  const self = this; // ← une seule fois, tout en haut de init()
+
+  // ── Login ──────────────────────────────────────
+  const loginForm = document.getElementById('admin-login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('admin-password').value;
+      const errDiv   = document.getElementById('admin-error');
+      if (await Store.adminLogin(password)) {
+        if (errDiv) errDiv.style.display = 'none';
+        document.getElementById('admin-password').value = '';
+        Animations.showToast("Connexion réussie", "success");
+        Router.navigate('#/admin/dashboard');
+      } else {
+        if (errDiv) {
+          errDiv.textContent   = "Mot de passe incorrect";
+          errDiv.style.display = 'block';
+          errDiv.style.color   = 'red';
+          errDiv.style.marginTop = '10px';
         }
-      });
+        Animations.showToast("Mot de passe incorrect", "error");
+      }
+    });
+  }
+
+  // ── Auto-refresh sur changement de données ─────
+  const refreshIfActive = () => {
+    if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
+      self.renderDashboard(); // ← self, pas this
     }
+  };
+  Store.on('guests-changed',         refreshIfActive);
+  Store.on('carpools-changed',       refreshIfActive);
+  Store.on('accommodations-changed', refreshIfActive);
 
-    // ── Auto-refresh sur changement de données ─────
-    const self = this;
-const refreshIfActive = () => {
-  if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
-    self.renderDashboard();
-  }
-};
-    Store.on('guests-changed',         refreshIfActive);
-    Store.on('carpools-changed',       refreshIfActive);
-    Store.on('accommodations-changed', refreshIfActive);
-
-    // ── Rendu au changement de route ───────────────
-const self = this;
-window.addEventListener('route-changed', (e) => {
-  if (e.detail.route === '#/admin/dashboard') {
-    if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
-    self.renderDashboard();
-  }
-});
-  },
+  // ── Rendu au changement de route ───────────────
+  window.addEventListener('route-changed', (e) => {
+    if (e.detail.route === '#/admin/dashboard') {
+      if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
+      self.renderDashboard(); // ← self, pas this
+    }
+  });
+},
 
 // ════════════════════════════════════════════════════════════
 // Helpers Supabase (réutilisables)
