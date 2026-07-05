@@ -425,57 +425,57 @@ p {
 }
 
 /* 2. Prénoms : taille maîtrisée sur PC + Reflet doré mouvant */
+/* 2. Prénoms : Reflet doré mouvant sur base Vert Sauge / Forest */
 .hero__names {
   display: flex !important;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   line-height: 1.15;
-  font-family: var(--font-playfair); /* Applique l'élégance de Playfair Display */
-  font-size: clamp(1.8rem, 3.2vw, 2.6rem); /* Max réduit à 2.6rem (~41px) pour un rendu chic sur ordinateur */
+  font-family: var(--font-playfair);
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem); /* Taille maîtrisée sur écran PC */
   font-weight: 400;
   letter-spacing: 0.04em;
   
-  /* Animation reflet doré mouvant basant sur votre @keyframes shimmerText */
+  /* Balayage doré sur écriture vert profond/sauge */
   background: linear-gradient(
     120deg,
-    var(--text-dark) 0%,
-    var(--text-dark) 35%,
+    var(--forest) 0%,
+    var(--forest) 35%,
     var(--gold) 50%,
-    var(--gold-light) 55%,
-    var(--text-dark) 65%,
-    var(--text-dark) 100%
+    var(--gold-light) 58%,
+    var(--forest) 68%,
+    var(--forest) 100%
   );
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: shimmerText 6s linear infinite;
+  animation: shimmerText 7s ease-in-out infinite; /* Légèrement ralenti (7s) pour plus de majesté */
 }
 
-/* 3. Esperluette : petite, délicate, couleur dorée claire et sans l'animation de reflet */
+/* 3. Esperluette : petite, délicate et dorée */
 .hero__ampersand {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 0.55em; /* Nettement plus petite que les prénoms */
+  font-size: 0.55em;
   font-weight: 400;
   color: var(--gold-light) !important;
   
-  /* Réinitialisation indispensable pour éviter le conflit avec le background-clip du parent */
+  /* Isolation du dégradé parent pour qu'elle reste fixe et lisible */
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
   -webkit-text-fill-color: var(--gold-light) !important;
   
   margin: 8px 0;
-  opacity: 0.9;
+  opacity: 0.95;
 }
-
 /* 4. Date : proportionnée par rapport aux nouveaux prénoms */
 .hero__date {
   font-family: var(--font-display);
   font-size: clamp(1rem, 1.8vw, 1.3rem);
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text-dark);
   letter-spacing: 0.08em;
   margin-bottom: 4px;
