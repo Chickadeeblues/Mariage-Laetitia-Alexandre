@@ -382,23 +382,17 @@ p {
 #page-home.page.active {
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important; /* Reste centré si l'écran est assez grand */
+  justify-content: center !important;
   align-items: center !important;
-  
-  /* Sécurité anti-écrasement : min-height au lieu de height strict */
-  min-height: calc(100vh - var(--nav-height)) !important; 
-  
-  /* Zone de respiration en haut et en bas pour éviter les collisions */
-  padding-top: 30px !important; 
-  padding-bottom: 30px !important;
-  
+  min-height: calc(100vh - var(--nav-height)) !important;
+  padding-top: 30px !important;
+  padding-bottom: 40px !important;
   margin-top: var(--nav-height) !important;
-  background-color: var(--cream-light) !important;
   
-  /* Si l'écran est minuscule (ex: vieux smartphone), on autorise le défilement */
-  overflow-y: auto !important; 
+  /* CORRECTION : On utilise var(--cream) au lieu de --cream-light pour fusionner avec le reste du site */
+  background-color: var(--cream) !important; 
+  overflow-y: auto !important;
 }
-
 #page-home .hero,
 #page-home .hero-section {
   width: 100% !important;
@@ -429,41 +423,116 @@ p {
   font-weight: 400;
 }
 
+/* ==========================================================================
+   2. PRÉNOMS & ESPERLUETTE (FORCÉE EN PETIT)
+   ========================================================================== */
 .hero__names {
   display: flex !important;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.1;
-  font-family: var(--font-playfair); /* Ou var(--font-display) selon votre préférence */
-  font-size: clamp(2.2rem, 7vw, 4rem); /* Retour à votre grande taille majestueuse (4rem max) */
-  font-weight: 400; /* On garde la finesse pour éviter le côté "mastoc" */
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1.1 !important;
+  font-family: var(--font-playfair);
+  font-size: clamp(2.2rem, 7vw, 4rem) !important;
+  font-weight: 400 !important;
   letter-spacing: 0.03em;
   
-  /* VOTRE balayage d'origine qui fonctionnait à merveille */
+  /* Balayage doré d'origine */
   background: linear-gradient(135deg, var(--forest) 0%, var(--gold) 50%, var(--forest) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent; /* Indispensable pour l'effet sur WebKit/Chrome/Safari */
+  -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: shimmerText 6s ease-in-out infinite;
 }
 
-/* 3. Esperluette (&) : Délicate, plus petite et dorée */
+/* CORRECTION MAJEURE : Taille forcée en clamp() + inline-block pour empêcher le JS ou le Flexbox d'étirer le & */
+.hero__names .hero__ampersand,
+span.hero__ampersand,
 .hero__ampersand {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 0.55em; /* Reste proportionnellement plus fine que les prénoms */
-  font-weight: 400;
+  display: inline-block !important;
+  font-family: var(--font-display) !important;
+  font-style: italic !important;
+  font-size: clamp(1.1rem, 3vw, 1.8rem) !important; /* Strictement plus petit que les prénoms (4rem max) */
+  font-weight: 400 !important;
   color: var(--gold-light) !important;
   
-  /* On annule le découpage du dégradé uniquement pour l'esperluette afin qu'elle reste fixe et claire */
+  /* Isolation totale du dégradé pour qu'il reste couleur or uni */
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
   -webkit-text-fill-color: var(--gold-light) !important;
   
-  margin: 10px 0;
+  margin: 6px 0 !important;
+  line-height: 1 !important;
+}
+
+/* ==========================================================================
+   3. NOUVEAU : TEXTE RSVP (STYLE PRÉLUDE)
+   ========================================================================== */
+.hero__rsvp {
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1.8vw, 0.88rem); /* Léger et élégant */
+  font-weight: 400;
+  color: var(--forest); /* Ou var(--text-muted) selon votre préférence de contraste */
+  text-transform: uppercase;
+  letter-spacing: 0.22em; /* Espacement large typique de la haute papeterie */
+  margin: 16px 0 8px 0 !important; /* Espace équilibré entre la date et les boutons */
+  text-align: center;
+}
+
+/* ==========================================================================
+   4. EMPILEMENT ET ALIGNEMENT DES BOUTONS
+   ========================================================================== */
+.hero__actions {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  gap: 12px !important;
+  margin-top: 8px !important;
+}
+
+/* Neutralisation si hero.js ajoute une div intermédiaire */
+.hero__actions > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 12px !important;
+}
+
+/* Bridage strict de la largeur de TOUS les boutons du Hero pour qu'ils soient identiques */
+.hero__actions .btn,
+.hero__actions button,
+.hero__actions a.btn,
+.hero__actions [class*="btn"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 280px !important; /* Largeur identique pour les 3 */
+  min-height: 48px !important; /* Hauteur identique pour les 3 */
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  text-decoration: none !important; /* Supprime le soulignement par défaut des liens <a> */
+}
+
+/* -- Déclinaison du 3ème bouton (Outline / Modifier) -- */
+.hero__actions .btn--outline {
+  background: transparent !important;
+  color: var(--forest) !important;
+  border: 1.5px solid var(--sage-light) !important;
+  font-size: 0.82rem !important; /* L'écriture est très légèrement plus fine pour hiérarchiser l'importance */
+}
+
+.hero__actions .btn--outline:hover {
+  background: var(--white) !important;
+  border-color: var(--sage) !important;
+  color: var(--forest) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(156, 175, 136, 0.15) !important;
 }
 
 .hero__date {
@@ -495,34 +564,6 @@ p {
   color: var(--text-dark);
   line-height: 1.5;
   margin: 0 !important;
-}
-
-/* ===================== STRUCTURE DES BOUTONS HERO (EMPILÉS & MÊME TAILLE) ===================== */
-.hero__actions {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  gap: 12px !important;
-  margin-top: 16px !important;
-}
-
-/* Neutralise et empile les boutons peu importe les sous-conteneurs (div) du HTML */
-.hero__actions div {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  width: 100% !important;
-  gap: 12px !important;
-}
-
-/* Force TOUS les boutons à adopter exactement la même largeur élégante */
-.hero__actions .btn,
-.hero__actions [class*="btn--"] {
-  width: 100% !important;
-  max-width: 290px !important; /* Largeur fixe commune harmonieuse */
-  box-sizing: border-box;
 }
 
 
