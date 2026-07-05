@@ -36,138 +36,129 @@ const getCountdownText = () => {
 
 const AdminDashboard = {
   logoutBtn: null,
-init() {
-  const self = this; // ← une seule fois, tout en haut de init()
-
-  // ── Login ──────────────────────────────────────
-  const loginForm = document.getElementById('admin-login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const password = document.getElementById('admin-password').value;
-      const errDiv   = document.getElementById('admin-error');
-      if (await Store.adminLogin(password)) {
-        if (errDiv) errDiv.style.display = 'none';
-        document.getElementById('admin-password').value = '';
-        Animations.showToast("Connexion réussie", "success");
-        Router.navigate('#/admin/dashboard');
-      } else {
-        if (errDiv) {
-          errDiv.textContent   = "Mot de passe incorrect";
-          errDiv.style.display = 'block';
-          errDiv.style.color   = 'red';
-          errDiv.style.marginTop = '10px';
+  init() {
+    // ── Login ──────────────────────────────────────
+    const loginForm = document.getElementById('admin-login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = document.getElementById('admin-password').value;
+        const errDiv   = document.getElementById('admin-error');
+        if (await Store.adminLogin(password)) {
+          if (errDiv) errDiv.style.display = 'none';
+          document.getElementById('admin-password').value = '';
+          Animations.showToast("Connexion réussie", "success");
+          Router.navigate('#/admin/dashboard');
+        } else {
+          if (errDiv) {
+            errDiv.textContent   = "Mot de passe incorrect";
+            errDiv.style.display = 'block';
+            errDiv.style.color   = 'red';
+            errDiv.style.marginTop = '10px';
+          }
+          Animations.showToast("Mot de passe incorrect", "error");
         }
-        Animations.showToast("Mot de passe incorrect", "error");
+      });
+    }
+
+    // ── Auto-refresh sur changement de données ─────
+    const refreshIfActive = () => {
+      if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
+        this.renderDashboard();
+      }
+    };
+    Store.on('guests-changed',         refreshIfActive);
+    Store.on('carpools-changed',       refreshIfActive);
+    Store.on('accommodations-changed', refreshIfActive);
+
+    // ── Rendu au changement de route ───────────────
+    window.addEventListener('route-changed', (e) => {
+      if (e.detail.route === '#/admin/dashboard') {
+        if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
+        this.renderDashboard();
       }
     });
-  }
-
-  // ── Auto-refresh sur changement de données ─────
-  const refreshIfActive = () => {
-    if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
-      self.renderDashboard(); // ← self, pas this
-    }
-  };
-  Store.on('guests-changed',         refreshIfActive);
-  Store.on('carpools-changed',       refreshIfActive);
-  Store.on('accommodations-changed', refreshIfActive);
-
-  // ── Rendu au changement de route ───────────────
-  window.addEventListener('route-changed', (e) => {
-    if (e.detail.route === '#/admin/dashboard') {
-      if (!Store.isAdmin()) { Router.navigate('#/admin'); return; }
-      self.renderDashboard(); // ← self, pas this
-    }
-  });
-},
-
-// ════════════════════════════════════════════════════════════
-// Helpers Supabase (réutilisables)
-// ════════════════════════════════════════════════════════════
-_sb(path, opts = {}) {
-  const URL = 'https://upaxcudmifqwiglodywf.supabase.co/rest/v1/';
-  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
-  return fetch(URL + path, {
-    ...opts,
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-      ...(opts.headers || {})
-    }
-  });
-},
+  },
 
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
   // ════════════════════════════════════════════════════════════
-async _loadTasks() {
-  const [tRes, sRes] = await Promise.all([
-    this._sb('wedding_tasks?select=*&order=id.asc'),
-    this._sb('wedding_subtasks?select=*&order=task_id.asc,position.asc')
-  ]);
-  const tasksRaw    = await tRes.json();
-  const subtasksRaw = await sRes.json();
-  const tasks    = Array.isArray(tasksRaw)    ? tasksRaw    : [];
-  const subtasks = Array.isArray(subtasksRaw) ? subtasksRaw : [];
-  tasks.forEach(t => { t.subtasks = subtasks.filter(s => s.task_id === t.id); });
-  return tasks;
+  async _loadTasks() {
+  const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/wedding_tasks?select=*&order=id.asc`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  if (!res.ok) throw new Error('Erreur chargement tâches');
+  return await res.json();
 },
  
-async _saveTaskDone(id, done) {
-  await this._sb(`wedding_tasks?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ done })
-  });
+  async _saveTaskDone(id, done) {
+  const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/wedding_tasks?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ done })
+    }
+  );
 },
  
-async _addTaskToDb(month, cat, label) {
-  const r = await this._sb('wedding_tasks', { method: 'POST', body: JSON.stringify({ month, cat, label, done: false }) });
-  return await r.json();
+  async _addTaskToDb(month, cat, label) {
+  const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/wedding_tasks`,
+    {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({ month, cat, label, done: false })
+    }
+  );
+  return await res.json();
 },
  
-async _deleteTaskFromDb(id) {
-  await this._sb(`wedding_tasks?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  async _deleteTaskFromDb(id) {
+  const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/wedding_tasks?id=eq.${id}`,
+    {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    }
+  );
 },
  
-async _updateTaskInDb(id, fields) {
-  await this._sb(`wedding_tasks?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify(fields)
-  });
-},
- 
-// ── Sous-tâches ──
-async _loadSubtasks(taskId) {
-  const r = await this._sb(`wedding_subtasks?task_id=eq.${taskId}&order=position.asc`);
-  return await r.json();
-},
- 
-async _saveSubtaskDone(id, done) {
-  await this._sb(`wedding_subtasks?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ done })
-  });
-},
- 
-async _addSubtask(taskId, label, position) {
-  const r = await this._sb('wedding_subtasks', {
-    method: 'POST',
-    body: JSON.stringify({ task_id: taskId, label, done: false, position })
-  });
-  return await r.json();
-},
- 
-async _deleteSubtask(id) {
-  await this._sb(`wedding_subtasks?id=eq.${id}`, {
-    method: 'DELETE',
-    headers: { Prefer: 'return=minimal' }
-  });
+  async _updateTaskInDb(id, label) {
+  const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/wedding_tasks?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ label })
+    }
+  );
 },
 
 async renderDashboard() {
@@ -179,12 +170,15 @@ async renderDashboard() {
       this._loadTasks()
     ]);
     await this.renderManagementZone(tasks);
+ 
     await Promise.all([
       this.renderStatsAndDiets(stats, guests),
       this.renderGuestsList(guests),
+	  this.renderSeatingPlan(guests),
       this.renderCarpools(stats),
       this.renderAccommodations()
     ]);
+ 
   } catch (e) {
     console.error('[Admin] Erreur renderDashboard :', e);
     Animations.showToast("Erreur de chargement des données", "error");
@@ -465,15 +459,9 @@ async renderManagementZone(tasks) {
                 <th style="width:100px;">Mois</th>
                 <th style="width:130px;">
                   Catégorie
-                  <select id="cat-filter" onchange="window._adminFilterCat(this.value)"
-					style="border:none;background:transparent;font-size:10px;font-weight:700;
-					text-transform:uppercase;letter-spacing:0.08em;
-					color:var(--text-muted);cursor:pointer;outline:none;padding:0 2px;">
-					<option value="Toutes les catégories">Toutes les catégories</option>
-					${allCats.filter(c => c !== 'Toutes les catégories').map(c =>
-					`<option value="${c}">${c}</option>`
-					).join('')}
-				 </select>
+                  <select id="cat-filter" onchange="window._adminFilterCat(this.value)">
+                    ${allCats.map(c => `<option value="${c}">${c}</option>`).join('')}
+                  </select> ▾
                 </th>
                 <th>Tâche</th>
                 <th style="width:70px;">Actions</th>
@@ -517,403 +505,79 @@ async renderManagementZone(tasks) {
 
 // ════════════════════════════════════════════════════════════
 // _renderChecklistRows
-
 // ════════════════════════════════════════════════════════════
 _renderChecklistRows(groups, catFilter) {
-  // Couleurs alternées par mois
-  const MONTH_COLORS = ['#ffffff', '#fdfaf5'];
   let rows = '';
-  let monthIdx = 0;
- 
   Object.entries(groups).forEach(([month, tasks]) => {
-    const filtered = catFilter === 'Toutes les catégories'
-      ? tasks
-      : tasks.filter(t => t.cat === catFilter);
-    if (!filtered.length) { monthIdx++; return; }
- 
-    const bgColor = MONTH_COLORS[monthIdx % 2];
-    monthIdx++;
- 
-    // Cellule mois en rowspan
-    const totalRows = filtered.reduce((sum, t) => {
-      return sum + 1 + (t._subExpanded && t.subtasks?.length ? t.subtasks.length : 0);
-    }, 0);
- 
-    filtered.forEach((t, ti) => {
-      const colors  = CAT_COLORS[t.cat] || { bg: '#f1f5f9', color: '#475569' };
-      const hasSubs = t.subtasks && t.subtasks.length > 0;
-      const subsDone = hasSubs ? t.subtasks.filter(s => s.done).length : 0;
-      const subsTotal = hasSubs ? t.subtasks.length : 0;
-      const isExpanded = t._subExpanded || false;
- 
-      let row = `<tr class="task-row ${t.done ? 'done' : ''}" id="task-row-${t.id}" style="background:${bgColor};">`;
- 
-      // Cellule mois (rowspan sur la première ligne du groupe)
-      if (ti === 0) {
-        row += `
-          <td rowspan="${filtered.length}"
-            style="background:${bgColor};border-right:3px solid #e8e0d0;
-                   font-size:11px;font-weight:700;letter-spacing:0.08em;
-                   text-transform:uppercase;color:var(--gold);
-                   vertical-align:top;padding:10px 12px;white-space:nowrap;
-                   width:100px;">
-            ${month}
-          </td>`;
-      }
- 
-      row += `
-        <td style="background:${bgColor};padding:7px 12px;width:130px;">
-          <span class="cat-badge"
-            style="background:${colors.bg};color:${colors.color};
-                   border:1px solid ${colors.color}33;
-                   padding:2px 9px;border-radius:20px;
-                   font-size:11px;font-weight:600;white-space:nowrap;">
-            ${t.cat}
-          </span>
-        </td>
-        <td style="background:${bgColor};padding:7px 12px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input type="checkbox" ${t.done ? 'checked' : ''}
-              style="width:14px;height:14px;flex-shrink:0;accent-color:var(--forest);cursor:pointer;margin:0;"
-              onchange="window._adminToggleTask(${t.id}, this.checked)">
-            <span id="task-label-${t.id}"
-              style="font-size:13px;color:var(--text-dark);line-height:1.35;
-                     ${t.done ? 'text-decoration:line-through;color:var(--text-muted);' : ''}">
-              ${t.label}
+    const filtered = catFilter === 'Toutes' ? tasks : tasks.filter(t => t.cat === catFilter);
+    if (!filtered.length) return;
+    rows += `<tr class="month-sep"><td colspan="4">${month}</td></tr>`;
+    filtered.forEach(t => {
+      const colors = CAT_COLORS[t.cat] || { bg: '#f1f5f9', color: '#475569' };
+      rows += `
+        <tr class="task-row ${t.done ? 'done' : ''}" id="task-row-${t.id}">
+          <td></td>
+          <td>
+            <span class="cat-badge" style="background:${colors.bg};color:${colors.color};border-color:${colors.color}33;">
+              ${t.cat}
             </span>
-            ${hasSubs ? `
-              <button onclick="window._adminToggleSubs(${t.id})"
-                style="margin-left:4px;background:none;border:1px solid #ddd;border-radius:4px;
-                       padding:1px 7px;font-size:11px;cursor:pointer;color:var(--text-muted);
-                       white-space:nowrap;flex-shrink:0;">
-                ${isExpanded ? '▴' : '▾'} ${subsTotal} sous-tâche${subsTotal > 1 ? 's' : ''}
-                ${subsDone > 0 ? `<span style="color:var(--sage);font-weight:600;">(${subsDone}/${subsTotal})</span>` : ''}
-              </button>` : ''}
-          </div>
-        </td>
-        <td style="background:${bgColor};padding:7px 12px;text-align:center;white-space:nowrap;">
-          <button class="task-btn" onclick="window._adminEditTask(${t.id})" title="Modifier"
-            style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 6px;
-                   font-size:11px;cursor:pointer;color:var(--text-muted);">✏️</button>
-          <button class="task-btn del" onclick="window._adminDeleteTask(${t.id})" title="Supprimer"
-            style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 6px;
-                   font-size:11px;cursor:pointer;color:var(--text-muted);margin-left:2px;">×</button>
-        </td>
-      </tr>`;
- 
-      rows += row;
- 
-      // Sous-tâches (dépliées si _subExpanded)
-      if (hasSubs && isExpanded) {
-        t.subtasks.forEach(s => {
-          rows += `
-            <tr id="subtask-row-${s.id}" style="background:${bgColor};">
-              <td style="background:${bgColor};"></td>
-              <td style="background:${bgColor};padding:5px 12px 5px 28px;" colspan="2">
-                <div style="display:flex;align-items:center;gap:8px;padding-left:24px;border-left:2px solid #e0d5c1;">
-                  <input type="checkbox" ${s.done ? 'checked' : ''}
-                    style="width:13px;height:13px;flex-shrink:0;accent-color:var(--sage);cursor:pointer;margin:0;"
-                    onchange="window._adminToggleSubtask(${t.id}, ${s.id}, this.checked)">
-                  <span style="font-size:12px;color:var(--text-muted);
-                               ${s.done ? 'text-decoration:line-through;' : ''}">
-                    ${s.label}
-                  </span>
-                  <button onclick="window._adminDeleteSubtask(${t.id}, ${s.id})"
-                    style="margin-left:auto;background:none;border:none;cursor:pointer;
-                           color:#ccc;font-size:13px;padding:0 4px;">×</button>
-                </div>
-              </td>
-              <td style="background:${bgColor};"></td>
-            </tr>`;
-        });
-      }
+          </td>
+          <td>
+            <div class="task-check-cell">
+              <input type="checkbox" ${t.done ? 'checked' : ''}
+                onchange="window._adminToggleTask(${t.id}, this.checked)">
+              <span class="task-label" id="task-label-${t.id}">${t.label}</span>
+            </div>
+          </td>
+          <td class="task-actions">
+            <button class="task-btn" onclick="window._adminEditTask(${t.id})" title="Modifier">✏️</button>
+            <button class="task-btn del" onclick="window._adminDeleteTask(${t.id})" title="Supprimer">×</button>
+          </td>
+        </tr>`;
     });
   });
- 
-  return rows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted);">Aucune tâche pour ce filtre.</td></tr>';
+  return rows;
 },
- 
+
 // ════════════════════════════════════════════════════════════
-// Modale de modification
-// ════════════════════════════════════════════════════════════
-_openEditModal(task, tasks) {
-  document.getElementById('admin-edit-task-modal')?.remove();
- 
-  const allMonths = [...new Set(tasks.map(t => t.month))];
-  const hasSubs   = task.subtasks && task.subtasks.length > 0;
- 
-  const html = `
-    <div id="admin-edit-task-modal"
-      style="position:fixed;top:0;left:0;width:100%;height:100%;
-             background:rgba(0,0,0,0.55);z-index:9999;
-             display:flex;align-items:center;justify-content:center;
-             backdrop-filter:blur(3px);">
-      <div style="background:#FAF8F5;border-radius:16px;width:95%;max-width:540px;
-                  max-height:88vh;overflow-y:auto;padding:24px;
-                  box-shadow:0 16px 40px rgba(0,0,0,0.2);border:1px solid var(--gold);">
- 
-        <div style="display:flex;justify-content:space-between;align-items:center;
-                    border-bottom:1px solid #f0ebe0;padding-bottom:12px;margin-bottom:18px;">
-          <h3 style="margin:0;font-family:var(--font-display);color:var(--forest);font-size:1.15rem;">
-            Modifier la tâche
-          </h3>
-          <button id="etm-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);">×</button>
-        </div>
- 
-        <div style="display:flex;flex-direction:column;gap:14px;">
- 
-          <!-- Mois -->
-          <div>
-            <label style="font-size:11px;font-weight:700;text-transform:uppercase;
-                          letter-spacing:0.08em;color:var(--text-muted);display:block;margin-bottom:4px;">
-              Mois
-            </label>
-            <select id="etm-month"
-              style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;
-                     font-family:var(--font-body);font-size:13px;background:#fff;">
-              ${allMonths.map(m => `<option value="${m}" ${m === task.month ? 'selected' : ''}>${m}</option>`).join('')}
-              <option value="__custom__">Autre (saisie libre)…</option>
-            </select>
-            <input id="etm-month-custom" type="text" placeholder="Ex: Août 2027"
-              style="display:none;width:100%;margin-top:6px;padding:9px 12px;
-                     border:1.5px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
-          </div>
- 
-          <!-- Catégorie -->
-          <div>
-            <label style="font-size:11px;font-weight:700;text-transform:uppercase;
-                          letter-spacing:0.08em;color:var(--text-muted);display:block;margin-bottom:4px;">
-              Catégorie
-            </label>
-            <select id="etm-cat"
-              style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;
-                     font-family:var(--font-body);font-size:13px;background:#fff;">
-              ${Object.keys(CAT_COLORS).map(c => `<option value="${c}" ${c === task.cat ? 'selected' : ''}>${c}</option>`).join('')}
-            </select>
-          </div>
- 
-          <!-- Tâche -->
-          <div>
-            <label style="font-size:11px;font-weight:700;text-transform:uppercase;
-                          letter-spacing:0.08em;color:var(--text-muted);display:block;margin-bottom:4px;">
-              Libellé de la tâche
-            </label>
-            <textarea id="etm-label" rows="2"
-              style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;
-                     font-family:var(--font-body);font-size:13px;resize:vertical;box-sizing:border-box;"
-              >${task.label}</textarea>
-          </div>
- 
-          <!-- Sous-tâches -->
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;
-                            letter-spacing:0.08em;color:var(--text-muted);">
-                Sous-tâches
-              </label>
-              <span style="font-size:11px;color:var(--text-muted);">
-                ${hasSubs ? task.subtasks.filter(s=>s.done).length + ' / ' + task.subtasks.length + ' faites' : 'Aucune'}
-              </span>
-            </div>
- 
-            <!-- Liste des sous-tâches existantes -->
-            <div id="etm-subs-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
-              ${hasSubs ? task.subtasks.map(s => `
-                <div id="etm-sub-${s.id}"
-                  style="display:flex;align-items:center;gap:8px;padding:7px 10px;
-                         background:#fff;border:1px solid #ede8df;border-radius:7px;">
-                  <input type="checkbox" ${s.done ? 'checked' : ''}
-                    style="width:13px;height:13px;accent-color:var(--sage);cursor:pointer;margin:0;flex-shrink:0;"
-                    onchange="window._etmToggleSub(${s.id}, this.checked)">
-                  <span style="flex:1;font-size:13px;color:var(--text-dark);
-                               ${s.done ? 'text-decoration:line-through;color:var(--text-muted);' : ''}">
-                    ${s.label}
-                  </span>
-                  <button onclick="window._etmDeleteSub(${task.id}, ${s.id})"
-                    style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;
-                           padding:0 4px;flex-shrink:0;transition:color 0.15s;"
-                    onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#ccc'">×</button>
-                </div>`).join('') : '<p style="font-size:12px;color:var(--text-muted);margin:0;">Aucune sous-tâche pour le moment.</p>'}
-            </div>
- 
-            <!-- Ajouter une sous-tâche -->
-            <div style="display:flex;gap:8px;">
-              <input id="etm-new-sub" type="text" placeholder="Nouvelle sous-tâche…"
-                style="flex:1;padding:8px 10px;border:1.5px solid #ddd;border-radius:7px;
-                       font-family:var(--font-body);font-size:12px;">
-              <button onclick="window._etmAddSub(${task.id})"
-                style="padding:8px 14px;background:var(--sage);color:#fff;border:none;
-                       border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">
-                + Ajouter
-              </button>
-            </div>
-          </div>
- 
-          <!-- Boutons -->
-          <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:8px;border-top:1px solid #f0ebe0;margin-top:4px;">
-            <button id="etm-cancel"
-              style="padding:10px 20px;background:none;border:1.5px solid #ddd;border-radius:8px;
-                     font-family:var(--font-body);font-size:13px;cursor:pointer;">
-              Annuler
-            </button>
-            <button id="etm-save"
-              style="padding:10px 20px;background:var(--forest);color:#fff;border:none;
-                     border-radius:8px;font-family:var(--font-body);font-size:13px;
-                     font-weight:600;cursor:pointer;">
-              Enregistrer
-            </button>
-          </div>
- 
-        </div>
-      </div>
-    </div>`;
- 
-  document.body.insertAdjacentHTML('beforeend', html);
-  const modal = document.getElementById('admin-edit-task-modal');
- 
-  // Fermeture
-  const close = () => modal.remove();
-  document.getElementById('etm-close').addEventListener('click', close);
-  document.getElementById('etm-cancel').addEventListener('click', close);
-  modal.addEventListener('click', e => { if (e.target === modal) close(); });
- 
-  // Mois custom
-  document.getElementById('etm-month').addEventListener('change', function() {
-    const custom = document.getElementById('etm-month-custom');
-    custom.style.display = this.value === '__custom__' ? 'block' : 'none';
-  });
- 
-  // Toggle sous-tâche dans la modale
-  window._etmToggleSub = async (subId, done) => {
-    await this._saveSubtaskDone(subId, done);
-    const sub = task.subtasks.find(s => s.id === subId);
-    if (sub) sub.done = done;
-    // Vérifier si toutes les sous-tâches sont cochées → cocher la tâche principale
-    if (task.subtasks.every(s => s.done) && !task.done) {
-      task.done = true;
-      await this._saveTaskDone(task.id, true);
-    } else if (!task.subtasks.every(s => s.done) && task.done) {
-      task.done = false;
-      await this._saveTaskDone(task.id, false);
-    }
-  };
- 
-  // Ajouter sous-tâche depuis la modale
-  window._etmAddSub = async (taskId) => {
-    const input = document.getElementById('etm-new-sub');
-    const label = input?.value.trim();
-    if (!label) return;
-    const pos  = task.subtasks.length;
-    const rows = await this._addSubtask(taskId, label, pos);
-    const newSub = Array.isArray(rows) ? rows[0] : rows;
-    if (!newSub) return;
-    task.subtasks.push(newSub);
-    input.value = '';
-    // Ajouter visuellement dans la liste
-    const list = document.getElementById('etm-subs-list');
-    const p = list.querySelector('p');
-    if (p) p.remove();
-    list.insertAdjacentHTML('beforeend', `
-      <div id="etm-sub-${newSub.id}"
-        style="display:flex;align-items:center;gap:8px;padding:7px 10px;
-               background:#fff;border:1px solid #ede8df;border-radius:7px;">
-        <input type="checkbox"
-          style="width:13px;height:13px;accent-color:var(--sage);cursor:pointer;margin:0;flex-shrink:0;"
-          onchange="window._etmToggleSub(${newSub.id}, this.checked)">
-        <span style="flex:1;font-size:13px;color:var(--text-dark);">${newSub.label}</span>
-        <button onclick="window._etmDeleteSub(${taskId}, ${newSub.id})"
-          style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:0 4px;"
-          onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#ccc'">×</button>
-      </div>`);
-  };
- 
-  // Supprimer sous-tâche depuis la modale
-  window._etmDeleteSub = async (taskId, subId) => {
-    if (!confirm('Supprimer cette sous-tâche ?')) return;
-    await this._deleteSubtask(subId);
-    task.subtasks = task.subtasks.filter(s => s.id !== subId);
-    document.getElementById(`etm-sub-${subId}`)?.remove();
-    if (task.subtasks.length === 0) {
-      const list = document.getElementById('etm-subs-list');
-      if (list) list.innerHTML = '<p style="font-size:12px;color:var(--text-muted);margin:0;">Aucune sous-tâche.</p>';
-    }
-  };
- 
-  // Sauvegarde principale
-  document.getElementById('etm-save').addEventListener('click', async () => {
-    const monthSel = document.getElementById('etm-month').value;
-    const month = monthSel === '__custom__'
-      ? document.getElementById('etm-month-custom').value.trim()
-      : monthSel;
-    const cat   = document.getElementById('etm-cat').value;
-    const label = document.getElementById('etm-label').value.trim();
-    if (!label || !month) return;
- 
-    await this._updateTaskInDb(task.id, { month, cat, label });
-    task.month = month; task.cat = cat; task.label = label;
-    Animations.showToast('Tâche mise à jour', 'success');
-    close();
-    const freshTasks = await this._loadTasks();
-    await this.renderManagementZone(freshTasks);
-    document.getElementById('admin-checklist-wrap')?.classList.add('open');
-    const btn = document.getElementById('checklist-toggle-btn');
-    if (btn) btn.textContent = 'Masquer la checklist ▴';
-  });
-},
- 
-// ════════════════════════════════════════════════════════════
-// _bindChecklistHandlers — avec sous-tâches et modale
+// _bindChecklistHandlers
 // ════════════════════════════════════════════════════════════
 _bindChecklistHandlers(tasks, groups) {
   window._adminToggleTask = async (id, done) => {
     await this._saveTaskDone(id, done);
+    // Mettre à jour visuellement sans recharger tout
+    const row = document.getElementById(`task-row-${id}`);
+    if (row) row.classList.toggle('done', done);
+    // Mettre à jour la tâche dans le tableau local
     const t = tasks.find(t => t.id === id);
-    if (t) {
-      t.done = done;
-      // Si on décoche la tâche, décocher aussi toutes les sous-tâches
-      if (!done && t.subtasks?.length) {
-        for (const s of t.subtasks) {
-          if (s.done) { s.done = false; await this._saveSubtaskDone(s.id, false); }
-        }
-      }
-    }
-    this._refreshChecklistTable(tasks, groups);
+    if (t) t.done = done;
+    // Rafraîchir le widget (compteur + prochaine tâche)
+    await this.renderManagementZone(tasks);
+    // Rouvrir la checklist
+    const wrap = document.getElementById('admin-checklist-wrap');
+    if (wrap) wrap.classList.add('open');
+    const btn = document.getElementById('checklist-toggle-btn');
+    if (btn) btn.textContent = 'Masquer la checklist ▴';
   };
  
-  window._adminToggleSubs = (id) => {
+  window._adminEditTask = async (id) => {
     const t = tasks.find(t => t.id === id);
-    if (t) { t._subExpanded = !t._subExpanded; }
-    this._refreshChecklistTable(tasks, groups);
-  };
- 
-  window._adminToggleSubtask = async (taskId, subId, done) => {
-    await this._saveSubtaskDone(subId, done);
-    const t = tasks.find(t => t.id === taskId);
     if (!t) return;
-    const s = t.subtasks.find(s => s.id === subId);
-    if (s) s.done = done;
-    // Auto-cocher la tâche principale si toutes les sous-tâches sont cochées
-    const allDone = t.subtasks.every(s => s.done);
-    if (allDone !== t.done) {
-      t.done = allDone;
-      await this._saveTaskDone(taskId, allDone);
-    }
-    this._refreshChecklistTable(tasks, groups);
-  };
- 
-  window._adminEditTask = (id) => {
-    const t = tasks.find(t => t.id === id);
-    if (t) this._openEditModal(t, tasks);
+    const newLabel = prompt('Modifier la tâche :', t.label);
+    if (!newLabel || newLabel.trim() === t.label) return;
+    t.label = newLabel.trim();
+    await this._updateTaskInDb(id, t.label);
+    await this.renderManagementZone(tasks);
+    document.getElementById('admin-checklist-wrap')?.classList.add('open');
+    const btn = document.getElementById('checklist-toggle-btn');
+    if (btn) btn.textContent = 'Masquer la checklist ▴';
   };
  
   window._adminDeleteTask = async (id) => {
-    if (!confirm('Supprimer cette tâche et ses sous-tâches définitivement ?')) return;
+    if (!confirm('Supprimer cette tâche définitivement ?')) return;
     await this._deleteTaskFromDb(id);
     const idx = tasks.findIndex(t => t.id === id);
     if (idx !== -1) tasks.splice(idx, 1);
-    // Reconstruire les groupes
-    const newGroups = {};
-    tasks.forEach(t => { if (!newGroups[t.month]) newGroups[t.month] = []; newGroups[t.month].push(t); });
     await this.renderManagementZone(tasks);
     document.getElementById('admin-checklist-wrap')?.classList.add('open');
     const btn = document.getElementById('checklist-toggle-btn');
@@ -925,9 +589,8 @@ _bindChecklistHandlers(tasks, groups) {
     const cat   = document.getElementById('new-task-cat')?.value;
     const label = document.getElementById('new-task-label')?.value.trim();
     if (!label) return;
-    const rows = await this._addTaskToDb(month, cat, label);
-    const newTask = Array.isArray(rows) ? rows[0] : rows;
-    if (newTask) { newTask.subtasks = []; tasks.push(newTask); }
+    const newRows = await this._addTaskToDb(month, cat, label);
+    if (newRows && newRows[0]) tasks.push(newRows[0]);
     await this.renderManagementZone(tasks);
     document.getElementById('admin-checklist-wrap')?.classList.add('open');
     const btn = document.getElementById('checklist-toggle-btn');
@@ -935,29 +598,18 @@ _bindChecklistHandlers(tasks, groups) {
   };
  
   window._adminFilterCat = (cat) => {
-    const newGroups = {};
-    tasks.forEach(t => { if (!newGroups[t.month]) newGroups[t.month] = []; newGroups[t.month].push(t); });
+    const groups2 = {};
+    tasks.forEach(t => { if (!groups2[t.month]) groups2[t.month] = []; groups2[t.month].push(t); });
     const tbody = document.getElementById('checklist-tbody');
-    if (tbody) tbody.innerHTML = this._renderChecklistRows(newGroups, cat);
-    this._bindChecklistHandlers(tasks, newGroups);
+    if (tbody) tbody.innerHTML = this._renderChecklistRows(groups2, cat);
     const sel = document.getElementById('cat-filter');
     if (sel) sel.value = cat;
   };
 },
  
-// Rafraîchit uniquement le tbody sans recréer tout le DOM
-_refreshChecklistTable(tasks, groups) {
-  const currentCat = document.getElementById('cat-filter')?.value || 'Toutes les catégories';
-  const newGroups  = {};
-  tasks.forEach(t => { if (!newGroups[t.month]) newGroups[t.month] = []; newGroups[t.month].push(t); });
-  const tbody = document.getElementById('checklist-tbody');
-  if (tbody) tbody.innerHTML = this._renderChecklistRows(newGroups, currentCat);
-  this._bindChecklistHandlers(tasks, newGroups);
-  const sel = document.getElementById('cat-filter');
-  if (sel) sel.value = currentCat;
+toggleTask(id) {
+  // Conservé pour compatibilité — non utilisé directement
 },
- 
-toggleTask(id) {},
 
   showLoader() {
     const el = document.getElementById('admin-loader');
@@ -969,76 +621,114 @@ toggleTask(id) {},
   },
 
   async renderStatsAndDiets(stats, guests) {
-  // Conteneurs directs par ID — fiable quoi qu'il arrive
-  const statTotal     = document.getElementById('stat-total');
-  const statConfirmed = document.getElementById('stat-confirmed');
-  const statMaybe     = document.getElementById('stat-maybe');
-  const statDeclined  = document.getElementById('stat-declined');
-  const statPending   = document.getElementById('stat-pending');
-  const dietsContainer = document.getElementById('admin-diets');
+    // 1. Calcul exact des présents au Brunch (Invités + Accompagnants)
+    const exactBrunchCount = guests.reduce((total, g) => {
+      const isAttending = g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1;
+      const wantsBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
+      if (isAttending && wantsBrunch) {
+        return total + 1 + (Array.isArray(g.companions) ? g.companions.length : 0);
+      }
+      return total;
+    }, 0);
 
-  // Brunch
-  const exactBrunchCount = guests.reduce((total, g) => {
-    const isAttending = g.attending === true || g.attending === 'true';
-    const wantsBrunch = g.brunch === true || g.brunch === 'true';
-    if (isAttending && wantsBrunch)
-      return total + 1 + (Array.isArray(g.companions) ? g.companions.length : 0);
-    return total;
-  }, 0);
+    const confirmedCount = stats.confirmedPeople !== undefined ? stats.confirmedPeople : stats.confirmed || 0;
 
-  const confirmedCount = stats.confirmedPeople ?? stats.confirmed ?? 0;
+    // Repérage des conteneurs
+    const firstStatCard = document.getElementById('stat-total') || 
+                          document.getElementById('stat-confirmed') ||
+                          document.querySelector('.stat-card')?.parentElement;
+    const statsContainer = firstStatCard ? (firstStatCard.id ? firstStatCard.parentElement : firstStatCard) : null;
+    const dietsContainer = document.getElementById('admin-diets');
 
-  const cardStyle = `
-    background:#fff;border-radius:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.04);
-    height:110px;display:flex;flex-direction:column;
-    justify-content:center;align-items:center;
-    text-align:center;padding:10px;box-sizing:border-box;
-    border:1.5px solid var(--sage,#9CAF88);`;
+    // NETTOYAGE FORCE DU FOND BLANC : On vide le CSS parent (index.html) de toute couleur ou bordure !
+    const gridStyle = `
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+      gap: 16px !important;
+      margin-bottom: 16px !important;
+      width: 100% !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    `;
 
-  const numStyle  = `font-size:28px;font-weight:700;`;
-  const lblStyle  = `font-size:13px;color:var(--text-muted);margin-top:4px;`;
+    if (statsContainer) statsContainer.style.cssText = gridStyle;
+    if (dietsContainer) dietsContainer.style.cssText = gridStyle;
 
-  const setCard = (el, number, label, color) => {
-    if (!el) return;
-    el.style.cssText = cardStyle;
-    el.innerHTML = `
-      <div style="${numStyle}color:${color};">${number}</div>
-      <div style="${lblStyle}">${label}</div>`;
-  };
+    // Style de base pour les cartes
+    const baseCardStyle = `
+      background: var(--white, #fff);
+      border-radius: var(--radius-lg, 16px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      height: 110px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+    `;
 
-  setCard(statTotal,     guests.length,   'Foyers invités',   'var(--text-dark)');
-  setCard(statConfirmed, confirmedCount,   'Confirmés',        'var(--forest)');
-  setCard(statMaybe,     stats.maybe ?? 0,'Peut-être',        'var(--sage)');
-  setCard(statDeclined,  stats.declined ?? 0,'Déclinés',      '#e06666');
-  setCard(statPending,   exactBrunchCount,'Au brunch',        'var(--gold)');
+    // 2. Rebord SAUGE pour les 4 cartes de statistiques
+    const statCardStyle = `${baseCardStyle} border: 1.5px solid var(--sage, #9CAF88);`;
+    // Rebord neutre discret pour les 4 cartes régimes
+    const dietCardStyle = `${baseCardStyle} border: 1px solid #EAEAEA;`;
 
-  // Régimes
-  if (!dietsContainer) return;
-  const allergiesCount   = stats.diets?.allergies?.length ?? 0;
-  const allergiesTooltip = allergiesCount > 0
-    ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ')
-    : 'Aucune allergie';
+    // ── Rangée 1 : Statistiques d'invités (Bordure Sauge) ──
+    if (statsContainer) {
+      statsContainer.innerHTML = `
+        <div class="card" style="${statCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${confirmedCount}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Confirmés</div>
+        </div>
+        <div class="card" style="${statCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--text-dark);">${exactBrunchCount}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Présents au Brunch</div>
+        </div>
+        <div class="card" style="${statCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--sage);">${stats.maybe || 0}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Peut-être</div>
+        </div>
+        <div class="card" style="${statCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#e06666;">${stats.declined || 0}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Déclinés</div>
+        </div>
+      `;
+    }
 
-  const dietCard = (num, label, color) => `
-    <div style="${cardStyle.replace('var(--sage,#9CAF88)', '#EAEAEA')}">
-      <div style="${numStyle}color:${color};">${num}</div>
-      <div style="${lblStyle}">${label}</div>
-    </div>`;
+    // ── Rangée 2 : Régimes alimentaires (Sans fond blanc derrière, couleurs distinctes) ──
+    if (dietsContainer) {
+      const allergiesCount = stats.diets.allergies?.length || 0;
+      const allergiesTooltip = allergiesCount > 0 
+        ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ') 
+        : 'Aucune allergie';
 
-  dietsContainer.style.cssText = `
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-    gap:16px;margin-bottom:16px;`;
-  dietsContainer.innerHTML =
-    dietCard(stats.diets?.vegetarian ?? 0, 'Végétariens', '#3B7A57') +
-    dietCard(stats.diets?.vegan      ?? 0, 'Végans',      'var(--forest)') +
-    dietCard(stats.diets?.noAlcohol  ?? 0, 'Sans alcool', '#4A779D') +
-    `<div style="${cardStyle.replace('var(--sage,#9CAF88)', '#EAEAEA')}"
-          title="${allergiesTooltip}">
-      <div style="${numStyle}color:var(--gold);">${allergiesCount}</div>
-      <div style="${lblStyle}">Allergies</div>
-    </div>`;
-},
+      dietsContainer.innerHTML = `
+        <div class="card" style="${dietCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#3B7A57;">${stats.diets.vegetarian || 0}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végétariens</div>
+        </div>
+        <div class="card" style="${dietCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--forest, #2D5A3D);">${stats.diets.vegan || 0}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Végans</div>
+        </div>
+        <div class="card" style="${dietCardStyle}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#4A779D;">${stats.diets.noAlcohol || 0}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sans alcool</div>
+        </div>
+        <div class="card" style="${dietCardStyle}" title="${allergiesTooltip}">
+          <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--gold, #C9A84C);">${allergiesCount}</div>
+          <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Allergies déclarées</div>
+          ${allergiesCount > 0 ? `<div style="font-size:10px; color:var(--gold); margin-top:2px; max-width:90%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${allergiesTooltip}</div>` : ''}
+        </div>
+      `;
+    }
+  },
+
   // ════════════════════════════════════════════════
   // Liste des invités
   // ════════════════════════════════════════════════
@@ -1565,7 +1255,7 @@ async renderAccommodations() {
           .seating-grid { grid-template-columns: repeat(5, 1fr); }
         }
         .seating-table-card {
-          background: #fff;
+          background: #FAF8F5;
           border: 1.5px solid var(--sage, #9CAF88);
           border-radius: 8px;
           padding: 6px;
@@ -1805,5 +1495,6 @@ async renderAccommodations() {
       }
     };
   }
-}
+};  // ← fermeture de l'objet AdminDashboard
+
 export default AdminDashboard;
