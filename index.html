@@ -69,159 +69,39 @@
 </nav>
 
   <!-- ===================== PAGE : ACCUEIL ===================== -->
-  <section id="page-home" class="page active">
+<section id="page-home" class="page active">
     <div class="hero">
-     <p class="hero__prelude animate-on-scroll">Nous avons le bonheur de vous convier</p>
-	 <p class="hero__prelude animate-on-scroll">à célébrer le mariage de</p>
-      <h1 class="hero__title animate-on-scroll">
-        <span class="hero__names">Laetitia <span class="hero__ampersand">&amp;</span> Alexandre</span>
-      </h1>
+      <p class="hero__prelude animate-on-scroll">Nous avons le bonheur de vous convier</p>
+      <p class="hero__prelude animate-on-scroll">à célébrer le mariage de</p>
+      
+      <h1 class="hero__names animate-on-scroll">Laetitia &amp; Alexandre</h1>
 
-      <div class="hero__details animate-on-scroll">
-        <p class="hero__date">
-          <span class="hero__date-icon">✦</span>
-          8 mai 2027
-          <span class="hero__date-icon">✦</span>
-      </div>
-
-      <div class="hero__actions animate-on-scroll" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-          <a href="#/rsvp" class="btn btn--primary">Confirmer ma présence</a>
-          <a href="#/infos" class="btn--secondary">Informations pratiques</a>
-        </div>
-        <a href="#/mes-reponses" class="btn btn--outline" style="font-size: 0.85rem; padding: 10px 20px;">Modifier ma réponse</a>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ===================== PAGE : RSVP ===================== -->
-<section id="page-rsvp" class="page">
-    <div class="container">
-      <div id="rsvp-container"></div>
-    </div>
-  </section>
-  
-<!-- PAGE : INFOS PRATIQUES (hub) -->
-<section id="page-infos" class="page"></section>
- 
-<!-- PAGE : MESSE & RÉCEPTION -->
-<section id="page-infos-messe" class="page"></section>
- 
-<!-- PAGE : ANIMATIONS & DISCOURS -->
-<section id="page-infos-animations" class="page"></section>
- 
-<!-- PAGE : CONTACTS UTILES -->
-<section id="page-infos-contacts" class="page"></section>
-
-<!-- PAGE : COMMENT VENIR -->
-<section id="page-comment-venir" class="page"></section>
-
-  <!-- ===================== PAGE : COVOITURAGE ===================== -->
-  <section id="page-covoiturage" class="page">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Covoiturage</h2>
-        <div class="ornament"></div>
-        <p class="text-muted">Organisez vos trajets ensemble ! Proposez ou recherchez un covoiturage pour rejoindre le domaine.</p>
-      </div>
-
-      <div id="carpool-container"></div>
-    </div>
-  </section>
-
-<!-- ===================== PAGE : HÉBERGEMENTS ===================== -->
-  <section id="page-hebergements" class="page">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Où dormir ?</h2>
-        <div class="ornament"></div>
-        <p class="text-muted">Découvrez les hébergements à proximité du domaine pour profiter pleinement de la fête.</p>
-      </div>
-
-      <div id="map-container" style="height: 500px;"></div>
-
-      <section id="accommodations-list" class="accommodations-grid"></section>
-    </div>
-  </section>
- 
-<!-- PAGE : LISTE DE MARIAGE -->
-<section id="page-liste" class="page"></section>
-
-
-  <!-- ===================== PAGE : MES RÉPONSES ===================== -->
-  <section id="page-mes-reponses" class="page">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Mes réponses</h2>
-        <div class="ornament"></div>
-      </div>
-
-      <div id="guest-profile-container"></div>
-    </div>
-  </section>
-
-  <!-- ===================== PAGE : ADMIN LOGIN ===================== -->
-  <section id="page-admin" class="page">
-    <div class="container">
-      <div class="admin-login-wrapper">
-        <div class="card admin-login-card">
-          <div class="section-header">
-            <h2>Espace Mariés</h2>
-            <div class="ornament"></div>
-            <p class="text-muted">Connectez-vous pour accéder au tableau de bord.</p>
+      <div class="hero__body-split animate-on-scroll">
+        <div class="hero__details">
+          <div class="hero__date">
+            <span class="hero__date-icon">✦</span>
+            8 MAI 2027
+            <span class="hero__date-icon">✦</span>
           </div>
-
-          <form id="admin-login-form" class="admin-login-form" autocomplete="off">
-            <div class="form-group">
-              <label for="admin-password">Mot de passe</label>
-              <input type="password" id="admin-password" name="admin-password" placeholder="Entrez le mot de passe" required>
-            </div>
-            <p id="admin-error" class="form-error hidden"></p>
-            <button type="submit" id="admin-login-btn" class="btn btn--primary btn--full">Se connecter</button>
-          </form>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ===================== PAGE : ADMIN DASHBOARD ===================== -->
-  <section id="page-admin-dashboard" class="page">
-    <div class="container">
+        <p class="hero__rsvp animate-on-scroll">RSVP avant le 30 décembre 2026</p>
+
+        <div class="hero__actions">
+          <button class="btn btn--primary btn--full" onclick="Router.navigate('rsvp')">
+            Répondre à l'invitation
+          </button>
+          
+          <button class="btn btn--secondary btn--full" onclick="Router.navigate('infos')">
+            Informations pratiques
+          </button>
+
+          <a href="#/mes-reponses" class="btn btn--outline btn--full">
+            Modifier ma réponse
+          </a>
         </div>
-      </div>
-
-<!-- Stats Grid -->
-<div class="admin-grid">
-  <div class="stat-card" id="stat-total"></div>
-  <div class="stat-card" id="stat-confirmed"></div>
-  <div class="stat-card" id="stat-maybe"></div>
-  <div class="stat-card" id="stat-declined"></div>
-  <div class="stat-card" id="stat-pending"></div>
-</div>
-<div id="admin-loader" style="display:none; text-align:center; padding:20px; color:#9b8660;">
-  Chargement…
-</div>
-
-      <!-- Admin sections -->
-      <section id="admin-diets" class="admin-section">
-        <h3>Synthèse des régimes alimentaires</h3>
-      </section>
-
-      <section id="admin-guests-list" class="admin-section">
-        <h3>Liste des invités</h3>
-      </section>
-
-      <section id="admin-carpools" class="admin-section">
-        <h3>Synthèse covoiturage</h3>
-      </section>
-
-      <section id="admin-accommodations" class="admin-section">
-        <h3>Gestion des hébergements</h3>
-      </section>
-    </div>
-  </section>
-
+      </div> </div> </section>
+	  
 <section id="page-faq" class="page"></section>
   <!-- ===================== TOAST CONTAINER ===================== -->
   <div id="toast-container"></div>

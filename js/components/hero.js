@@ -38,9 +38,6 @@ const Hero = {
       || this._elements.page.querySelector('.hero') 
       || this._elements.page;
 
-    // 2. Restructuration du DOM (Prénoms, Bouton en gras, Émojis droits)
-    this._restructureHeroDOM();
-
     // 3. Lancement des animations et listeners
     this._animateEntrance();
     this._attachCTAListeners();
@@ -125,6 +122,7 @@ const Hero = {
       '.hero__names',
       '.hero__body-split',
       '.hero__details',
+	  '.hero__rsvp',
       '.hero__actions',
       '.scroll-indicator'
     ];

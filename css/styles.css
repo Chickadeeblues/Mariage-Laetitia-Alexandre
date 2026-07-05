@@ -34,6 +34,7 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
+  --nav-height: 72px;
 
   /* Motion */
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -393,6 +394,22 @@ p {
   background-color: var(--cream) !important; 
   overflow-y: auto !important;
 }
+/* ===================== HERO (HOME) ===================== */
+#page-home.page.active {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 100vh !important;
+  
+  /* PROTECTION ANTI-CHEVAUCHEMENT : 72px de menu + 30px de respiration */
+  padding-top: calc(72px + 30px) !important; 
+  padding-bottom: 40px !important;
+  margin-top: 0 !important;
+  background-color: var(--cream) !important; 
+  overflow-y: auto !important;
+}
+
 #page-home .hero,
 #page-home .hero-section {
   width: 100% !important;
@@ -409,23 +426,18 @@ p {
 
 .hero__prelude {
   font-family: var(--font-body);
-  font-size: clamp(0.8rem, 1.8vw, 0.95rem); /* Légèrement réduit pour maximiser le contraste avec les prénoms */
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
   font-weight: 300;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.20em;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   line-height: 1.2;
 }
 
-.hero__title {
-  margin: 0;
-  font-weight: 400;
-}
+.hero__title { margin: 0; font-weight: 400; }
 
-/* ==========================================================================
-   2. PRÉNOMS & ESPERLUETTE (FORCÉE EN PETIT)
-   ========================================================================== */
+/* PRÉNOMS & BALAYAGE DORÉ */
 .hero__names {
   display: flex !important;
   flex-direction: column !important;
@@ -437,7 +449,6 @@ p {
   font-weight: 400 !important;
   letter-spacing: 0.03em;
   
-  /* Balayage doré d'origine */
   background: linear-gradient(135deg, var(--forest) 0%, var(--gold) 50%, var(--forest) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -446,18 +457,19 @@ p {
   animation: shimmerText 6s ease-in-out infinite;
 }
 
-/* CORRECTION MAJEURE : Taille forcée en clamp() + inline-block pour empêcher le JS ou le Flexbox d'étirer le & */
+/* CORRECTION : On ajoute .hero-ampersand-stacked pour vaincre le JavaScript ! */
 .hero__names .hero__ampersand,
+.hero__names .hero-ampersand-stacked,
 span.hero__ampersand,
+span.hero-ampersand-stacked,
 .hero__ampersand {
   display: inline-block !important;
   font-family: var(--font-display) !important;
   font-style: italic !important;
-  font-size: clamp(1.1rem, 3vw, 1.8rem) !important; /* Strictement plus petit que les prénoms (4rem max) */
+  font-size: clamp(1.1rem, 3vw, 1.8rem) !important; /* Strictement plus petit que les prénoms */
   font-weight: 400 !important;
   color: var(--gold-light) !important;
   
-  /* Isolation totale du dégradé pour qu'il reste couleur or uni */
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
@@ -467,24 +479,57 @@ span.hero__ampersand,
   line-height: 1 !important;
 }
 
-/* ==========================================================================
-   3. NOUVEAU : TEXTE RSVP (STYLE PRÉLUDE)
-   ========================================================================== */
+/* NOUVEAU : TEXTE RSVP */
 .hero__rsvp {
   font-family: var(--font-body);
-  font-size: clamp(0.75rem, 1.8vw, 0.88rem); /* Léger et élégant */
+  font-size: clamp(0.75rem, 1.8vw, 0.88rem);
   font-weight: 400;
-  color: var(--forest); /* Ou var(--text-muted) selon votre préférence de contraste */
+  color: var(--forest);
   text-transform: uppercase;
-  letter-spacing: 0.22em; /* Espacement large typique de la haute papeterie */
-  margin: 16px 0 8px 0 !important; /* Espace équilibré entre la date et les boutons */
+  letter-spacing: 0.22em;
+  margin: 14px 0 8px 0 !important;
   text-align: center;
+  width: 100%;
 }
 
-/* ==========================================================================
-   4. EMPILEMENT ET ALIGNEMENT DES BOUTONS
-   ========================================================================== */
-.hero__actions {
+.hero__body-split {
+  margin: 8px auto 0 !important;
+  gap: 12px !important;
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.hero__details {
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  color: var(--text-dark);
+  line-height: 1.5;
+  margin: 0 !important;
+}
+
+.hero__date {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 400;
+  color: var(--text-dark);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.hero__date-icon {
+  display: inline-block;
+  color: var(--gold);
+  font-size: 0.75rem;
+  vertical-align: middle;
+  margin: 0 10px;
+  opacity: 0.9;
+}
+
+/* EMPILEMENT ET ALIGNEMENT DES 3 BOUTONS */
+.hero__actions,
+.hero__actions > div {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -494,16 +539,6 @@ span.hero__ampersand,
   margin-top: 8px !important;
 }
 
-/* Neutralisation si hero.js ajoute une div intermédiaire */
-.hero__actions > div {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  width: 100% !important;
-  gap: 12px !important;
-}
-
-/* Bridage strict de la largeur de TOUS les boutons du Hero pour qu'ils soient identiques */
 .hero__actions .btn,
 .hero__actions button,
 .hero__actions a.btn,
@@ -512,19 +547,18 @@ span.hero__ampersand,
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  max-width: 280px !important; /* Largeur identique pour les 3 */
-  min-height: 48px !important; /* Hauteur identique pour les 3 */
+  max-width: 280px !important;
+  min-height: 48px !important;
   box-sizing: border-box !important;
   margin: 0 auto !important;
-  text-decoration: none !important; /* Supprime le soulignement par défaut des liens <a> */
+  text-decoration: none !important;
 }
 
-/* -- Déclinaison du 3ème bouton (Outline / Modifier) -- */
 .hero__actions .btn--outline {
   background: transparent !important;
   color: var(--forest) !important;
   border: 1.5px solid var(--sage-light) !important;
-  font-size: 0.82rem !important; /* L'écriture est très légèrement plus fine pour hiérarchiser l'importance */
+  font-size: 0.82rem !important;
 }
 
 .hero__actions .btn--outline:hover {
