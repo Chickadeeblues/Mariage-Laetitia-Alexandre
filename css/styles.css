@@ -426,23 +426,6 @@ p {
   line-height: 0.92;
 }
 
-/* Typographie Playfair Display requise par hero.js */
-.hero-name-stacked {
-  font-family: var(--font-playfair), serif !important;
-  font-size: clamp(2.5rem, 6.5vw, 4rem) !important; /* Légèrement augmenté pour l'impact visuel principal */
-  font-weight: 500;
-  color: #3F4B34; /* Vert sauge sombre */
-  text-shadow: 0 2px 10px rgba(63, 75, 52, 0.05);
-}
-
-/* Typographie Playfair Display requise par hero.js */
-.hero-ampersand-stacked {
-  font-family: var(--font-playfair), serif !important;
-  font-size: clamp(1.8rem, 4.5vw, 2.4rem) !important;
-  color: var(--sage);
-  font-style: italic;
-  margin: 4px 0;
-}
 
 .hero__date {
   font-family: var(--font-display);
