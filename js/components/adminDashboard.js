@@ -2,24 +2,6 @@ import Store from '../store.js';
 import Router from '../utils/router.js';
 import Animations from '../utils/animations.js';
 
-// ════════════════════════════════════════════════════════════
-// Helpers Supabase (réutilisables)
-// ════════════════════════════════════════════════════════════
-_sb(path, opts = {}) {
-  const URL = 'https://upaxcudmifqwiglodywf.supabase.co/rest/v1/';
-  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
-  return fetch(URL + path, {
-    ...opts,
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-      ...(opts.headers || {})
-    }
-  });
-},
-
 // ── Couleurs des étiquettes checklist ──────────────────────────────────
 const CAT_COLORS = {
   'Messe':         { bg: '#dbeafe', color: '#1d4ed8' },  // bleu
@@ -97,6 +79,24 @@ const AdminDashboard = {
       }
     });
   },
+
+// ════════════════════════════════════════════════════════════
+// Helpers Supabase (réutilisables)
+// ════════════════════════════════════════════════════════════
+_sb(path, opts = {}) {
+  const URL = 'https://upaxcudmifqwiglodywf.supabase.co/rest/v1/';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+  return fetch(URL + path, {
+    ...opts,
+    headers: {
+      apikey: KEY,
+      Authorization: `Bearer ${KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...(opts.headers || {})
+    }
+  });
+},
 
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
