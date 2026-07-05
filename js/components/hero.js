@@ -11,7 +11,6 @@
  */
 
 import Animations from '../utils/animations.js';
-import Router from '../utils/router.js';
 
 const Hero = {
   /** Références DOM internes */
@@ -166,7 +165,7 @@ const Hero = {
           e.preventDefault();
           this._rippleEffect(link, e);
           setTimeout(() => {
-            Router.navigate(href);
+            window.location.hash = href;
           }, 300);
         }
       });
