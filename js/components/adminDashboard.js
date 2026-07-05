@@ -171,14 +171,12 @@ async renderDashboard() {
       Store.getStats(),
       this._loadTasks()
     ]);
- 
-    // Widget + barre de progression EN PREMIER
     await this.renderManagementZone(tasks);
  
-    // Puis le reste
     await Promise.all([
       this.renderStatsAndDiets(stats, guests),
       this.renderGuestsList(guests),
+	  this.renderSeatingPlan(guests),
       this.renderCarpools(stats),
       this.renderAccommodations()
     ]);
@@ -1153,6 +1151,330 @@ async renderAccommodations() {
   });
 },
 
+// ════════════════════════════════════════════════════════════
+  // GESTION DU PLAN DE TABLE (DRAG & DROP)
+  // ════════════════════════════════════════════════════════════
+
+  async _loadSeatingDb() {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_seating?id=eq.main&select=data`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) return rows[0].data;
+      }
+    } catch (e) { console.warn('Secours localStorage pour le plan de table'); }
+    
+    const local = localStorage.getItem('wedding_seating_plan');
+    return local ? JSON.parse(local) : {};
+  },
+
+  async _saveSeatingDb(data) {
+    localStorage.setItem('wedding_seating_plan', JSON.stringify(data));
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/wedding_seating`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({ id: 'main', data })
+      });
+    } catch (e) { console.error('Erreur sauvegarde Supabase seating:', e); }
+  },
+
+  async renderSeatingPlan(guests) {
+    const container = document.getElementById('admin-seating-plan');
+    if (!container) return;
+
+    // 1. Charger la disposition actuelle { "guest_id": table_number }
+    const seatingMap = await this._loadSeatingDb();
+
+    // 2. Extraire et formater tous les invités confirmés + accompagnants
+    const allPeople = [];
+    guests.forEach(g => {
+      const isConfirmed = g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1;
+      if (!isConfirmed) return;
+
+      const formatName = (first, last) => {
+        const f = (first || '').trim();
+        const l = (last || '').trim();
+        const initial = l ? ` ${l.charAt(0).toUpperCase()}.` : '';
+        return `${f}${initial}` || 'Invité';
+      };
+
+      // Invité principal
+      allPeople.push({
+        id: String(g.id),
+        name: formatName(g.firstName, g.lastName),
+        table: seatingMap[g.id] || null
+      });
+
+      // Accompagnants
+      if (Array.isArray(g.companions)) {
+        g.companions.forEach((comp, idx) => {
+          const compId = `${g.id}__c__${idx}`;
+          const parts = (comp.name || '').trim().split(' ');
+          const first = parts[0] || 'Accompagnant';
+          const last = parts.slice(1).join(' ');
+          allPeople.push({
+            id: compId,
+            name: formatName(first, last),
+            table: seatingMap[compId] || null
+          });
+        });
+      }
+    });
+
+    // 3. Séparer placés et non placés
+    const unassigned = allPeople.filter(p => !p.table || p.table < 1 || p.table > 10);
+    const tables = Array.from({ length: 10 }, (_, i) => ({
+      number: i + 1,
+      guests: allPeople.filter(p => Number(p.table) === i + 1)
+    }));
+
+    // 4. Générer le HTML et le CSS intégré
+    const css = `
+      <style>
+        .seating-wrapper { margin-top: 15px; font-family: var(--font-body); }
+        .seating-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        @media (min-width: 1100px) {
+          .seating-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+        .seating-table-card {
+          background: #fff;
+          border: 1.5px solid var(--sage, #9CAF88);
+          border-radius: var(--radius-md, 12px);
+          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .seating-table-header {
+          font-weight: 700;
+          color: var(--forest, #2D5A3D);
+          border-bottom: 1px solid #eee;
+          padding-bottom: 6px;
+          margin-bottom: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 13px;
+        }
+        .seating-table-header badge {
+          font-size: 11px;
+          background: #f0f4ef;
+          color: var(--forest);
+          padding: 2px 6px;
+          border-radius: 10px;
+        }
+        .seating-slots {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px;
+          flex: 1;
+        }
+        .seat-slot {
+          height: 32px;
+          border: 1px dashed #ccc;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          color: #aaa;
+          background: #fafafa;
+          transition: all 0.2s;
+          overflow: hidden;
+        }
+        .seat-slot.drag-over {
+          background: #e8f0e6;
+          border-color: var(--forest);
+          transform: scale(1.02);
+        }
+        .guest-chip {
+          background: var(--forest, #2D5A3D);
+          color: #fff;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 500;
+          cursor: grab;
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          text-align: center;
+          box-sizing: border-box;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+          transition: opacity 0.2s;
+        }
+        .guest-chip:active { cursor: grabbing; }
+        .guest-chip.dragging { opacity: 0.4; }
+        
+        .unassigned-pool {
+          background: var(--cream, #FAF8F5);
+          border: 1.5px solid var(--gold, #C9A84C);
+          border-radius: var(--radius-lg, 16px);
+          padding: 16px;
+          min-height: 80px;
+        }
+        .unassigned-pool.drag-over {
+          background: #fff8eb;
+          border-style: dashed;
+        }
+        .unassigned-title {
+          font-weight: 700;
+          color: var(--text-dark);
+          margin-bottom: 12px;
+          font-size: 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .unassigned-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .unassigned-chips .guest-chip {
+          width: auto;
+          background: #fff;
+          color: var(--forest);
+          border: 1px solid var(--forest);
+          padding: 6px 12px;
+        }
+      </style>
+    `;
+
+    let html = `${css}<div class="seating-wrapper">`;
+
+    // Grille des 10 tables
+    html += `<div class="seating-grid">`;
+    tables.forEach(t => {
+      const isFull = t.guests.length >= 8;
+      html += `
+        <div class="seating-table-card">
+          <div class="seating-table-header">
+            <span>Table ${t.number}</span>
+            <span style="color:${isFull ? 'red' : 'inherit'}">${t.guests.length}/8</span>
+          </div>
+          <div class="seating-slots">
+      `;
+      
+      // 8 places par table
+      for (let i = 0; i < 8; i++) {
+        const guest = t.guests[i];
+        if (guest) {
+          html += `
+            <div class="seat-slot" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, ${t.number})">
+              <div class="guest-chip" draggable="true" ondragstart="window._seatingDragStart(event, '${guest.id}')" title="${guest.name}">
+                ${guest.name}
+              </div>
+            </div>`;
+        } else {
+          html += `
+            <div class="seat-slot" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, ${t.number})">
+              vide
+            </div>`;
+        }
+      }
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    // Zone des non placés
+    html += `
+      <div class="unassigned-pool" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, null)">
+        <div class="unassigned-title">
+          <span>👥 Invités à placer (${unassigned.length})</span>
+          <button class="btn btn--outline btn--sm" onclick="window._seatingReset()" style="font-size:11px; padding:2px 8px;">Réinitialiser le plan</button>
+        </div>
+        <div class="unassigned-chips">
+          ${unassigned.length > 0 
+            ? unassigned.map(g => `
+              <div class="guest-chip" draggable="true" ondragstart="window._seatingDragStart(event, '${g.id}')" title="${g.name}">
+                ${g.name}
+              </div>`).join('') 
+            : `<span class="text-muted" style="font-size:13px; font-style:italic;">Tous les invités confirmés ont été placés ! 🎉</span>`}
+        </div>
+      </div>
+    </div>`;
+
+    container.innerHTML = html;
+    this._bindSeatingHandlers(allPeople, seatingMap);
+  },
+
+  _bindSeatingHandlers(allPeople, seatingMap) {
+    window._seatingDragStart = (e, guestId) => {
+      e.dataTransfer.setData('text/plain', guestId);
+      e.target.classList.add('dragging');
+    };
+
+    window._seatingDragOver = (e) => {
+      e.preventDefault(); // Nécessaire pour autoriser le Drop
+      const slot = e.currentTarget;
+      slot.classList.add('drag-over');
+      slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'), { once: true });
+    };
+
+    window._seatingDrop = async (e, targetTable) => {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      
+      const guestId = e.dataTransfer.getData('text/plain');
+      if (!guestId) return;
+
+      // Vérifier si la table cible n'est pas déjà pleine (sauf si on échange ou qu'on remet à zéro)
+      if (targetTable !== null) {
+        const currentCount = Object.values(seatingMap).filter(val => Number(val) === targetTable).length;
+        // Si l'invité n'était pas déjà à cette table et qu'elle a 8 personnes
+        if (seatingMap[guestId] !== targetTable && currentCount >= 8) {
+          if (typeof Animations !== 'undefined' && Animations.showToast) {
+            Animations.showToast("Cette table est déjà complète (8 places max)", "error");
+          } else {
+            alert("Cette table est déjà complète (8 places max)");
+          }
+          return;
+        }
+      }
+
+      // Mise à jour de la carte de placement
+      if (targetTable === null) {
+        delete seatingMap[guestId];
+      } else {
+        seatingMap[guestId] = targetTable;
+      }
+
+      // Sauvegarde et re-rendu
+      await this._saveSeatingDb(seatingMap);
+      if (typeof Store !== 'undefined' && Store.getGuests) {
+        this.renderSeatingPlan(await Store.getGuests());
+      }
+    };
+
+    window._seatingReset = async () => {
+      if (confirm("Voulez-vous vraiment réinitialiser tout le plan de table ?")) {
+        await this._saveSeatingDb({});
+        if (typeof Store !== 'undefined' && Store.getGuests) {
+          this.renderSeatingPlan(await Store.getGuests());
+        }
+      }
+    };
+  }
 
 };  // ← fermeture de l'objet AdminDashboard
 
