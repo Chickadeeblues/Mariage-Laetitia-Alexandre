@@ -68,7 +68,7 @@
   </div>
 </nav>
 
-  <!-- ===================== PAGE : ACCUEIL ===================== -->
+	<!-- ===================== PAGE : ACCUEIL ===================== -->
 <section id="page-home" class="page active">
     <div class="hero">
       <p class="hero__prelude animate-on-scroll">Nous avons le bonheur de vous convier</p>
@@ -101,8 +101,111 @@
           </a>
         </div>
       </div> </div> </section>
-	  
+
+	<!-- ===================== PAGE : RSVP ===================== -->
+<section id="page-rsvp" class="page">
+    <div class="container">
+      <div id="rsvp-container"></div>
+    </div>
+  </section>
+
+	<!-- ===================== PAGE : INFOS PRATIQUES ===================== -->
+<section id="page-infos" class="page"></section>
+	<!-- PAGE : MESSE & RÉCEPTION -->
+<section id="page-infos-messe" class="page"></section>
+	<!-- PAGE : COMMENT VENIR -->
+<section id="page-comment-venir" class="page"></section>
+	<!-- PAGE : COVOITURAGE -->
+<section id="page-covoiturage" class="page"></section>
+	<!-- PAGE : HERBEGEMENT -->
+<section id="page-hebergements" class="page"></section>
+	<!-- PAGE : ANIMATIONS & DISCOURS -->
+<section id="page-infos-animations" class="page"></section>
+	<!-- PAGE : LISTE DE MARIAGE -->
+<section id="page-liste" class="page"></section>
+	<!-- PAGE : CONTACTS UTILES -->
+<section id="page-infos-contacts" class="page"></section>
+	<!-- PAGE : FAQ -->
 <section id="page-faq" class="page"></section>
+
+<!-- ===================== PAGE : MES RÉPONSES ===================== -->
+  <section id="page-mes-reponses" class="page">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <h2>Mes réponses</h2>
+        <div class="ornament"></div>
+      </div>
+
+      <div id="guest-profile-container"></div>
+    </div>
+  </section>
+
+<!-- ===================== PAGE : ADMIN LOGIN ===================== -->
+  <section id="page-admin" class="page">
+    <div class="container">
+      <div class="admin-login-wrapper">
+        <div class="card admin-login-card">
+          <div class="section-header">
+            <h2>Espace Mariés</h2>
+            <div class="ornament"></div>
+            <p class="text-muted">Connectez-vous pour accéder au tableau de bord.</p>
+          </div>
+
+          <form id="admin-login-form" class="admin-login-form" autocomplete="off">
+            <div class="form-group">
+              <label for="admin-password">Mot de passe</label>
+              <input type="password" id="admin-password" name="admin-password" placeholder="Entrez le mot de passe" required>
+            </div>
+            <p id="admin-error" class="form-error hidden"></p>
+            <button type="submit" id="admin-login-btn" class="btn btn--primary btn--full">Se connecter</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ===================== PAGE : ADMIN DASHBOARD ===================== -->
+  <section id="page-admin-dashboard" class="page">
+    <div class="container">
+      <div class="admin-header">
+        <div class="section-header">
+          <h2>Tableau de bord</h2>
+          <div class="ornament"></div>
+        </div>
+        <button id="admin-logout-btn" class="btn btn--outline">Déconnexion</button>
+      </div>
+
+<!-- Stats Grid -->
+<div class="admin-grid">
+  <div class="stat-card" id="stat-total"></div>
+  <div class="stat-card" id="stat-confirmed"></div>
+  <div class="stat-card" id="stat-maybe"></div>
+  <div class="stat-card" id="stat-declined"></div>
+  <div class="stat-card" id="stat-pending"></div>
+</div>
+<div id="admin-loader" style="display:none; text-align:center; padding:20px; color:#9b8660;">
+  Chargement…
+</div>
+
+      <!-- Admin sections -->
+      <section id="admin-diets" class="admin-section">
+        <h3>Synthèse des régimes alimentaires</h3>
+      </section>
+
+      <section id="admin-guests-list" class="admin-section">
+        <h3>Liste des invités</h3>
+      </section>
+
+      <section id="admin-carpools" class="admin-section">
+        <h3>Synthèse covoiturage</h3>
+      </section>
+
+      <section id="admin-accommodations" class="admin-section">
+        <h3>Gestion des hébergements</h3>
+      </section>
+    </div>
+  </section>
+
   <!-- ===================== TOAST CONTAINER ===================== -->
   <div id="toast-container"></div>
 
