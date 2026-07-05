@@ -79,9 +79,7 @@ const AdminDashboard = {
       }
     });
   },
-  // ════════════════════════════════════════════════
-  // Dashboard principal
-  // ════════════════════════════════════════════════
+
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
   // ════════════════════════════════════════════════════════════
@@ -612,7 +610,6 @@ _bindChecklistHandlers(tasks, groups) {
 toggleTask(id) {
   // Conservé pour compatibilité — non utilisé directement
 },
-
 
   showLoader() {
     const el = document.getElementById('admin-loader');
@@ -1152,7 +1149,7 @@ async renderAccommodations() {
 },
 
 // ════════════════════════════════════════════════════════════
-  // GESTION DU PLAN DE TABLE (DRAG & DROP)
+  // GESTION DU PLAN DE TABLE COMPACT & RENOMMABLE (DRAG & DROP)
   // ════════════════════════════════════════════════════════════
 
   async _loadSeatingDb() {
@@ -1169,7 +1166,7 @@ async renderAccommodations() {
     } catch (e) { console.warn('Secours localStorage pour le plan de table'); }
     
     const local = localStorage.getItem('wedding_seating_plan');
-    return local ? JSON.parse(local) : {};
+    return local ? JSON.parse(local) : { guests: {}, tableNames: {} };
   },
 
   async _saveSeatingDb(data) {
@@ -1194,8 +1191,13 @@ async renderAccommodations() {
     const container = document.getElementById('admin-seating-plan');
     if (!container) return;
 
-    // 1. Charger la disposition actuelle { "guest_id": table_number }
-    const seatingMap = await this._loadSeatingDb();
+    // 1. Charger la disposition et assurer la compatibilité de structure
+    const rawData = await this._loadSeatingDb();
+    const seatingData = {
+      guests: rawData.guests || (rawData.tableNames ? {} : rawData), // Rétro-compatibilité
+      tableNames: rawData.tableNames || {}
+    };
+    const seatingMap = seatingData.guests;
 
     // 2. Extraire et formater tous les invités confirmés + accompagnants
     const allPeople = [];
@@ -1210,14 +1212,12 @@ async renderAccommodations() {
         return `${f}${initial}` || 'Invité';
       };
 
-      // Invité principal
       allPeople.push({
         id: String(g.id),
         name: formatName(g.firstName, g.lastName),
         table: seatingMap[g.id] || null
       });
 
-      // Accompagnants
       if (Array.isArray(g.companions)) {
         g.companions.forEach((comp, idx) => {
           const compId = `${g.id}__c__${idx}`;
@@ -1237,18 +1237,19 @@ async renderAccommodations() {
     const unassigned = allPeople.filter(p => !p.table || p.table < 1 || p.table > 10);
     const tables = Array.from({ length: 10 }, (_, i) => ({
       number: i + 1,
+      name: seatingData.tableNames[i + 1] || `Table ${i + 1}`,
       guests: allPeople.filter(p => Number(p.table) === i + 1)
     }));
 
-    // 4. Générer le HTML et le CSS intégré
+    // 4. CSS Ultra-Compact (Sans scroll, teintes sauge)
     const css = `
       <style>
-        .seating-wrapper { margin-top: 15px; font-family: var(--font-body); }
+        .seating-wrapper { margin-top: 4px; font-family: var(--font-body); }
         .seating-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 8px;
+          margin-bottom: 12px;
         }
         @media (min-width: 1100px) {
           .seating-grid { grid-template-columns: repeat(5, 1fr); }
@@ -1256,46 +1257,53 @@ async renderAccommodations() {
         .seating-table-card {
           background: #fff;
           border: 1.5px solid var(--sage, #9CAF88);
-          border-radius: var(--radius-md, 12px);
-          padding: 10px;
+          border-radius: 8px;
+          padding: 6px;
           display: flex;
           flex-direction: column;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
         .seating-table-header {
           font-weight: 700;
           color: var(--forest, #2D5A3D);
-          border-bottom: 1px solid #eee;
-          padding-bottom: 6px;
-          margin-bottom: 8px;
+          border-bottom: 1px solid #f0f0f0;
+          padding-bottom: 4px;
+          margin-bottom: 6px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 13px;
+          font-size: 12px;
         }
-        .seating-table-header badge {
+        .seating-table-header span {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 85%;
+        }
+        .btn-rename-table {
+          background: none;
+          border: none;
+          cursor: pointer;
           font-size: 11px;
-          background: #f0f4ef;
-          color: var(--forest);
-          padding: 2px 6px;
-          border-radius: 10px;
+          padding: 0 2px;
+          opacity: 0.5;
+          transition: opacity 0.15s;
         }
+        .btn-rename-table:hover { opacity: 1; }
         .seating-slots {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px;
+          gap: 4px;
           flex: 1;
         }
         .seat-slot {
-          height: 32px;
-          border: 1px dashed #ccc;
-          border-radius: 6px;
+          height: 26px;
+          border: 1px dashed #dedede;
+          border-radius: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 11px;
-          color: #aaa;
-          background: #fafafa;
+          background: #fafbfc;
           transition: all 0.2s;
           overflow: hidden;
         }
@@ -1305,10 +1313,8 @@ async renderAccommodations() {
           transform: scale(1.02);
         }
         .guest-chip {
-          background: var(--forest, #2D5A3D);
-          color: #fff;
-          padding: 4px 8px;
-          border-radius: 6px;
+          padding: 2px 5px;
+          border-radius: 4px;
           font-size: 11px;
           font-weight: 500;
           cursor: grab;
@@ -1319,18 +1325,32 @@ async renderAccommodations() {
           width: 100%;
           text-align: center;
           box-sizing: border-box;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-          transition: opacity 0.2s;
+          transition: opacity 0.2s, transform 0.1s;
+        }
+        /* Style des invités PLACÉS sur les tables (Vert Sauge) */
+        .seat-slot .guest-chip {
+          background: var(--sage, #9CAF88);
+          color: #fff;
+          font-weight: 600;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        /* Style des invités NON PLACÉS dans la zone d'attente (Fond blanc, contour sapin) */
+        .unassigned-chips .guest-chip {
+          width: auto;
+          background: #fff;
+          color: var(--forest, #2D5A3D);
+          border: 1px solid var(--forest, #2D5A3D);
+          padding: 4px 10px;
         }
         .guest-chip:active { cursor: grabbing; }
         .guest-chip.dragging { opacity: 0.4; }
         
         .unassigned-pool {
           background: var(--cream, #FAF8F5);
-          border: 1.5px solid var(--gold, #C9A84C);
-          border-radius: var(--radius-lg, 16px);
-          padding: 16px;
-          min-height: 80px;
+          border: 1px solid var(--gold, #C9A84C);
+          border-radius: 10px;
+          padding: 10px 14px;
+          min-height: 50px;
         }
         .unassigned-pool.drag-over {
           background: #fff8eb;
@@ -1339,8 +1359,8 @@ async renderAccommodations() {
         .unassigned-title {
           font-weight: 700;
           color: var(--text-dark);
-          margin-bottom: 12px;
-          font-size: 14px;
+          margin-bottom: 8px;
+          font-size: 13px;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -1348,34 +1368,27 @@ async renderAccommodations() {
         .unassigned-chips {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-        }
-        .unassigned-chips .guest-chip {
-          width: auto;
-          background: #fff;
-          color: var(--forest);
-          border: 1px solid var(--forest);
-          padding: 6px 12px;
+          gap: 6px;
         }
       </style>
     `;
 
     let html = `${css}<div class="seating-wrapper">`;
 
-    // Grille des 10 tables
+    // Grille compacte des 10 tables
     html += `<div class="seating-grid">`;
     tables.forEach(t => {
-      const isFull = t.guests.length >= 8;
+      const safeName = t.name.replace(/'/g, "\\'");
       html += `
         <div class="seating-table-card">
           <div class="seating-table-header">
-            <span>Table ${t.number}</span>
-            <span style="color:${isFull ? 'red' : 'inherit'}">${t.guests.length}/8</span>
+            <span id="t-name-${t.number}" title="${t.name}">${t.name}</span>
+            <button class="btn-rename-table" onclick="window._seatingRename(${t.number}, '${safeName}')" title="Renommer la table">✏️</button>
           </div>
           <div class="seating-slots">
       `;
       
-      // 8 places par table
+      // 8 places par table (sans le texte 'vide')
       for (let i = 0; i < 8; i++) {
         const guest = t.guests[i];
         if (guest) {
@@ -1387,21 +1400,19 @@ async renderAccommodations() {
             </div>`;
         } else {
           html += `
-            <div class="seat-slot" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, ${t.number})">
-              vide
-            </div>`;
+            <div class="seat-slot" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, ${t.number})"></div>`;
         }
       }
       html += `</div></div>`;
     });
     html += `</div>`;
 
-    // Zone des non placés
+    // Zone compacte des non placés
     html += `
       <div class="unassigned-pool" ondragover="window._seatingDragOver(event)" ondrop="window._seatingDrop(event, null)">
         <div class="unassigned-title">
           <span>👥 Invités à placer (${unassigned.length})</span>
-          <button class="btn btn--outline btn--sm" onclick="window._seatingReset()" style="font-size:11px; padding:2px 8px;">Réinitialiser le plan</button>
+          <button class="btn btn--outline btn--sm" onclick="window._seatingReset()" style="font-size:11px; padding:2px 8px;">Réinitialiser</button>
         </div>
         <div class="unassigned-chips">
           ${unassigned.length > 0 
@@ -1409,23 +1420,35 @@ async renderAccommodations() {
               <div class="guest-chip" draggable="true" ondragstart="window._seatingDragStart(event, '${g.id}')" title="${g.name}">
                 ${g.name}
               </div>`).join('') 
-            : `<span class="text-muted" style="font-size:13px; font-style:italic;">Tous les invités confirmés ont été placés ! 🎉</span>`}
+            : `<span class="text-muted" style="font-size:12px; font-style:italic;">Tous les invités confirmés ont été placés ! 🎉</span>`}
         </div>
       </div>
     </div>`;
 
     container.innerHTML = html;
-    this._bindSeatingHandlers(allPeople, seatingMap);
+    this._bindSeatingHandlers(allPeople, seatingData);
   },
 
-  _bindSeatingHandlers(allPeople, seatingMap) {
+  _bindSeatingHandlers(allPeople, seatingData) {
+    const seatingMap = seatingData.guests;
+
+    window._seatingRename = async (tableNum, currentName) => {
+      const newName = prompt(`Donnez un nom à la Table ${tableNum} :`, currentName);
+      if (newName === null) return;
+      const trimmed = newName.trim() || `Table ${tableNum}`;
+      seatingData.tableNames[tableNum] = trimmed;
+      await this._saveSeatingDb(seatingData);
+      const label = document.getElementById(`t-name-${tableNum}`);
+      if (label) { label.textContent = trimmed; label.title = trimmed; }
+    };
+
     window._seatingDragStart = (e, guestId) => {
       e.dataTransfer.setData('text/plain', guestId);
       e.target.classList.add('dragging');
     };
 
     window._seatingDragOver = (e) => {
-      e.preventDefault(); // Nécessaire pour autoriser le Drop
+      e.preventDefault();
       const slot = e.currentTarget;
       slot.classList.add('drag-over');
       slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'), { once: true });
@@ -1438,10 +1461,8 @@ async renderAccommodations() {
       const guestId = e.dataTransfer.getData('text/plain');
       if (!guestId) return;
 
-      // Vérifier si la table cible n'est pas déjà pleine (sauf si on échange ou qu'on remet à zéro)
       if (targetTable !== null) {
         const currentCount = Object.values(seatingMap).filter(val => Number(val) === targetTable).length;
-        // Si l'invité n'était pas déjà à cette table et qu'elle a 8 personnes
         if (seatingMap[guestId] !== targetTable && currentCount >= 8) {
           if (typeof Animations !== 'undefined' && Animations.showToast) {
             Animations.showToast("Cette table est déjà complète (8 places max)", "error");
@@ -1452,30 +1473,28 @@ async renderAccommodations() {
         }
       }
 
-      // Mise à jour de la carte de placement
       if (targetTable === null) {
         delete seatingMap[guestId];
       } else {
         seatingMap[guestId] = targetTable;
       }
 
-      // Sauvegarde et re-rendu
-      await this._saveSeatingDb(seatingMap);
+      await this._saveSeatingDb(seatingData);
       if (typeof Store !== 'undefined' && Store.getGuests) {
         this.renderSeatingPlan(await Store.getGuests());
       }
     };
 
     window._seatingReset = async () => {
-      if (confirm("Voulez-vous vraiment réinitialiser tout le plan de table ?")) {
-        await this._saveSeatingDb({});
+      if (confirm("Voulez-vous vraiment réinitialiser tout le plan de table (les noms de tables seront conservés) ?")) {
+        seatingData.guests = {};
+        await this._saveSeatingDb(seatingData);
         if (typeof Store !== 'undefined' && Store.getGuests) {
           this.renderSeatingPlan(await Store.getGuests());
         }
       }
     };
   }
-
 };  // ← fermeture de l'objet AdminDashboard
 
 export default AdminDashboard;
