@@ -1565,7 +1565,7 @@ async renderAccommodations() {
           .seating-grid { grid-template-columns: repeat(5, 1fr); }
         }
         .seating-table-card {
-          background: #FAF8F5;
+          background: #fff;
           border: 1.5px solid var(--sage, #9CAF88);
           border-radius: 8px;
           padding: 6px;
@@ -1805,6 +1805,4 @@ async renderAccommodations() {
       }
     };
   }
-};  // ← fermeture de l'objet AdminDashboard
-
 export default AdminDashboard;
