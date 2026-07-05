@@ -418,13 +418,11 @@ p {
   line-height: 1.2;
 }
 
-/* 1. Réinitialisation du conteneur H1 */
 .hero__title {
   margin: 0;
   font-weight: 400;
 }
 
-/* 2. Prénoms : Votre grand format + Votre balayage doré 135deg intact */
 .hero__names {
   display: flex !important;
   flex-direction: column;
@@ -462,7 +460,6 @@ p {
   margin: 10px 0;
 }
 
-/* 4. Date : Bien proportionnée sous les grands prénoms */
 .hero__date {
   font-family: var(--font-display);
   font-size: clamp(1.2rem, 2.5vw, 1.6rem);
@@ -472,7 +469,6 @@ p {
   margin-bottom: 4px;
 }
 
-/* 5. Étoiles de la date (✦) */
 .hero__date-icon {
   display: inline-block;
   color: var(--gold);
@@ -499,6 +495,131 @@ p {
   line-height: 1.5;
   margin: 0 !important;
 }
+
+/* ===================== STRUCTURE DES BOUTONS HERO (EMPILÉS & MÊME TAILLE) ===================== */
+.hero__actions {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  gap: 12px !important;
+  margin-top: 24px;
+}
+
+/* Neutralise et empile les boutons peu importe les sous-conteneurs (div) du HTML */
+.hero__actions div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 12px !important;
+}
+
+/* Force TOUS les boutons à adopter exactement la même largeur élégante */
+.hero__actions .btn,
+.hero__actions [class*="btn--"] {
+  width: 100% !important;
+  max-width: 290px !important; /* Largeur fixe commune harmonieuse */
+  box-sizing: border-box;
+}
+
+
+/* ===================== DESIGN SYSTEM DES BOUTONS ===================== */
+.btn, .btn--secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600; /* Un peu plus d'épaisseur pour le raffinement */
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition);
+  letter-spacing: 0.06em;
+  text-transform: uppercase; /* Rendu "faire-part chic" haut de gamme */
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn:active, .btn--secondary:active {
+  transform: scale(0.98) !important;
+}
+
+/* 1. Déclinaison VERT (Vert sapin forêt profond) */
+.btn--primary {
+  background: var(--forest);
+  color: var(--white) !important;
+  border-color: var(--forest);
+  box-shadow: 0 2px 8px rgba(45, 90, 61, 0.1);
+}
+
+.btn--primary:hover {
+  background: #20412c; /* Légèrement plus sombre */
+  border-color: #20412c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(45, 90, 61, 0.25);
+}
+
+/* 2. Déclinaison SAUGE (Vert sauge doux signature) */
+.btn--secondary, .btn--sage {
+  background: var(--sage) !important;
+  color: var(--white) !important;
+  border-color: var(--sage) !important;
+  box-shadow: 0 2px 8px rgba(156, 175, 136, 0.1);
+}
+
+.btn--secondary:hover, .btn--sage:hover {
+  background: var(--sage-dark) !important;
+  border-color: var(--sage-dark) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(122, 139, 105, 0.25);
+}
+
+/* 3. Déclinaison CRÈME (Épuré, lumineux et doux) */
+.btn--cream, .btn--outline {
+  background: var(--cream-light) !important;
+  color: var(--forest) !important;
+  border-color: var(--sage-light) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.btn--cream:hover, .btn--outline:hover {
+  background: var(--white) !important;
+  border-color: var(--sage) !important;
+  color: var(--forest) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(156, 175, 136, 0.15);
+}
+
+/* 4. Déclinaison DORÉE (Prestigieux éclat d'or) */
+.btn--gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  color: var(--text-dark) !important;
+  border-color: var(--gold);
+  box-shadow: 0 2px 8px rgba(201, 168, 76, 0.15);
+}
+
+.btn--gold:hover {
+  background: linear-gradient(135deg, #b8973f 0%, var(--gold) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3);
+}
+
+/* --- Utilitaires conservés --- */
+.btn--full { width: 100%; }
+.btn--sm { padding: 8px 18px; font-size: 0.82rem; }
+.btn--danger { background: #d94f4f; color: var(--white); border-color: #d94f4f; }
+.btn--danger:hover { background: #c03e3e; transform: translateY(-2px); }
+
 /* ===================== GOLD LINE / ORNAMENTS ===================== */
 .gold-line {
   border: none;
@@ -562,112 +683,6 @@ p {
   line-height: 1.7;
 }
 
-
-/* ===================== BUTTONS ===================== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 32px;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition:
-    background var(--transition),
-    color var(--transition),
-    border-color var(--transition),
-    transform var(--transition),
-    box-shadow var(--transition);
-  letter-spacing: 0.03em;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.btn:active {
-  transform: scale(0.98);
-}
-
-/* Primary – Vert sapin */
-.btn--primary {
-  background: linear-gradient(135deg, var(--forest) 0%, #3a7350 100%);
-  color: var(--white);
-  border-color: var(--forest);
-}
-
-.btn--primary:hover {
-  background: linear-gradient(135deg, #245a32 0%, var(--forest) 100%);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 24px rgba(45, 90, 61, 0.25);
-}
-
-/* Secondary – Bordure vert sauge */
-.btn--secondary {
-  background: transparent!important;
-  color: var(--forest)!important;
-  border-color: var(--sage)!important;
-}
-
-.btn--secondary:hover {
-  background: var(--sage);
-  color: var(--white);
-  border-color: var(--sage);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 24px rgba(156, 175, 136, 0.25);
-}
-
-/* Gold */
-.btn--gold {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-  color: var(--text-dark);
-  border-color: var(--gold);
-}
-
-.btn--gold:hover {
-  background: linear-gradient(135deg, #b8973f 0%, var(--gold) 100%);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 24px rgba(201, 168, 76, 0.3);
-}
-
-/* Outline */
-.btn--outline {
-  background: transparent;
-  color: var(--text-dark);
-  border-color: rgba(44, 44, 44, 0.2);
-}
-
-.btn--outline:hover {
-  border-color: var(--forest);
-  color: var(--forest);
-  background: rgba(45, 90, 61, 0.04);
-}
-
-/* Full width */
-.btn--full {
-  width: 100%;
-}
-
-/* Small */
-.btn--sm {
-  padding: 8px 18px;
-  font-size: 0.82rem;
-}
-
-/* Danger */
-.btn--danger {
-  background: #d94f4f;
-  color: var(--white);
-  border-color: #d94f4f;
-}
-
-.btn--danger:hover {
-  background: #c03e3e;
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 24px rgba(217, 79, 79, 0.3);
-}
 
 
 /* ===================== CARDS ===================== */
