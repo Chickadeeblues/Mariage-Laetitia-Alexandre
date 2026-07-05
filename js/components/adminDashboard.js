@@ -1805,4 +1805,5 @@ async renderAccommodations() {
       }
     };
   }
+}
 export default AdminDashboard;
