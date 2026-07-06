@@ -173,7 +173,7 @@ init() {
     // 4. Restauration de l'onglet actif ou valeur par défaut ('guests')
     const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
     activateTab(savedTab);
-  }
+  },
 
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
