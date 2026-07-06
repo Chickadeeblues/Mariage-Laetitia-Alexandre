@@ -85,14 +85,11 @@ init() {
  // ════════════════════════════════════════════════════════════
   // Gestion des onglets intercalaires
   // ════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════
-  // Gestion des onglets intercalaires
-  // ════════════════════════════════════════════════════════════
   initTabs() {
     const nav = document.getElementById('admin-tabs-nav');
     if (!nav) return;
 
-    // 1. CSS optimisé : marges collées et masquage complet du curseur de scroll inutile
+    // 1. CSS optimisé : marges réduites pour coller la section aux onglets
     if (!document.getElementById('admin-tabs-styles')) {
       const css = `
         <style id="admin-tabs-styles">
@@ -100,16 +97,9 @@ init() {
             display: flex;
             gap: 6px;
             border-bottom: 2px solid #e8e0d0;
-            margin-bottom: 4px; /* Réduit au maximum pour coller au contenu */
+            margin-bottom: 4px; /* Réduit pour coller au contenu */
             overflow-x: auto;
             padding-bottom: 0;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Masque la barre sur Firefox */
-            -ms-overflow-style: none;  /* Masque la barre sur IE/Edge */
-          }
-          /* Masque le curseur de scroll sur Chrome, Safari, Opera */
-          .admin-tabs::-webkit-scrollbar {
-            display: none;
           }
           .admin-tab {
             background: none;
@@ -123,7 +113,7 @@ init() {
             border-radius: 8px 8px 0 0;
             transition: all 0.2s ease;
             white-space: nowrap;
-            margin-bottom: -2px; /* Permet d'épouser la ligne de bordure */
+            margin-bottom: -2px; /* Permet à l'onglet actif de recouvrir la ligne */
           }
           .admin-tab:hover {
             color: var(--forest, #2D5A3D);
@@ -133,7 +123,7 @@ init() {
             color: var(--forest, #2D5A3D);
             font-weight: 700;
             border-bottom: 2px solid var(--forest, #2D5A3D);
-            background: rgba(156, 175, 136, 0.12);
+            background: rgba(156, 175, 136, 0.15); /* Optionnel : léger fond pour bien marquer l'onglet */
           }
           .admin-tab-panel {
             display: none;
@@ -143,10 +133,9 @@ init() {
             display: block;
           }
           /* Force la suppression de l'espace vide en haut des sections internes */
-          .admin-tab-panel .admin-section,
-          .admin-tab-panel #admin-mgmt {
+          .admin-tab-panel .admin-section {
             margin-top: 0 !important;
-            padding-top: 10px !important;
+            padding-top: 8px !important;
           }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(3px); }
@@ -157,11 +146,11 @@ init() {
       document.head.insertAdjacentHTML('beforeend', css);
     }
 
-    // 2. Nettoyage des anciens écouteurs par clonage pour éviter les conflits au refresh
+    // 2. Nettoyage des anciens écouteurs par clonage
     const oldButtons = nav.querySelectorAll('.admin-tab');
     oldButtons.forEach(btn => btn.replaceWith(btn.cloneNode(true)));
 
-    // 3. RE-SÉLECTION des éléments APRES le clonage (Règle le bug de l'onglet actif permanent !)
+    // 3. RE-SÉLECTION des éléments APRES le clonage (Corrige le bug de l'onglet actif !)
     const buttons = nav.querySelectorAll('.admin-tab');
     const panels = document.querySelectorAll('.admin-tab-panel');
 
@@ -184,14 +173,14 @@ init() {
       localStorage.setItem('wedding_admin_active_tab', tabName);
     };
 
-    // 4. Ré-attachement propre des clics sur les boutons actifs du DOM
+    // 4. Attachement des clics sur les boutons actifs du DOM
     buttons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         activateTab(e.currentTarget.dataset.tab);
       });
     });
 
-    // 5. Restauration du dernier onglet mémorisé (ou 'guests' par défaut)
+    // 5. Restauration du dernier onglet visité (ou 'guests' par défaut)
     const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
     activateTab(savedTab);
   },
@@ -289,6 +278,7 @@ async renderDashboard() {
     await Promise.all([
       this.renderStatsAndDiets(stats, guests),
       this.renderGuestsList(guests),
+	  this.renderTeam(guests),
 	  this.renderSeatingPlan(guests),
       this.renderCarpools(stats),
       this.renderAccommodations()
@@ -606,13 +596,8 @@ async renderManagementZone(tasks) {
     </div>
   `;
  
-  // Injecter la checklist dans l'onglet dédié s'il est présent, sinon fallback en haut
-  const teamPanel = document.getElementById('tab-panel-team');
-  if (teamPanel) {
-    teamPanel.innerHTML = html;
-  } else {
-    root.insertAdjacentHTML('afterbegin', html);
-  }
+  // Insérer EN PREMIER dans le container (avant les stats)
+  root.insertAdjacentHTML('afterbegin', html);
  
   // Toggle checklist
   document.getElementById('checklist-toggle-btn')?.addEventListener('click', function() {
@@ -981,6 +966,305 @@ toggleTask(id) {
     });
   },
 
+  // ════════════════════════════════════════════════════════════
+  // GESTION DE L'ÉQUIPE PRÉPA (API Supabase)
+  // ════════════════════════════════════════════════════════════
+  async _loadTeam() {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?select=*&order=name.asc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  },
+
+  async _saveTeamMember(data, id = null) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    const url = id 
+      ? `${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}` 
+      : `${SUPABASE_URL}/rest/v1/wedding_team`;
+    
+    await fetch(url, {
+      method: id ? 'PATCH' : 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(data)
+    });
+  },
+
+  async _deleteTeamMember(id) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // RENDU DU TABLEAU ÉQUIPE PRÉPA
+  // ════════════════════════════════════════════════════════════
+  async renderTeam(guests) {
+    const container = document.getElementById('admin-team');
+    if (!container) return;
+
+    container.innerHTML = '<p class="text-muted" style="padding:10px 0;">Chargement de l\'équipe...</p>';
+    const team = await this._loadTeam();
+
+    const formatDayBadge = (active, time) => {
+      if (!active) return '<span style="color:#ccc;">—</span>';
+      return `✓ Oui <span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:4px;">${time || 'NC'}</span>`;
+    };
+
+    let html = `
+      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <p class="text-muted" style="margin:0; font-size:14px;">Gérez ici les personnes mobilisées pour l'installation, les animations et la logistique.</p>
+        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="admin-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
+              <th style="padding:10px;">Nom &amp; Téléphone</th>
+              <th style="padding:10px;">Rôle</th>
+              <th style="padding:10px;">Arrivée Jeudi</th>
+              <th style="padding:10px;">Arrivée Vendredi</th>
+              <th style="padding:10px;">Arrivée Samedi</th>
+              <th style="padding:10px; text-align:center;">Loge sur place</th>
+              <th style="padding:10px; width:70px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (team.length === 0) {
+      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment. Cliquez sur "+ Ajouter un membre".</td></tr>`;
+    } else {
+      team.forEach((m, idx) => {
+        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+        const formattedPhone = formatPhone(m.phone);
+        html += `
+          <tr style="background:${bg}; border-bottom:1px solid #eee;">
+            <td style="padding:10px;">
+              <strong>${m.name}</strong>
+              ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+            </td>
+            <td style="padding:10px;">
+              <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:4px 8px; border-radius:6px; font-size:12px;">
+                ${m.role}
+              </span>
+            </td>
+            <td style="padding:10px;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
+            <td style="padding:10px;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
+            <td style="padding:10px;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
+            <td style="padding:10px; text-align:center;">
+              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">🏡 Oui</span>' : '<span style="color:#999;">Non</span>'}
+            </td>
+            <td style="padding:10px; display:flex; gap:6px;">
+              <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
+              <button class="btn btn--outline delete-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:red; border-color:red; cursor:pointer;" title="Supprimer">×</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+
+    // Action : Ajouter un membre
+    document.getElementById('add-team-btn')?.addEventListener('click', () => {
+      this.openTeamModal(null, guests);
+    });
+
+    // Action : Modifier (✏️)
+    container.querySelectorAll('.edit-team-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = team.find(item => item.id == e.currentTarget.dataset.id);
+        if (target) this.openTeamModal(target, guests);
+      });
+    });
+
+    // Action : Supprimer (×)
+    container.querySelectorAll('.delete-team-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
+          await this._deleteTeamMember(e.currentTarget.dataset.id);
+          Animations.showToast("Membre supprimé", "success");
+          this.renderTeam(guests);
+        }
+      });
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // MODALE AJOUT / MODIFICATION ÉQUIPE PRÉPA
+  // ════════════════════════════════════════════════════════════
+  openTeamModal(member, guests) {
+    const existing = document.getElementById('admin-team-modal');
+    if (existing) existing.remove();
+
+    // Générer les options du menu déroulant à partir de la liste des invités confirmés
+    const guestOptions = guests
+      .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
+      .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''))
+      .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${formatPhone(g.phone) || 'Sans tel'})</option>`)
+      .join('');
+
+    const modalHtml = `
+      <div id="admin-team-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:500px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gold-light); padding-bottom:12px; margin-bottom:16px;">
+            <h3 style="margin:0; font-family:var(--font-display); color:var(--forest); font-size:22px;">
+              ${member ? '✏️ Modifier le membre' : '➕ Ajouter à l\'équipe prépa'}
+            </h3>
+            <button type="button" id="team-close-x" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);">×</button>
+          </div>
+
+          <form id="admin-team-form" style="display:flex; flex-direction:column; gap:16px; text-align:left;">
+            
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">👤 Identité</legend>
+              
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Auto-remplir depuis un invité :</label>
+                <select id="team-guest-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; background:#fdfcfa;">
+                  <option value="">-- Saisie manuelle ou prestataire externe --</option>
+                  ${guestOptions}
+                </select>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Nom affiché *</label>
+                  <input type="text" id="team-name" value="${member?.name || ''}" placeholder="Ex: Alexandre Dupont" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Téléphone</label>
+                  <input type="text" id="team-phone" value="${member?.phone || ''}" placeholder="06 00 00 00 00" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">🏷️ Mission</legend>
+              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Rôle / Responsabilité *</label>
+              <input type="text" id="team-role" list="team-role-list" value="${member?.role || ''}" placeholder="Choisissez ou tapez un rôle..." required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              <datalist id="team-role-list">
+                <option value="Messe">
+                <option value="Animation">
+                <option value="Covoiturage">
+                <option value="Décoration">
+                <option value="Fleuriste">
+                <option value="Sono">
+                <option value="Photographe">
+                <option value="Logistique">
+                <option value="Traiteur">
+              </datalist>
+            </fieldset>
+
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">📅 Planning d'arrivée &amp; Logement</legend>
+              
+              <div style="display:grid; grid-template-columns: 1fr 110px; gap:8px; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed #eee;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                  <input type="checkbox" id="team-arr-thu" ${member?.arrival_thursday ? 'checked' : ''} style="accent-color:var(--forest); width:16px; height:16px;">
+                  Arrivée Jeudi (6 mai)
+                </label>
+                <input type="time" id="team-time-thu" value="${member?.time_thursday || ''}" style="padding:4px 6px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 110px; gap:8px; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed #eee;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                  <input type="checkbox" id="team-arr-fri" ${member?.arrival_friday ? 'checked' : ''} style="accent-color:var(--forest); width:16px; height:16px;">
+                  Arrivée Vendredi (7 mai)
+                </label>
+                <input type="time" id="team-time-fri" value="${member?.time_friday || ''}" style="padding:4px 6px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 110px; gap:8px; align-items:center; margin-bottom:12px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                  <input type="checkbox" id="team-arr-sat" ${member?.arrival_saturday ? 'checked' : ''} style="accent-color:var(--forest); width:16px; height:16px;">
+                  Arrivée Samedi (8 mai)
+                </label>
+                <input type="time" id="team-time-sat" value="${member?.time_saturday || ''}" style="padding:4px 6px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
+              </div>
+
+              <div style="background:#f4f8f3; padding:10px; border-radius:6px; border:1px solid #c8dcc4;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; font-weight:600; color:var(--forest);">
+                  <input type="checkbox" id="team-onsite" ${member?.stays_on_site ? 'checked' : ''} style="accent-color:var(--forest); width:18px; height:18px;">
+                  🏡 Loge sur place au Domaine
+                </label>
+              </div>
+            </fieldset>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+              <button type="button" id="team-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer</button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('admin-team-modal');
+    const closeX = document.getElementById('team-close-x');
+    const cancelBtn = document.getElementById('team-cancel-btn');
+    const form = document.getElementById('admin-team-form');
+    const guestSelect = document.getElementById('team-guest-select');
+
+    const closeModal = () => modal.remove();
+    closeX.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Auto-remplissage magique lors de la sélection d'un invité !
+    guestSelect.addEventListener('change', (e) => {
+      const gId = e.target.value;
+      if (!gId) return;
+      const selectedGuest = guests.find(g => g.id == gId);
+      if (selectedGuest) {
+        document.getElementById('team-name').value = `${selectedGuest.firstName || ''} ${selectedGuest.lastName || ''}`.trim();
+        document.getElementById('team-phone').value = selectedGuest.phone || '';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        guest_id: guestSelect.value || null,
+        name: document.getElementById('team-name').value.trim(),
+        phone: document.getElementById('team-phone').value.trim(),
+        role: document.getElementById('team-role').value.trim() || 'Organisation',
+        arrival_thursday: document.getElementById('team-arr-thu').checked,
+        time_thursday: document.getElementById('team-time-thu').value || null,
+        arrival_friday: document.getElementById('team-arr-fri').checked,
+        time_friday: document.getElementById('team-time-fri').value || null,
+        arrival_saturday: document.getElementById('team-arr-sat').checked,
+        time_saturday: document.getElementById('team-time-sat').value || null,
+        stays_on_site: document.getElementById('team-onsite').checked
+      };
+
+      await this._saveTeamMember(payload, member?.id);
+      Animations.showToast(member ? "Membre mis à jour" : "Membre ajouté à l'équipe", "success");
+      closeModal();
+      this.renderTeam(guests);
+    });
+  },
+  
+  
   // ════════════════════════════════════════════════
   // 3. Modale de modification complète et ergonomique (Oui/Non)
   // ════════════════════════════════════════════════
