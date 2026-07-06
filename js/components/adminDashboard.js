@@ -36,7 +36,7 @@ const getCountdownText = () => {
 
 const AdminDashboard = {
   logoutBtn: null,
-  init() {
+init() {
     // ── Login ──────────────────────────────────────
     const loginForm = document.getElementById('admin-login-form');
     if (loginForm) {
@@ -59,7 +59,8 @@ const AdminDashboard = {
           Animations.showToast("Mot de passe incorrect", "error");
         }
       });
-    },
+    } //  Corrigé : plus de virgule ici !
+
     // ── Auto-refresh sur changement de données ─────
     const refreshIfActive = () => {
       if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
@@ -78,7 +79,6 @@ const AdminDashboard = {
       }
     });
   },
-  
   // ════════════════════════════════════════════════════════════
   // Gestion des onglets intercalaires
   // ════════════════════════════════════════════════════════════
