@@ -82,26 +82,29 @@ init() {
   // ════════════════════════════════════════════════════════════
   // Gestion des onglets intercalaires
   // ════════════════════════════════════════════════════════════
+ // ════════════════════════════════════════════════════════════
+  // Gestion des onglets intercalaires
+  // ════════════════════════════════════════════════════════════
   initTabs() {
     const nav = document.getElementById('admin-tabs-nav');
     if (!nav) return;
 
-    // 1. Injection des styles de base pour les onglets si non présents dans styles.css
+    // 1. CSS optimisé : marges réduites pour coller la section aux onglets
     if (!document.getElementById('admin-tabs-styles')) {
       const css = `
         <style id="admin-tabs-styles">
           .admin-tabs {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             border-bottom: 2px solid #e8e0d0;
-            margin-bottom: 20px;
+            margin-bottom: 4px; /* Réduit pour coller au contenu */
             overflow-x: auto;
-            padding-bottom: 4px;
+            padding-bottom: 0;
           }
           .admin-tab {
             background: none;
             border: none;
-            padding: 10px 18px;
+            padding: 8px 16px;
             font-family: var(--font-body, sans-serif);
             font-size: 14px;
             font-weight: 500;
@@ -110,6 +113,7 @@ init() {
             border-radius: 8px 8px 0 0;
             transition: all 0.2s ease;
             white-space: nowrap;
+            margin-bottom: -2px; /* Permet à l'onglet actif de recouvrir la ligne */
           }
           .admin-tab:hover {
             color: var(--forest, #2D5A3D);
@@ -118,18 +122,23 @@ init() {
           .admin-tab.active {
             color: var(--forest, #2D5A3D);
             font-weight: 700;
-            border-bottom: 3px solid var(--forest, #2D5A3D);
-            margin-bottom: -6px;
+            border-bottom: 2px solid var(--forest, #2D5A3D);
+            background: rgba(156, 175, 136, 0.15); /* Optionnel : léger fond pour bien marquer l'onglet */
           }
           .admin-tab-panel {
             display: none;
-            animation: fadeIn 0.25s ease-in-out;
+            animation: fadeIn 0.2s ease-in-out;
           }
           .admin-tab-panel.active {
             display: block;
           }
+          /* Force la suppression de l'espace vide en haut des sections internes */
+          .admin-tab-panel .admin-section {
+            margin-top: 0 !important;
+            padding-top: 8px !important;
+          }
           @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(3px); }
             to { opacity: 1; transform: translateY(0); }
           }
         </style>
@@ -137,15 +146,23 @@ init() {
       document.head.insertAdjacentHTML('beforeend', css);
     }
 
+    // 2. Nettoyage des anciens écouteurs par clonage
+    const oldButtons = nav.querySelectorAll('.admin-tab');
+    oldButtons.forEach(btn => btn.replaceWith(btn.cloneNode(true)));
+
+    // 3. RE-SÉLECTION des éléments APRES le clonage (Corrige le bug de l'onglet actif !)
     const buttons = nav.querySelectorAll('.admin-tab');
     const panels = document.querySelectorAll('.admin-tab-panel');
 
-    // 2. Fonction d'activation d'un onglet
     const activateTab = (tabName) => {
       buttons.forEach(btn => {
         const isTarget = btn.dataset.tab === tabName;
         btn.classList.toggle('active', isTarget);
-        btn.setAttribute('aria-selected', isTarget);
+        if (isTarget) {
+          btn.setAttribute('aria-selected', 'true');
+        } else {
+          btn.removeAttribute('aria-selected');
+        }
       });
 
       panels.forEach(panel => {
@@ -153,28 +170,20 @@ init() {
         panel.classList.toggle('active', isTarget);
       });
 
-      // Sauvegarder l'onglet actif en localStorage
       localStorage.setItem('wedding_admin_active_tab', tabName);
     };
 
-    // 3. Écouteurs de clics
+    // 4. Attachement des clics sur les boutons actifs du DOM
     buttons.forEach(btn => {
-      // Éviter de dupliquer les écouteurs si initTabs est rappelé lors d'un auto-refresh
-      btn.replaceWith(btn.cloneNode(true));
-    });
-
-    // Récupérer les nouveaux nœuds clonés pour attacher proprement l'événement
-    nav.querySelectorAll('.admin-tab').forEach(btn => {
       btn.addEventListener('click', (e) => {
         activateTab(e.currentTarget.dataset.tab);
       });
     });
 
-    // 4. Restauration de l'onglet actif ou valeur par défaut ('guests')
+    // 5. Restauration du dernier onglet visité (ou 'guests' par défaut)
     const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
     activateTab(savedTab);
   },
-
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
   // ════════════════════════════════════════════════════════════
