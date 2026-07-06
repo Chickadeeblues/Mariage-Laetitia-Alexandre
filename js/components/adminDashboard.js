@@ -59,8 +59,7 @@ const AdminDashboard = {
           Animations.showToast("Mot de passe incorrect", "error");
         }
       });
-    }
-
+    },
     // ── Auto-refresh sur changement de données ─────
     const refreshIfActive = () => {
       if (Router.getCurrentRoute() === '#/admin/dashboard' && Store.isAdmin()) {
