@@ -85,11 +85,14 @@ init() {
  // ════════════════════════════════════════════════════════════
   // Gestion des onglets intercalaires
   // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+  // Gestion des onglets intercalaires
+  // ════════════════════════════════════════════════════════════
   initTabs() {
     const nav = document.getElementById('admin-tabs-nav');
     if (!nav) return;
 
-    // 1. CSS optimisé : marges réduites pour coller la section aux onglets
+    // 1. CSS optimisé : marges collées et masquage complet du curseur de scroll inutile
     if (!document.getElementById('admin-tabs-styles')) {
       const css = `
         <style id="admin-tabs-styles">
@@ -97,9 +100,16 @@ init() {
             display: flex;
             gap: 6px;
             border-bottom: 2px solid #e8e0d0;
-            margin-bottom: 4px; /* Réduit pour coller au contenu */
+            margin-bottom: 4px; /* Réduit au maximum pour coller au contenu */
             overflow-x: auto;
             padding-bottom: 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Masque la barre sur Firefox */
+            -ms-overflow-style: none;  /* Masque la barre sur IE/Edge */
+          }
+          /* Masque le curseur de scroll sur Chrome, Safari, Opera */
+          .admin-tabs::-webkit-scrollbar {
+            display: none;
           }
           .admin-tab {
             background: none;
@@ -113,7 +123,7 @@ init() {
             border-radius: 8px 8px 0 0;
             transition: all 0.2s ease;
             white-space: nowrap;
-            margin-bottom: -2px; /* Permet à l'onglet actif de recouvrir la ligne */
+            margin-bottom: -2px; /* Permet d'épouser la ligne de bordure */
           }
           .admin-tab:hover {
             color: var(--forest, #2D5A3D);
@@ -123,7 +133,7 @@ init() {
             color: var(--forest, #2D5A3D);
             font-weight: 700;
             border-bottom: 2px solid var(--forest, #2D5A3D);
-            background: rgba(156, 175, 136, 0.15); /* Optionnel : léger fond pour bien marquer l'onglet */
+            background: rgba(156, 175, 136, 0.12);
           }
           .admin-tab-panel {
             display: none;
@@ -133,9 +143,10 @@ init() {
             display: block;
           }
           /* Force la suppression de l'espace vide en haut des sections internes */
-          .admin-tab-panel .admin-section {
+          .admin-tab-panel .admin-section,
+          .admin-tab-panel #admin-mgmt {
             margin-top: 0 !important;
-            padding-top: 8px !important;
+            padding-top: 10px !important;
           }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(3px); }
@@ -146,11 +157,11 @@ init() {
       document.head.insertAdjacentHTML('beforeend', css);
     }
 
-    // 2. Nettoyage des anciens écouteurs par clonage
+    // 2. Nettoyage des anciens écouteurs par clonage pour éviter les conflits au refresh
     const oldButtons = nav.querySelectorAll('.admin-tab');
     oldButtons.forEach(btn => btn.replaceWith(btn.cloneNode(true)));
 
-    // 3. RE-SÉLECTION des éléments APRES le clonage (Corrige le bug de l'onglet actif !)
+    // 3. RE-SÉLECTION des éléments APRES le clonage (Règle le bug de l'onglet actif permanent !)
     const buttons = nav.querySelectorAll('.admin-tab');
     const panels = document.querySelectorAll('.admin-tab-panel');
 
@@ -173,14 +184,14 @@ init() {
       localStorage.setItem('wedding_admin_active_tab', tabName);
     };
 
-    // 4. Attachement des clics sur les boutons actifs du DOM
+    // 4. Ré-attachement propre des clics sur les boutons actifs du DOM
     buttons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         activateTab(e.currentTarget.dataset.tab);
       });
     });
 
-    // 5. Restauration du dernier onglet visité (ou 'guests' par défaut)
+    // 5. Restauration du dernier onglet mémorisé (ou 'guests' par défaut)
     const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
     activateTab(savedTab);
   },
@@ -595,8 +606,13 @@ async renderManagementZone(tasks) {
     </div>
   `;
  
-  // Insérer EN PREMIER dans le container (avant les stats)
-  root.insertAdjacentHTML('afterbegin', html);
+  // Injecter la checklist dans l'onglet dédié s'il est présent, sinon fallback en haut
+  const teamPanel = document.getElementById('tab-panel-team');
+  if (teamPanel) {
+    teamPanel.innerHTML = html;
+  } else {
+    root.insertAdjacentHTML('afterbegin', html);
+  }
  
   // Toggle checklist
   document.getElementById('checklist-toggle-btn')?.addEventListener('click', function() {
