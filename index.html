@@ -89,7 +89,7 @@
 
 	  <div class="hero__actions">
 		<a href="#/rsvp" class="btn btn--primary">Confirmer ma présence</a>
-        <a href="#/infos" class="btn btn--secondary">Informations pratiques</a>
+        <a href="#/infos" class="btn--secondary">Informations pratiques</a>
 		<a href="#/mes-reponses" class="btn btn--outline btn--full">Modifier ma réponse</a>
 		</div>
       </div> 
@@ -160,66 +160,66 @@
 
 <!-- ===================== PAGE : ADMIN DASHBOARD ===================== -->
   <section id="page-admin-dashboard" class="page">
-    <div class="container">
-      <div class="admin-header"></div>
+		<div class="container">
+		<div class="admin-header">
+		 </div>
 
-      <!-- Stats Grid (toujours visible) -->
-      <div class="admin-grid">
-        <div class="stat-card" id="stat-total"></div>
-        <div class="stat-card" id="stat-confirmed"></div>
-        <div class="stat-card" id="stat-maybe"></div>
-        <div class="stat-card" id="stat-declined"></div>
-        <div class="stat-card" id="stat-pending"></div>
-      </div>
+<!-- Stats Grid -->
+<div class="admin-grid">
+  <div class="stat-card" id="stat-total"></div>
+  <div class="stat-card" id="stat-confirmed"></div>
+  <div class="stat-card" id="stat-maybe"></div>
+  <div class="stat-card" id="stat-declined"></div>
+  <div class="stat-card" id="stat-pending"></div>
+</div>
+<div id="admin-loader" style="display:none; text-align:center; padding:20px; color:#9b8660;">
+  Chargement…
+</div>
 
-      <!-- Régimes alimentaires (toujours visible) -->
-      <section id="admin-diets" class="admin-section"></section>
+      <!-- Admin sections -->
+    <section id="admin-diets" class="admin-section">
+        <h3>Synthèse des régimes alimentaires</h3>
+    </section>
 
-      <div id="admin-loader" style="display:none; text-align:center; padding:20px; color:#9b8660;">
-        Chargement…
-      </div>
+      <nav class="admin-tabs" id="admin-tabs-nav" role="tablist">
+        <button class="admin-tab active" data-tab="guests" role="tab" aria-selected="true">Invités</button>
+        <button class="admin-tab" data-tab="team" role="tab">Équipe prépa</button>
+        <button class="admin-tab" data-tab="seating" role="tab">Plan de table</button>
+        <button class="admin-tab" data-tab="carpools" role="tab">Covoiturage</button>
+        <button class="admin-tab" data-tab="accommodations" role="tab">Hébergements</button>
+      </nav>
 
-      <!-- ── ONGLETS INTERCALAIRES ── -->
-      <div id="admin-tabs-container">
-        <div class="admin-tabs" id="admin-tabs-nav" role="tablist">
-          <button class="admin-tab active" data-tab="guests" role="tab" aria-selected="true">Invités</button>
-          <button class="admin-tab" data-tab="team" role="tab" aria-selected="false">Équipe prépa</button>
-          <button class="admin-tab" data-tab="seating" role="tab" aria-selected="false">Plan de table</button>
-          <button class="admin-tab" data-tab="carpools" role="tab" aria-selected="false">Covoiturage</button>
-        </div>
-
-        <!-- Panneau 1 : Invités -->
+      <div class="admin-tabs-content">
         <div class="admin-tab-panel active" id="tab-panel-guests" role="tabpanel">
           <section id="admin-guests-list" class="admin-section">
             <h3>Liste des invités</h3>
           </section>
         </div>
 
-        <!-- Panneau 2 : Équipe prépa -->
         <div class="admin-tab-panel" id="tab-panel-team" role="tabpanel">
           <section id="admin-team" class="admin-section">
-            <h3>Équipe prépa</h3>
+            <h3>Équipe préparation</h3>
           </section>
         </div>
 
-        <!-- Panneau 3 : Plan de table -->
         <div class="admin-tab-panel" id="tab-panel-seating" role="tabpanel">
           <section id="admin-seating-plan" class="admin-section">
             <h3>Plan de table</h3>
           </section>
         </div>
 
-        <!-- Panneau 4 : Covoiturage + Hébergements -->
         <div class="admin-tab-panel" id="tab-panel-carpools" role="tabpanel">
           <section id="admin-carpools" class="admin-section">
-            <h3>Covoiturage</h3>
+            <h3>Synthèse covoiturage</h3>
           </section>
+        </div>
+
+        <div class="admin-tab-panel" id="tab-panel-accommodations" role="tabpanel">
           <section id="admin-accommodations" class="admin-section">
-            <h3>Hébergements</h3>
+            <h3>Gestion des hébergements</h3>
           </section>
         </div>
       </div>
-
     </div>
   </section>
 
