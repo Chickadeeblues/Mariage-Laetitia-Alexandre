@@ -963,21 +963,62 @@ toggleTask(id) {
     });
   },
 
-  // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
   // GESTION DE L'ÉQUIPE PRÉPA (API Supabase)
   // ════════════════════════════════════════════════════════════
   async _loadTeam() {
     const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?select=*&order=name.asc`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    });
-    if (!res.ok) return [];
-    return await res.json();
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?select=*&order=name.asc`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      console.error("Erreur chargement équipe:", e);
+      return [];
+    }
   },
 
-// ════════════════════════════════════════════════════════════
-  // RENDU DU TABLEAU ÉQUIPE PRÉPA (Corrigé)
+  async _saveTeamMember(data, id = null) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    const url = id 
+      ? `${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}` 
+      : `${SUPABASE_URL}/rest/v1/wedding_team`;
+    
+    // Nettoyage pour s'assurer que les heures sont bien transmises
+    const cleanData = {
+      ...data,
+      time_thursday: data.time_thursday || null,
+      time_friday: data.time_friday || null,
+      time_saturday: data.time_saturday || null
+    };
+
+    await fetch(url, {
+      method: id ? 'PATCH' : 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(cleanData)
+    });
+  },
+
+  async _deleteTeamMember(id) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // RENDU DU TABLEAU ÉQUIPE PRÉPA (Toutes corrections intégrées)
   // ════════════════════════════════════════════════════════════
   async renderTeam(guests) {
     const container = document.getElementById('admin-team');
@@ -986,15 +1027,14 @@ toggleTask(id) {
     container.innerHTML = '<p class="text-muted" style="padding:10px 0;">Chargement de l\'équipe...</p>';
     const team = await this._loadTeam();
 
-    // Fonction pour formater le badge jour + heure au format 24h (HH:mm)
+    // 5. Formatage de l'heure en format 24h français (ex: 14h30 ou 14:30)
     const formatDayBadge = (active, time) => {
       if (!active) return '<span style="color:#ccc;">—</span>';
-      // S'assure que l'heure est propre au format 24h
-      const formattedTime = time ? time.slice(0, 5) : 'NC';
+      let formattedTime = time ? time.slice(0, 5) : 'NC';
       return `✓ <span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:4px;">${formattedTime}</span>`;
     };
 
-    // 1 & 2. Suppression du texte descriptif + Bouton "Ajouter" aligné à gauche
+    // 1 & 2. Suppression du texte et alignement du bouton à gauche
     let html = `
       <div style="margin-bottom:16px; display:flex; justify-content:flex-start;">
         <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
@@ -1008,7 +1048,7 @@ toggleTask(id) {
               <th rowspan="2" style="padding:10px; vertical-align:bottom;">Rôle</th>
               <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
               <th rowspan="2" style="padding:10px; text-align:center; vertical-align:bottom;">Loge sur place</th>
-              <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom;">Actions</th>
+              <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom; text-align:center;">Actions</th>
             </tr>
             <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
               <th style="padding:6px 10px;">Jeudi</th>
@@ -1025,7 +1065,7 @@ toggleTask(id) {
     } else {
       team.forEach((m, idx) => {
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
-        const formattedPhone = formatPhone ? formatPhone(m.phone) : m.phone;
+        const formattedPhone = typeof formatPhone === 'function' ? formatPhone(m.phone) : (m.phone || '');
         html += `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
             <td style="padding:10px;">
@@ -1055,7 +1095,7 @@ toggleTask(id) {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // Réattachement des événements
+    // Réattachement des boutons d'action
     document.getElementById('add-team-btn')?.addEventListener('click', () => {
       this.openTeamModal(null, guests);
     });
@@ -1071,113 +1111,10 @@ toggleTask(id) {
       btn.addEventListener('click', async (e) => {
         if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
           await this._deleteTeamMember(e.currentTarget.dataset.id);
+          if (typeof Animations !== 'undefined' && Animations.showToast) {
+            Animations.showToast("Membre supprimé", "success");
+          }
           await this.renderTeam(guests);
-        }
-      });
-    });
-  },
-
-  async _deleteTeamMember(id) {
-    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
-    await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    });
-  },
-
-  // ════════════════════════════════════════════════════════════
-  // RENDU DU TABLEAU ÉQUIPE PRÉPA
-  // ════════════════════════════════════════════════════════════
-  async renderTeam(guests) {
-    const container = document.getElementById('admin-team');
-    if (!container) return;
-
-    container.innerHTML = '<p class="text-muted" style="padding:10px 0;">Chargement de l\'équipe...</p>';
-    const team = await this._loadTeam();
-
-    const formatDayBadge = (active, time) => {
-      if (!active) return '<span style="color:#ccc;">—</span>';
-      return `✓ Oui <span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:4px;">${time || 'NC'}</span>`;
-    };
-
-    let html = `
-      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <p class="text-muted" style="margin:0; font-size:14px;">Gérez ici les personnes mobilisées pour l'installation, les animations et la logistique.</p>
-        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
-      </div>
-
-      <div class="table-responsive">
-        <table class="admin-table" style="width:100%; border-collapse:collapse;">
-          <thead>
-            <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding:10px;">Nom &amp; Téléphone</th>
-              <th style="padding:10px;">Rôle</th>
-              <th style="padding:10px;">Arrivée Jeudi</th>
-              <th style="padding:10px;">Arrivée Vendredi</th>
-              <th style="padding:10px;">Arrivée Samedi</th>
-              <th style="padding:10px; text-align:center;">Loge sur place</th>
-              <th style="padding:10px; width:70px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (team.length === 0) {
-      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment. Cliquez sur "+ Ajouter un membre".</td></tr>`;
-    } else {
-      team.forEach((m, idx) => {
-        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
-        const formattedPhone = formatPhone(m.phone);
-        html += `
-          <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px;">
-              <strong>${m.name}</strong>
-              ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
-            </td>
-            <td style="padding:10px;">
-              <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:4px 8px; border-radius:6px; font-size:12px;">
-                ${m.role}
-              </span>
-            </td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
-            <td style="padding:10px; text-align:center;">
-              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">🏡 Oui</span>' : '<span style="color:#999;">Non</span>'}
-            </td>
-            <td style="padding:10px; display:flex; gap:6px;">
-              <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
-              <button class="btn btn--outline delete-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:red; border-color:red; cursor:pointer;" title="Supprimer">×</button>
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    html += '</tbody></table></div>';
-    container.innerHTML = html;
-
-    // Action : Ajouter un membre
-    document.getElementById('add-team-btn')?.addEventListener('click', () => {
-      this.openTeamModal(null, guests);
-    });
-
-    // Action : Modifier (✏️)
-    container.querySelectorAll('.edit-team-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = team.find(item => item.id == e.currentTarget.dataset.id);
-        if (target) this.openTeamModal(target, guests);
-      });
-    });
-
-    // Action : Supprimer (×)
-    container.querySelectorAll('.delete-team-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
-          await this._deleteTeamMember(e.currentTarget.dataset.id);
-          Animations.showToast("Membre supprimé", "success");
-          this.renderTeam(guests);
         }
       });
     });
@@ -1190,11 +1127,10 @@ toggleTask(id) {
     const existing = document.getElementById('admin-team-modal');
     if (existing) existing.remove();
 
-    // Générer les options du menu déroulant à partir de la liste des invités confirmés
     const guestOptions = guests
       .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
       .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''))
-      .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${formatPhone(g.phone) || 'Sans tel'})</option>`)
+      .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${typeof formatPhone === 'function' ? formatPhone(g.phone) : g.phone || 'Sans tel'})</option>`)
       .join('');
 
     const modalHtml = `
@@ -1238,15 +1174,15 @@ toggleTask(id) {
               <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Rôle / Responsabilité *</label>
               <input type="text" id="team-role" list="team-role-list" value="${member?.role || ''}" placeholder="Choisissez ou tapez un rôle..." required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
               <datalist id="team-role-list">
-                <option value="Messe">
-                <option value="Animation">
-                <option value="Covoiturage">
-                <option value="Décoration">
-                <option value="Fleuriste">
-                <option value="Sono">
-                <option value="Photographe">
-                <option value="Logistique">
-                <option value="Traiteur">
+                <option value="Messe"></option>
+                <option value="Animation"></option>
+                <option value="Covoiturage"></option>
+                <option value="Décoration"></option>
+                <option value="Fleuriste"></option>
+                <option value="Sono"></option>
+                <option value="Photographe"></option>
+                <option value="Logistique"></option>
+                <option value="Traiteur"></option>
               </datalist>
             </fieldset>
 
@@ -1308,7 +1244,6 @@ toggleTask(id) {
     cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // Auto-remplissage magique lors de la sélection d'un invité !
     guestSelect.addEventListener('change', (e) => {
       const gId = e.target.value;
       if (!gId) return;
@@ -1336,14 +1271,19 @@ toggleTask(id) {
         stays_on_site: document.getElementById('team-onsite').checked
       };
 
-      await this._saveTeamMember(payload, member?.id);
-      Animations.showToast(member ? "Membre mis à jour" : "Membre ajouté à l'équipe", "success");
-      closeModal();
-      this.renderTeam(guests);
+      try {
+        await this._saveTeamMember(payload, member?.id);
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast(member ? "Membre mis à jour" : "Membre ajouté à l'équipe", "success");
+        }
+        closeModal();
+        await this.renderTeam(guests);
+      } catch (err) {
+        console.error("Erreur sauvegarde:", err);
+        alert("Erreur lors de l'enregistrement ! Vérifiez les permissions SQL dans Supabase.");
+      }
     });
   },
-  
-  
   // ════════════════════════════════════════════════
   // 3. Modale de modification complète et ergonomique (Oui/Non)
   // ════════════════════════════════════════════════
