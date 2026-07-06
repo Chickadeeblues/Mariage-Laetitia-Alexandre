@@ -79,11 +79,107 @@ const AdminDashboard = {
       }
     });
   },
+  
+  // ════════════════════════════════════════════════════════════
+  // Gestion des onglets intercalaires
+  // ════════════════════════════════════════════════════════════
+  initTabs() {
+    const nav = document.getElementById('admin-tabs-nav');
+    if (!nav) return;
+
+    // 1. Injection des styles de base pour les onglets si non présents dans styles.css
+    if (!document.getElementById('admin-tabs-styles')) {
+      const css = `
+        <style id="admin-tabs-styles">
+          .admin-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid #e8e0d0;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+          }
+          .admin-tab {
+            background: none;
+            border: none;
+            padding: 10px 18px;
+            font-family: var(--font-body, sans-serif);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted, #6B6B6B);
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+          }
+          .admin-tab:hover {
+            color: var(--forest, #2D5A3D);
+            background: rgba(156, 175, 136, 0.1);
+          }
+          .admin-tab.active {
+            color: var(--forest, #2D5A3D);
+            font-weight: 700;
+            border-bottom: 3px solid var(--forest, #2D5A3D);
+            margin-bottom: -6px;
+          }
+          .admin-tab-panel {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+          }
+          .admin-tab-panel.active {
+            display: block;
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        </style>
+      `;
+      document.head.insertAdjacentHTML('beforeend', css);
+    }
+
+    const buttons = nav.querySelectorAll('.admin-tab');
+    const panels = document.querySelectorAll('.admin-tab-panel');
+
+    // 2. Fonction d'activation d'un onglet
+    const activateTab = (tabName) => {
+      buttons.forEach(btn => {
+        const isTarget = btn.dataset.tab === tabName;
+        btn.classList.toggle('active', isTarget);
+        btn.setAttribute('aria-selected', isTarget);
+      });
+
+      panels.forEach(panel => {
+        const isTarget = panel.id === `tab-panel-${tabName}`;
+        panel.classList.toggle('active', isTarget);
+      });
+
+      // Sauvegarder l'onglet actif en localStorage
+      localStorage.setItem('wedding_admin_active_tab', tabName);
+    };
+
+    // 3. Écouteurs de clics
+    buttons.forEach(btn => {
+      // Éviter de dupliquer les écouteurs si initTabs est rappelé lors d'un auto-refresh
+      btn.replaceWith(btn.cloneNode(true));
+    });
+
+    // Récupérer les nouveaux nœuds clonés pour attacher proprement l'événement
+    nav.querySelectorAll('.admin-tab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        activateTab(e.currentTarget.dataset.tab);
+      });
+    });
+
+    // 4. Restauration de l'onglet actif ou valeur par défaut ('guests')
+    const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
+    activateTab(savedTab);
+  }
 
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
   // ════════════════════════════════════════════════════════════
-  async _loadTasks() {
+async _loadTasks() {
   const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
   const res = await fetch(
@@ -94,7 +190,7 @@ const AdminDashboard = {
   return await res.json();
 },
  
-  async _saveTaskDone(id, done) {
+async _saveTaskDone(id, done) {
   const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
   await fetch(
@@ -112,7 +208,7 @@ const AdminDashboard = {
   );
 },
  
-  async _addTaskToDb(month, cat, label) {
+async _addTaskToDb(month, cat, label) {
   const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
   const res = await fetch(
@@ -131,7 +227,7 @@ const AdminDashboard = {
   return await res.json();
 },
  
-  async _deleteTaskFromDb(id) {
+async _deleteTaskFromDb(id) {
   const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
   await fetch(
@@ -143,7 +239,7 @@ const AdminDashboard = {
   );
 },
  
-  async _updateTaskInDb(id, label) {
+async _updateTaskInDb(id, label) {
   const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
   await fetch(
@@ -178,7 +274,8 @@ async renderDashboard() {
       this.renderCarpools(stats),
       this.renderAccommodations()
     ]);
- 
+	// Initialiser et positionner les onglets intercalaires
+    this.initTabs();
   } catch (e) {
     console.error('[Admin] Erreur renderDashboard :', e);
     Animations.showToast("Erreur de chargement des données", "error");
