@@ -1657,7 +1657,7 @@ toggleTask(id) {
         this.renderMoodboard(activeCategory);
       }
     });
-  }
+  },
 
   // ════════════════════════════════════════════════
   // Covoiturage
