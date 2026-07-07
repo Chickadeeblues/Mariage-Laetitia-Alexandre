@@ -1548,12 +1548,13 @@ toggleTask(id) {
   // ════════════════════════════════════════════════════════════
   // API SUPABASE : MOODBOARD
   // ════════════════════════════════════════════════════════════
-  async _loadMoodboard(category) {
+async _loadMoodboard(category) {
     const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
     try {
+      // Modifié ici : order=position.asc,id.desc
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/moodboard_items?category=eq.${encodeURIComponent(category)}&order=id.desc`,
+        `${SUPABASE_URL}/rest/v1/moodboard_items?category=eq.${encodeURIComponent(category)}&order=position.asc,id.desc`,
         { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
       );
       return res.ok ? await res.json() : [];
@@ -1563,7 +1564,7 @@ toggleTask(id) {
     }
   },
 
-  async _saveMoodboardItem(item) {
+async _saveMoodboardItem(item) {
     const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
     await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items`, {
@@ -1578,7 +1579,7 @@ toggleTask(id) {
     });
   },
 
-  async _deleteMoodboardItem(id) {
+async _deleteMoodboardItem(id) {
     const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
     await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
@@ -1588,20 +1589,20 @@ toggleTask(id) {
   },
   
 // ════════════════════════════════════════════════════════════
-  // RENDU DU MOODBOARD (STYLE PINTEREST / MASONRY & CONTRÔLES DISCRETS)
+  // RENDU DU MOODBOARD (STYLE PINTEREST + TRI GLISSER-DÉPOSER)
   // ════════════════════════════════════════════════════════════
   async renderMoodboard(activeCategory = 'Faire-parts') {
     const container = document.getElementById('admin-moodboard');
     if (!container) return;
 
     const categories = [
-      'Faire-parts', 'Robe de mariée', 'Coiffures', 'Bouquet',
+      'Faire-parts', 'Robe de mariée', 'Coiffure', 'Maquillage', 'Bouquet',
       'Décoration église', 'Décoration réception', 'Plan de table', 'Tables'
     ];
 
     const items = await this._loadMoodboard(activeCategory);
 
-    // 1. Barre de navigation par catégorie + Bouton d'ajout discret
+    // 1. Navigation
     const subNavHtml = categories.map(cat => `
       <button class="moodboard-nav-btn" data-cat="${cat}"
               style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--gold); 
@@ -1612,18 +1613,17 @@ toggleTask(id) {
       </button>
     `).join('');
 
-    // 2. Grille style "Pinterest" avec formats variables (Normal vs Vedette/Large)
-    let gridHtml = items.map(item => {
+    // 2. Grille avec cartes DRAGGABLES pour le tri
+    let gridHtml = items.map((item, index) => {
       const isLarge = item.size === 'large';
-      // Si "large", l'image prend toute la largeur de sa colonne ou s'étend
       const cardStyle = isLarge 
-        ? "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.12); background: #fff; position: relative; border: 2px solid var(--gold-light);"
-        : "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); background: #fff; position: relative;";
+        ? "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.12); background: #fff; position: relative; border: 2px solid var(--gold-light); cursor: grab; transition: transform 0.15s, border-color 0.15s;"
+        : "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); background: #fff; position: relative; cursor: grab; transition: transform 0.15s, border-color 0.15s;";
 
       return `
-        <div class="moodboard-card" style="${cardStyle}" group>
+        <div class="moodboard-card" draggable="true" data-id="${item.id}" data-index="${index}" data-size="${item.size || 'normal'}" style="${cardStyle}">
           <img src="${item.image_url}" alt="Inspiration" 
-               style="width: 100%; height: auto; display: block; max-height: ${isLarge ? '600px' : '380px'}; object-fit: cover;">
+               style="width: 100%; height: auto; display: block; max-height: ${isLarge ? '600px' : '380px'}; object-fit: cover; pointer-events: none;">
           
           <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0.85;">
             <button class="resize-moodboard-btn" data-id="${item.id}" data-size="${isLarge ? 'normal' : 'large'}"
@@ -1642,61 +1642,50 @@ toggleTask(id) {
 
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #eee;">
-        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-          ${subNavHtml}
-        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">${subNavHtml}</div>
         <button id="add-moodboard-url-btn" class="btn btn--outline btn--sm" 
                 style="border-color: var(--sage, #84a98c); color: var(--forest); font-size: 12px; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; background: #fff; cursor: pointer;">
           <span>➕ Coller le lien d'une image</span>
         </button>
       </div>
 
-      <div id="moodboard-grid-area" 
-           style="min-height: 200px; border: 2px dashed transparent; border-radius: 12px; transition: all 0.2s; padding: 4px;">
-        
+      <div id="moodboard-grid-area" style="min-height: 200px; border: 2px dashed transparent; border-radius: 12px; transition: all 0.2s; padding: 4px;">
         <div style="column-count: 3; column-gap: 16px; width: 100%;">
           ${gridHtml || '<p class="text-muted" style="text-align:center; padding: 40px 0; font-style: italic;">Aucune image ici. Glissez-déposez une image depuis un autre onglet ou cliquez sur "Coller le lien" !</p>'}
         </div>
-
       </div>
     `;
 
-    // 3. Réactivité en CSS pour les écrans plus petits (2 colonnes sur tablette, 1 sur mobile)
     const styleBlock = document.createElement('style');
     styleBlock.innerHTML = `
       @media (max-width: 900px) { #moodboard-grid-area > div { column-count: 2 !important; } }
       @media (max-width: 600px) { #moodboard-grid-area > div { column-count: 1 !important; } }
       .moodboard-card:hover div { opacity: 1 !important; }
+      .moodboard-card:active { cursor: grabbing !important; }
     `;
     container.appendChild(styleBlock);
 
-    // 4. Événements de navigation
+    // 3. Navigation & Actions boutons
     container.querySelectorAll('.moodboard-nav-btn').forEach(btn => {
       btn.addEventListener('click', (e) => this.renderMoodboard(e.currentTarget.dataset.cat));
     });
 
-    // 5. SUPPRESSION RÉPARÉE (en vert sauge)
     container.querySelectorAll('.delete-moodboard-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm("Supprimer cette image du moodboard ?")) {
+        if (confirm("Supprimer cette image ?")) {
           await this._deleteMoodboardItem(e.currentTarget.dataset.id);
-          if (typeof Animations !== 'undefined' && Animations.showToast) {
-            Animations.showToast("Image supprimée", "success");
-          }
+          if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image supprimée", "success");
           this.renderMoodboard(activeCategory);
         }
       });
     });
 
-    // 6. REDIMENSIONNEMENT / MISE EN AVANT (⭐ / 🗜️)
     container.querySelectorAll('.resize-moodboard-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = e.currentTarget.dataset.id;
         const newSize = e.currentTarget.dataset.size;
-        
-        // Mise à jour rapide dans Supabase
         const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
         await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
@@ -1704,28 +1693,95 @@ toggleTask(id) {
           headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ size: newSize })
         });
-
         this.renderMoodboard(activeCategory);
       });
     });
 
-    // 7. BOUTON D'AJOUT DISCRET PAR LIEN
     document.getElementById('add-moodboard-url-btn').addEventListener('click', async () => {
       const url = prompt("Collez l'URL (lien https://...) de l'image :");
       if (url && url.startsWith('http')) {
-        await this._saveMoodboardItem({ category: activeCategory, image_url: url, size: 'normal' });
+        await this._saveMoodboardItem({ category: activeCategory, image_url: url, size: 'normal', position: items.length });
         if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
         this.renderMoodboard(activeCategory);
       }
     });
 
-    // 8. GLISSER-DÉPOSER DISCRET SUR TOUTE LA GRILLE
+    // ════════════════════════════════════════════════════════════
+    // 4. GESTION DU TRI GLISSER-DÉPOSER (RÉORGANISER LES CARTES)
+    // ════════════════════════════════════════════════════════════
+    container.querySelectorAll('.moodboard-card').forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        // Identification unique d'une carte interne
+        e.dataTransfer.setData('text/internal-id', card.dataset.id);
+        card.style.opacity = '0.4';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        card.style.transform = 'scale(1.03)';
+        card.style.borderColor = 'var(--forest, #2D5A3D)';
+      });
+
+      card.addEventListener('dragleave', () => {
+        card.style.transform = 'none';
+        card.style.borderColor = card.dataset.size === 'large' ? 'var(--gold-light)' : 'transparent';
+      });
+
+      // DROP SUR UNE AUTRE CARTE = PERMUTATION / RÉORDONNEMENT
+      card.addEventListener('drop', async (e) => {
+        e.stopPropagation(); // ⚠️ CAPITAL : Empêche la grille de croire à un nouvel ajout d'image !
+        e.preventDefault();
+        
+        card.style.transform = 'none';
+        card.style.borderColor = card.dataset.size === 'large' ? 'var(--gold-light)' : 'transparent';
+
+        const draggedId = e.dataTransfer.getData('text/internal-id');
+        const targetId = card.dataset.id;
+
+        // Si on a bien glissé une carte interne sur une autre carte interne différente
+        if (draggedId && draggedId !== targetId) {
+          const draggedIndex = items.findIndex(i => i.id == draggedId);
+          const targetIndex = items.findIndex(i => i.id == targetId);
+          
+          // Réorganisation instantanée en mémoire
+          const [draggedItem] = items.splice(draggedIndex, 1);
+          items.splice(targetIndex, 0, draggedItem);
+
+          // Rendu visuel immédiat pour l'utilisateur
+          this.renderMoodboard(activeCategory);
+
+          // Sauvegarde silencieuse en arrière-plan des nouvelles positions dans Supabase
+          const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+          const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+          
+          await Promise.all(items.map((it, idx) => 
+            fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${it.id}`, {
+              method: 'PATCH',
+              headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ position: idx })
+            })
+          ));
+        }
+      });
+    });
+
+    // ════════════════════════════════════════════════════════════
+    // 5. AJOUT D'IMAGES DEPUIS INTERNET (ANTI-DÉDOUBLEMENT)
+    // ════════════════════════════════════════════════════════════
     const gridArea = document.getElementById('moodboard-grid-area');
 
     gridArea.addEventListener('dragover', (e) => {
       e.preventDefault();
-      gridArea.style.borderColor = 'var(--sage, #84a98c)';
-      gridArea.style.background = '#f4f8f3';
+      // Si c'est un déplacement de carte interne, on ne change pas le fond
+      if (!e.dataTransfer.types.includes('text/internal-id')) {
+        gridArea.style.borderColor = 'var(--sage, #84a98c)';
+        gridArea.style.background = '#f4f8f3';
+      }
     });
 
     gridArea.addEventListener('dragleave', () => {
@@ -1737,6 +1793,9 @@ toggleTask(id) {
       e.preventDefault();
       gridArea.style.borderColor = 'transparent';
       gridArea.style.background = 'transparent';
+
+      // ⚠️ SÉCURITÉ ANTI-DÉDOUBLEMENT : Si l'élément relâché est une carte interne, on s'arrête net !
+      if (e.dataTransfer.getData('text/internal-id')) return;
 
       const htmlData = e.dataTransfer.getData('text/html');
       const textData = e.dataTransfer.getData('text/plain');
@@ -1751,7 +1810,7 @@ toggleTask(id) {
       }
 
       if (imageUrl) {
-        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl, size: 'normal' });
+        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl, size: 'normal', position: items.length });
         if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
         this.renderMoodboard(activeCategory);
       } else {
@@ -1759,6 +1818,7 @@ toggleTask(id) {
       }
     });
   },
+  
   // ════════════════════════════════════════════════
   // Covoiturage
  // ════════════════════════════════════════════════════════════
