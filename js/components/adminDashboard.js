@@ -278,7 +278,8 @@ async renderDashboard() {
 	  this.renderTeam(guests),
 	  this.renderSeatingPlan(guests),
       this.renderCarpools(stats),
-      this.renderAccommodations()
+      this.renderAccommodations(),
+	  this.renderMoodboard()
     ]);
 	// Initialiser et positionner les onglets intercalaires
     this.initTabs();
@@ -1544,9 +1545,51 @@ toggleTask(id) {
     });
   },
 
-	// ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
   // RENDU DU MOODBOARD (AVEC SOUS-NAVIGATION & DRAG AND DROP)
   // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
+  // API SUPABASE : MOODBOARD
+  // ════════════════════════════════════════════════════════════
+  async _loadMoodboard(category) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/moodboard_items?category=eq.${encodeURIComponent(category)}&order=id.desc`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      );
+      return res.ok ? await res.json() : [];
+    } catch (e) {
+      console.error("Erreur chargement moodboard:", e);
+      return [];
+    }
+  },
+
+  async _saveMoodboardItem(item) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(item)
+    });
+  },
+
+  async _deleteMoodboardItem(id) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+  },
+  
   async renderMoodboard(activeCategory = 'Faire-parts') {
     const container = document.getElementById('admin-moodboard');
     if (!container) return;
