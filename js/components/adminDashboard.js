@@ -1546,9 +1546,6 @@ toggleTask(id) {
   },
 
   // ════════════════════════════════════════════════════════════
-  // RENDU DU MOODBOARD (AVEC SOUS-NAVIGATION & DRAG AND DROP)
-  // ════════════════════════════════════════════════════════════
-  // ════════════════════════════════════════════════════════════
   // API SUPABASE : MOODBOARD
   // ════════════════════════════════════════════════════════════
   async _loadMoodboard(category) {
@@ -1590,118 +1587,178 @@ toggleTask(id) {
     });
   },
   
+// ════════════════════════════════════════════════════════════
+  // RENDU DU MOODBOARD (STYLE PINTEREST / MASONRY & CONTRÔLES DISCRETS)
+  // ════════════════════════════════════════════════════════════
   async renderMoodboard(activeCategory = 'Faire-parts') {
     const container = document.getElementById('admin-moodboard');
     if (!container) return;
 
-    // 1. Définition de vos 8 tableaux
     const categories = [
       'Faire-parts', 'Robe de mariée', 'Coiffures', 'Bouquet',
       'Décoration église', 'Décoration réception', 'Plan de table', 'Tables'
     ];
 
-    // 2. Chargement des images depuis Supabase pour la catégorie active
-    // (Suppose une méthode this._loadMoodboard(activeCategory))
     const items = await this._loadMoodboard(activeCategory);
 
-    // 3. Génération des boutons de sous-navigation
+    // 1. Barre de navigation par catégorie + Bouton d'ajout discret
     const subNavHtml = categories.map(cat => `
-      <button class="moodboard-nav-btn ${cat === activeCategory ? 'active' : ''}" 
-              data-cat="${cat}"
+      <button class="moodboard-nav-btn" data-cat="${cat}"
               style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--gold); 
                      background: ${cat === activeCategory ? 'var(--forest)' : '#fff'}; 
                      color: ${cat === activeCategory ? '#fff' : 'var(--forest)'}; 
-                     font-weight: 600; cursor: pointer; font-size: 13px;">
+                     font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">
         ${cat}
       </button>
     `).join('');
 
-    // 4. Génération de la grille d'images + Zone de Drop
-    let gridHtml = items.map(item => `
-      <div class="moodboard-card" style="position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); background:#fff;">
-        <img src="${item.image_url}" alt="Inspiration" style="width:100%; height:200px; object-fit:cover; display:block;">
-        <button class="delete-moodboard-btn" data-id="${item.id}" 
-                style="position:absolute; top:8px; right:8px; background:rgba(255,0,0,0.8); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-weight:bold;">×</button>
-      </div>
-    `).join('');
+    // 2. Grille style "Pinterest" avec formats variables (Normal vs Vedette/Large)
+    let gridHtml = items.map(item => {
+      const isLarge = item.size === 'large';
+      // Si "large", l'image prend toute la largeur de sa colonne ou s'étend
+      const cardStyle = isLarge 
+        ? "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.12); background: #fff; position: relative; border: 2px solid var(--gold-light);"
+        : "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); background: #fff; position: relative;";
+
+      return `
+        <div class="moodboard-card" style="${cardStyle}" group>
+          <img src="${item.image_url}" alt="Inspiration" 
+               style="width: 100%; height: auto; display: block; max-height: ${isLarge ? '600px' : '380px'}; object-fit: cover;">
+          
+          <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0.85;">
+            <button class="resize-moodboard-btn" data-id="${item.id}" data-size="${isLarge ? 'normal' : 'large'}"
+                    title="${isLarge ? 'Réduire' : 'Mettre en vedette (Grand format)'}"
+                    style="background: var(--sage, #84a98c); color: white; border: none; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              ${isLarge ? '🗜️' : '⭐'}
+            </button>
+            <button class="delete-moodboard-btn" data-id="${item.id}" title="Supprimer"
+                    style="background: var(--sage, #84a98c); color: white; border: none; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              ×
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
 
     container.innerHTML = `
-      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
-        ${subNavHtml}
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #eee;">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          ${subNavHtml}
+        </div>
+        <button id="add-moodboard-url-btn" class="btn btn--outline btn--sm" 
+                style="border-color: var(--sage, #84a98c); color: var(--forest); font-size: 12px; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; background: #fff; cursor: pointer;">
+          <span>➕ Coller le lien d'une image</span>
+        </button>
       </div>
 
-      <div id="moodboard-dropzone" 
-           style="border: 2px dashed var(--gold); border-radius: 12px; padding: 30px; text-align: center; 
-                  background: #fdfaf5; margin-bottom: 24px; transition: background 0.2s; cursor: pointer;">
-        <p style="margin:0; font-weight:600; color:var(--forest); font-size:15px;">
-          📥 Glissez et déposez une image d'Internet ici
-        </p>
-        <span style="font-size:12px; color:var(--text-muted);">Ou cliquez pour coller l'URL d'une image</span>
-      </div>
+      <div id="moodboard-grid-area" 
+           style="min-height: 200px; border: 2px dashed transparent; border-radius: 12px; transition: all 0.2s; padding: 4px;">
+        
+        <div style="column-count: 3; column-gap: 16px; width: 100%;">
+          ${gridHtml || '<p class="text-muted" style="text-align:center; padding: 40px 0; font-style: italic;">Aucune image ici. Glissez-déposez une image depuis un autre onglet ou cliquez sur "Coller le lien" !</p>'}
+        </div>
 
-      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:16px;">
-        ${gridHtml || '<p class="text-muted" style="grid-column:1/-1;">Aucune image dans ce tableau pour l\'instant.</p>'}
       </div>
     `;
 
-    // 5. Attacher les événements des sous-onglets
+    // 3. Réactivité en CSS pour les écrans plus petits (2 colonnes sur tablette, 1 sur mobile)
+    const styleBlock = document.createElement('style');
+    styleBlock.innerHTML = `
+      @media (max-width: 900px) { #moodboard-grid-area > div { column-count: 2 !important; } }
+      @media (max-width: 600px) { #moodboard-grid-area > div { column-count: 1 !important; } }
+      .moodboard-card:hover div { opacity: 1 !important; }
+    `;
+    container.appendChild(styleBlock);
+
+    // 4. Événements de navigation
     container.querySelectorAll('.moodboard-nav-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this.renderMoodboard(e.currentTarget.dataset.cat);
+      btn.addEventListener('click', (e) => this.renderMoodboard(e.currentTarget.dataset.cat));
+    });
+
+    // 5. SUPPRESSION RÉPARÉE (en vert sauge)
+    container.querySelectorAll('.delete-moodboard-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm("Supprimer cette image du moodboard ?")) {
+          await this._deleteMoodboardItem(e.currentTarget.dataset.id);
+          if (typeof Animations !== 'undefined' && Animations.showToast) {
+            Animations.showToast("Image supprimée", "success");
+          }
+          this.renderMoodboard(activeCategory);
+        }
       });
     });
 
-    // 6. GESTION DU DRAG & DROP D'IMAGES WEB
-    const dropzone = document.getElementById('moodboard-dropzone');
+    // 6. REDIMENSIONNEMENT / MISE EN AVANT (⭐ / 🗜️)
+    container.querySelectorAll('.resize-moodboard-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.dataset.id;
+        const newSize = e.currentTarget.dataset.size;
+        
+        // Mise à jour rapide dans Supabase
+        const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+        await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: newSize })
+        });
 
-    dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault(); // Obligatoire pour autoriser le drop !
-      dropzone.style.background = '#f0e6d2'; // Effet visuel au survol
+        this.renderMoodboard(activeCategory);
+      });
     });
 
-    dropzone.addEventListener('dragleave', () => {
-      dropzone.style.background = '#fdfaf5';
+    // 7. BOUTON D'AJOUT DISCRET PAR LIEN
+    document.getElementById('add-moodboard-url-btn').addEventListener('click', async () => {
+      const url = prompt("Collez l'URL (lien https://...) de l'image :");
+      if (url && url.startsWith('http')) {
+        await this._saveMoodboardItem({ category: activeCategory, image_url: url, size: 'normal' });
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
+        this.renderMoodboard(activeCategory);
+      }
     });
 
-    dropzone.addEventListener('drop', async (e) => {
+    // 8. GLISSER-DÉPOSER DISCRET SUR TOUTE LA GRILLE
+    const gridArea = document.getElementById('moodboard-grid-area');
+
+    gridArea.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dropzone.style.background = '#fdfaf5';
+      gridArea.style.borderColor = 'var(--sage, #84a98c)';
+      gridArea.style.background = '#f4f8f3';
+    });
 
-      // Astuce JS : Extraire l'URL de l'image glissée depuis un autre onglet
+    gridArea.addEventListener('dragleave', () => {
+      gridArea.style.borderColor = 'transparent';
+      gridArea.style.background = 'transparent';
+    });
+
+    gridArea.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      gridArea.style.borderColor = 'transparent';
+      gridArea.style.background = 'transparent';
+
       const htmlData = e.dataTransfer.getData('text/html');
       const textData = e.dataTransfer.getData('text/plain');
       let imageUrl = null;
 
-      // Si l'utilisateur glisse une balise <img src="...">
       if (htmlData) {
         const match = htmlData.match(/src\s*=\s*["']([^"']+)["']/i);
         if (match && match[1]) imageUrl = match[1];
       }
-      // Sinon, s'il glisse directement l'URL (texte) de l'image
       if (!imageUrl && textData && (textData.startsWith('http://') || textData.startsWith('https://'))) {
         imageUrl = textData;
       }
 
       if (imageUrl) {
-        // Sauvegarde dans Supabase
-        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl });
-        if (typeof Animations !== 'undefined') Animations.showToast("Image ajoutée !", "success");
-        this.renderMoodboard(activeCategory); // Recharge la grille
-      } else {
-        alert("Impossible de récupérer le lien de cette image. Essayez d'ouvrir l'image dans un nouvel onglet avant de la glisser, ou collez directement son URL !");
-      }
-    });
-
-    // Option simple : Clic sur la zone = Proposer de coller un lien directement
-    dropzone.addEventListener('click', async () => {
-      const url = prompt("Collez l'URL (le lien https://...) de l'image :");
-      if (url && url.startsWith('http')) {
-        await this._saveMoodboardItem({ category: activeCategory, image_url: url });
+        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl, size: 'normal' });
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
         this.renderMoodboard(activeCategory);
+      } else {
+        alert("Impossible de lire ce lien. Utilisez le bouton 'Coller le lien d'une image' juste au-dessus !");
       }
     });
   },
-
   // ════════════════════════════════════════════════
   // Covoiturage
  // ════════════════════════════════════════════════════════════
