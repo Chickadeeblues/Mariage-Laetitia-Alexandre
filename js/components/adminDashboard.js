@@ -1544,6 +1544,121 @@ toggleTask(id) {
     });
   },
 
+	// ════════════════════════════════════════════════════════════
+  // RENDU DU MOODBOARD (AVEC SOUS-NAVIGATION & DRAG AND DROP)
+  // ════════════════════════════════════════════════════════════
+  async renderMoodboard(activeCategory = 'Faire-parts') {
+    const container = document.getElementById('admin-moodboard');
+    if (!container) return;
+
+    // 1. Définition de vos 8 tableaux
+    const categories = [
+      'Faire-parts', 'Robe de mariée', 'Coiffures', 'Bouquet',
+      'Décoration église', 'Décoration réception', 'Plan de table', 'Tables'
+    ];
+
+    // 2. Chargement des images depuis Supabase pour la catégorie active
+    // (Suppose une méthode this._loadMoodboard(activeCategory))
+    const items = await this._loadMoodboard(activeCategory);
+
+    // 3. Génération des boutons de sous-navigation
+    const subNavHtml = categories.map(cat => `
+      <button class="moodboard-nav-btn ${cat === activeCategory ? 'active' : ''}" 
+              data-cat="${cat}"
+              style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--gold); 
+                     background: ${cat === activeCategory ? 'var(--forest)' : '#fff'}; 
+                     color: ${cat === activeCategory ? '#fff' : 'var(--forest)'}; 
+                     font-weight: 600; cursor: pointer; font-size: 13px;">
+        ${cat}
+      </button>
+    `).join('');
+
+    // 4. Génération de la grille d'images + Zone de Drop
+    let gridHtml = items.map(item => `
+      <div class="moodboard-card" style="position:relative; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1); background:#fff;">
+        <img src="${item.image_url}" alt="Inspiration" style="width:100%; height:200px; object-fit:cover; display:block;">
+        <button class="delete-moodboard-btn" data-id="${item.id}" 
+                style="position:absolute; top:8px; right:8px; background:rgba(255,0,0,0.8); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-weight:bold;">×</button>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
+        ${subNavHtml}
+      </div>
+
+      <div id="moodboard-dropzone" 
+           style="border: 2px dashed var(--gold); border-radius: 12px; padding: 30px; text-align: center; 
+                  background: #fdfaf5; margin-bottom: 24px; transition: background 0.2s; cursor: pointer;">
+        <p style="margin:0; font-weight:600; color:var(--forest); font-size:15px;">
+          📥 Glissez et déposez une image d'Internet ici
+        </p>
+        <span style="font-size:12px; color:var(--text-muted);">Ou cliquez pour coller l'URL d'une image</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:16px;">
+        ${gridHtml || '<p class="text-muted" style="grid-column:1/-1;">Aucune image dans ce tableau pour l\'instant.</p>'}
+      </div>
+    `;
+
+    // 5. Attacher les événements des sous-onglets
+    container.querySelectorAll('.moodboard-nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.renderMoodboard(e.currentTarget.dataset.cat);
+      });
+    });
+
+    // 6. GESTION DU DRAG & DROP D'IMAGES WEB
+    const dropzone = document.getElementById('moodboard-dropzone');
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault(); // Obligatoire pour autoriser le drop !
+      dropzone.style.background = '#f0e6d2'; // Effet visuel au survol
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.style.background = '#fdfaf5';
+    });
+
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.style.background = '#fdfaf5';
+
+      // Astuce JS : Extraire l'URL de l'image glissée depuis un autre onglet
+      const htmlData = e.dataTransfer.getData('text/html');
+      const textData = e.dataTransfer.getData('text/plain');
+      let imageUrl = null;
+
+      // Si l'utilisateur glisse une balise <img src="...">
+      if (htmlData) {
+        const match = htmlData.match(/src\s*=\s*["']([^"']+)["']/i);
+        if (match && match[1]) imageUrl = match[1];
+      }
+      // Sinon, s'il glisse directement l'URL (texte) de l'image
+      if (!imageUrl && textData && (textData.startsWith('http://') || textData.startsWith('https://'))) {
+        imageUrl = textData;
+      }
+
+      if (imageUrl) {
+        // Sauvegarde dans Supabase
+        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl });
+        if (typeof Animations !== 'undefined') Animations.showToast("Image ajoutée !", "success");
+        this.renderMoodboard(activeCategory); // Recharge la grille
+      } else {
+        alert("Impossible de récupérer le lien de cette image. Essayez d'ouvrir l'image dans un nouvel onglet avant de la glisser, ou collez directement son URL !");
+      }
+    });
+
+    // Option simple : Clic sur la zone = Proposer de coller un lien directement
+    dropzone.addEventListener('click', async () => {
+      const url = prompt("Collez l'URL (le lien https://...) de l'image :");
+      if (url && url.startsWith('http')) {
+        await this._saveMoodboardItem({ category: activeCategory, image_url: url });
+        this.renderMoodboard(activeCategory);
+      }
+    });
+  }
+
   // ════════════════════════════════════════════════
   // Covoiturage
  // ════════════════════════════════════════════════════════════
