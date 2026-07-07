@@ -1017,8 +1017,8 @@ toggleTask(id) {
     });
   },
 
-  // ════════════════════════════════════════════════════════════
-  // RENDU DU TABLEAU ÉQUIPE PRÉPA (Toutes corrections intégrées)
+// ════════════════════════════════════════════════════════════
+  // RENDU DU TABLEAU ÉQUIPE PRÉPA
   // ════════════════════════════════════════════════════════════
   async renderTeam(guests) {
     const container = document.getElementById('admin-team');
@@ -1027,61 +1027,68 @@ toggleTask(id) {
     container.innerHTML = '<p class="text-muted" style="padding:10px 0;">Chargement de l\'équipe...</p>';
     const team = await this._loadTeam();
 
-    // 5. Formatage de l'heure en format 24h français (ex: 14h30 ou 14:30)
+    // Formatage de l'heure sans coche (ex: 14h30)
     const formatDayBadge = (active, time) => {
       if (!active) return '<span style="color:#ccc;">—</span>';
-      let formattedTime = time ? time.slice(0, 5) : 'NC';
-      return `✓ <span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:4px;">${formattedTime}</span>`;
+      let formattedTime = time ? time.slice(0, 5).replace(':', 'h') : 'NC';
+      return `<span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:11px; padding:3px 8px; border-radius:4px; font-weight:700; display:inline-block;">${formattedTime}</span>`;
     };
 
-    // 1 & 2. Suppression du texte et alignement du bouton à gauche
-    let html = `
-      <div style="margin-bottom:16px; display:flex; justify-content:flex-start;">
-        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
-      </div>
+    // Calcul des totaux pour le pied de page (uniquement si loge sur place = oui)
+    const totalPeople = team ? team.length : 0;
+    const totalThu = team ? team.filter(m => m.stays_on_site && m.arrival_thursday).length : 0;
+    const totalFri = team ? team.filter(m => m.stays_on_site && m.arrival_friday).length : 0;
+    const totalSat = team ? team.filter(m => m.stays_on_site && m.arrival_saturday).length : 0;
 
-      <div class="table-responsive">
-        <table class="admin-table" style="width:100%; border-collapse:collapse;">
+    // 1. Tableau collé aux onglets (margin-top: 0)
+    let html = `
+      <div class="table-responsive" style="margin-top:0;">
+        <table class="admin-table" style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th rowspan="2" style="padding:10px; vertical-align:bottom;">Nom &amp; Téléphone</th>
-              <th rowspan="2" style="padding:10px; vertical-align:bottom;">Rôle</th>
+              <th rowspan="2" style="padding:10px; width:26%; vertical-align:bottom;">Nom &amp; Téléphone</th>
+              <th rowspan="2" style="padding:10px; width:20%; vertical-align:bottom;">Rôle(s)</th>
               <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
-              <th rowspan="2" style="padding:10px; text-align:center; vertical-align:bottom;">Loge sur place</th>
+              <th rowspan="2" style="padding:10px; width:11%; text-align:center; vertical-align:bottom;">Loge sur place</th>
               <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom; text-align:center;">Actions</th>
             </tr>
             <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
-              <th style="padding:6px 10px;">Jeudi</th>
-              <th style="padding:6px 10px;">Vendredi</th>
-              <th style="padding:6px 10px;">Samedi</th>
+              <th style="padding:6px 4px; width:12%; text-align:center;">Jeudi</th>
+              <th style="padding:6px 4px; width:12%; text-align:center;">Vendredi</th>
+              <th style="padding:6px 4px; width:12%; text-align:center;">Samedi</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    // 6. Suppression du texte "Cliquez sur + Ajouter un membre"
     if (!team || team.length === 0) {
       html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
     } else {
       team.forEach((m, idx) => {
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
         const formattedPhone = typeof formatPhone === 'function' ? formatPhone(m.phone) : (m.phone || '');
+        
+        // 2. Gestion de l'affichage multi-rôles (max 3)
+        const rolesArray = m.role ? m.role.split(',').map(r => r.trim()).slice(0, 3) : ['Organisation'];
+        const rolesHtml = rolesArray.map(r => `
+          <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">
+            ${r}
+          </span>`).join('');
+
         html += `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px;">
+            <td style="padding:10px; word-wrap:break-word;">
               <strong>${m.name || 'Sans nom'}</strong>
               ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
             </td>
             <td style="padding:10px;">
-              <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:4px 8px; border-radius:6px; font-size:12px;">
-                ${m.role || 'Organisation'}
-              </span>
+              <div style="display:flex; flex-wrap:wrap; gap:2px;">${rolesHtml}</div>
             </td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
             <td style="padding:10px; text-align:center;">
-              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">🏡 Oui</span>' : '<span style="color:#999;">Non</span>'}
+              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">Oui</span>' : '<span style="color:#999;">Non</span>'}
             </td>
             <td style="padding:10px; display:flex; gap:6px; justify-content:center;">
               <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
@@ -1092,10 +1099,30 @@ toggleTask(id) {
       });
     }
 
-    html += '</tbody></table></div>';
+    // 5. Ligne de totaux en fin de tableau
+    html += `
+          </tbody>
+          <tfoot>
+            <tr style="background:#fdfaf5; border-top: 2px solid var(--gold); font-weight:700; color:var(--forest); font-size:13px;">
+              <td style="padding:12px 10px;">Total : ${totalPeople} personne${totalPeople > 1 ? 's' : ''}</td>
+              <td style="padding:12px 10px; text-align:right; font-size:11px; color:var(--text-muted); font-weight:normal;">Logeant sur place :</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalThu}</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalFri}</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalSat}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div style="margin-top:16px; display:flex; justify-content:flex-start;">
+        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
+      </div>
+    `;
+
     container.innerHTML = html;
 
-    // Réattachement des boutons d'action
+    // Réattachement des événements
     document.getElementById('add-team-btn')?.addEventListener('click', () => {
       this.openTeamModal(null, guests);
     });
@@ -1119,9 +1146,9 @@ toggleTask(id) {
       });
     });
   },
-
-  // ════════════════════════════════════════════════════════════
-  // MODALE AJOUT / MODIFICATION ÉQUIPE PRÉPA
+  
+// ════════════════════════════════════════════════════════════
+  // MODALE AJOUT / MODIFICATION ÉQUIPE PRÉPA (AVEC MULTI-RÔLES)
   // ════════════════════════════════════════════════════════════
   openTeamModal(member, guests) {
     const existing = document.getElementById('admin-team-modal');
@@ -1133,9 +1160,23 @@ toggleTask(id) {
       .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${typeof formatPhone === 'function' ? formatPhone(g.phone) : g.phone || 'Sans tel'})</option>`)
       .join('');
 
+    // Rôles disponibles et rôles actuellement assignés
+    const availableRoles = ['Messe', 'Animation', 'Covoiturage', 'Décoration', 'Fleuriste', 'Sono', 'Photographe', 'Logistique', 'Traiteur', 'Coordination'];
+    const currentRoles = member?.role ? member.role.split(',').map(r => r.trim()) : ['Organisation'];
+
+    const rolesCheckboxesHtml = availableRoles.map(role => {
+      const isChecked = currentRoles.includes(role);
+      return `
+        <label style="display:inline-flex; align-items:center; gap:6px; background:#f4f8f3; border:1px solid #c8dcc4; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--forest); font-weight:500;">
+          <input type="checkbox" name="team-role-cb" value="${role}" ${isChecked ? 'checked' : ''} style="accent-color:var(--forest); width:14px; height:14px; margin:0;">
+          ${role}
+        </label>
+      `;
+    }).join('');
+
     const modalHtml = `
       <div id="admin-team-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:500px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
+        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:520px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
           
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gold-light); padding-bottom:12px; margin-bottom:16px;">
             <h3 style="margin:0; font-family:var(--font-display); color:var(--forest); font-size:22px;">
@@ -1148,7 +1189,6 @@ toggleTask(id) {
             
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
               <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">👤 Identité</legend>
-              
               <div style="margin-bottom:10px;">
                 <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Auto-remplir depuis un invité :</label>
                 <select id="team-guest-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; background:#fdfcfa;">
@@ -1156,7 +1196,6 @@ toggleTask(id) {
                   ${guestOptions}
                 </select>
               </div>
-
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <div>
                   <label style="font-size:12px; color:var(--text-muted);">Nom affiché *</label>
@@ -1170,20 +1209,13 @@ toggleTask(id) {
             </fieldset>
 
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
-              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">🏷️ Mission</legend>
-              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Rôle / Responsabilité *</label>
-              <input type="text" id="team-role" list="team-role-list" value="${member?.role || ''}" placeholder="Choisissez ou tapez un rôle..." required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
-              <datalist id="team-role-list">
-                <option value="Messe"></option>
-                <option value="Animation"></option>
-                <option value="Covoiturage"></option>
-                <option value="Décoration"></option>
-                <option value="Fleuriste"></option>
-                <option value="Sono"></option>
-                <option value="Photographe"></option>
-                <option value="Logistique"></option>
-                <option value="Traiteur"></option>
-              </datalist>
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">🏷️ Missions (3 maximum)</legend>
+              <p id="role-limit-msg" style="font-size:11px; color:#c2410c; margin:0 0 8px 0; display:none;">⚠️ Vous ne pouvez sélectionner que 3 rôles maximum.</p>
+              <div id="roles-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+                ${rolesCheckboxesHtml}
+              </div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:2px;">Autre rôle (optionnel) :</label>
+              <input type="text" id="team-role-custom" placeholder="Ex: Chauffeur mariés..." style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid #ccc; font-size:12px; box-sizing:border-box;" />
             </fieldset>
 
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
@@ -1216,7 +1248,7 @@ toggleTask(id) {
               <div style="background:#f4f8f3; padding:10px; border-radius:6px; border:1px solid #c8dcc4;">
                 <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; font-weight:600; color:var(--forest);">
                   <input type="checkbox" id="team-onsite" ${member?.stays_on_site ? 'checked' : ''} style="accent-color:var(--forest); width:18px; height:18px;">
-                  🏡 Loge sur place au Domaine
+                  Loge sur place au Domaine
                 </label>
               </div>
             </fieldset>
@@ -1238,11 +1270,25 @@ toggleTask(id) {
     const cancelBtn = document.getElementById('team-cancel-btn');
     const form = document.getElementById('admin-team-form');
     const guestSelect = document.getElementById('team-guest-select');
+    const roleCheckboxes = modal.querySelectorAll('input[name="team-role-cb"]');
+    const limitMsg = document.getElementById('role-limit-msg');
 
     const closeModal = () => modal.remove();
     closeX.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // 2. Limitation stricte à 3 cases à cocher maximum pour les rôles
+    roleCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const checkedCount = modal.querySelectorAll('input[name="team-role-cb"]:checked').length;
+        if (checkedCount > 3) {
+          cb.checked = false;
+          limitMsg.style.display = 'block';
+          setTimeout(() => { limitMsg.style.display = 'none'; }, 3000);
+        }
+      });
+    });
 
     guestSelect.addEventListener('change', (e) => {
       const gId = e.target.value;
@@ -1257,11 +1303,19 @@ toggleTask(id) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      // Récupérer et assembler les rôles (max 3)
+      const selectedRoles = Array.from(modal.querySelectorAll('input[name="team-role-cb"]:checked')).map(cb => cb.value);
+      const customRole = document.getElementById('team-role-custom').value.trim();
+      if (customRole && selectedRoles.length < 3) {
+        selectedRoles.push(customRole);
+      }
+      const finalRoleString = selectedRoles.length > 0 ? selectedRoles.slice(0, 3).join(', ') : 'Organisation';
+
       const payload = {
         guest_id: guestSelect.value || null,
         name: document.getElementById('team-name').value.trim(),
         phone: document.getElementById('team-phone').value.trim(),
-        role: document.getElementById('team-role').value.trim() || 'Organisation',
+        role: finalRoleString,
         arrival_thursday: document.getElementById('team-arr-thu').checked,
         time_thursday: document.getElementById('team-time-thu').value || null,
         arrival_friday: document.getElementById('team-arr-fri').checked,
@@ -1284,10 +1338,10 @@ toggleTask(id) {
       }
     });
   },
+  
   // ════════════════════════════════════════════════
   // 3. Modale de modification complète et ergonomique (Oui/Non)
   // ════════════════════════════════════════════════
-
   openEditModal(guest) {
     const existingModal = document.getElementById('admin-edit-modal');
     if (existingModal) existingModal.remove();
