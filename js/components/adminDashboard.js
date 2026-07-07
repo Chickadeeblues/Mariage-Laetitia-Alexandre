@@ -1036,9 +1036,10 @@ toggleTask(id) {
 
     // Calcul des totaux pour le pied de page (uniquement si loge sur place = oui)
     const totalPeople = team ? team.length : 0;
+    // Calcul cumulé : une arrivée le jeudi compte pour le ven/sam, une arrivée le vendredi compte pour le sam
     const totalThu = team ? team.filter(m => m.stays_on_site && m.arrival_thursday).length : 0;
-    const totalFri = team ? team.filter(m => m.stays_on_site && m.arrival_friday).length : 0;
-    const totalSat = team ? team.filter(m => m.stays_on_site && m.arrival_saturday).length : 0;
+    const totalFri = team ? team.filter(m => m.stays_on_site && (m.arrival_thursday || m.arrival_friday)).length : 0;
+    const totalSat = team ? team.filter(m => m.stays_on_site && (m.arrival_thursday || m.arrival_friday || m.arrival_saturday)).length : 0;
 
     // 1. Tableau collé aux onglets (margin-top: 0)
     let html = `
@@ -1484,7 +1485,21 @@ toggleTask(id) {
     cancelBtn.addEventListener('click', closeModal);
     closeX.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+	
+	// Pré-cochage automatique des jours suivants (décochable manuellement)
+    document.getElementById('team-arr-thu')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('team-arr-fri').checked = true;
+        document.getElementById('team-arr-sat').checked = true;
+      }
+    });
 
+    document.getElementById('team-arr-fri')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('team-arr-sat').checked = true;
+      }
+    });
+	
     // Soumission du formulaire complet
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
