@@ -1883,10 +1883,10 @@ async _deleteMoodboardItem(id) {
       .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
 
     // ════════════════════════════════════════════════════════════
-    // SOUS-ONGLET 1 : QUI FAIT QUOI ? (AUTOCOMPLETE & BOUTON +)
+    // SOUS-ONGLET 1 : QUI FAIT QUOI ?
     // ════════════════════════════════════════════════════════════
     if (activeSubTab === 'roles') {
-      // 4. Nouvel ordre et ajouts
+      // 2. Correction : Première et Deuxième lecture ne sont plus multi-choix (multi: false)
       const predefinedRoles = [
         { label: 'Prêtre célébrant', multi: false },
         { label: 'Curé', multi: false },
@@ -1895,8 +1895,8 @@ async _deleteMoodboardItem(id) {
         { label: 'Animation des chants', multi: true },
         { label: 'Chorale', multi: true },
         { label: 'Instruments', multi: true },
-        { label: 'Première lecture', multi: true },
-        { label: 'Deuxième lecture', multi: true },
+        { label: 'Première lecture', multi: false },
+        { label: 'Deuxième lecture', multi: false },
         { label: 'Prière universelle', multi: true },
         { label: 'Accueil des invités', multi: true }
       ];
@@ -1904,8 +1904,14 @@ async _deleteMoodboardItem(id) {
       let rowsHtml = predefinedRoles.map((roleObj, idx) => {
         const role = roleObj.label;
         const stored = rolesData[role];
-        // Transformation en tableau pour uniformiser la gestion du multi-lignes
-        const rArray = Array.isArray(stored) ? stored : (stored ? [stored] : [{ name: '', phone: '', email: '' }]);
+        
+        // 1. Correctif Anti-Bug : On garantit qu'il y a toujours AU MOINS UNE case vide affichée,
+        // même si la sauvegarde précédente avait enregistré un tableau vide []
+        let rArray = Array.isArray(stored) ? stored : (stored ? [stored] : []);
+        if (!rArray || rArray.length === 0) {
+          rArray = [{ name: '', phone: '', email: '' }];
+        }
+
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
 
         const inputsHtml = rArray.map((item, subIdx) => `
@@ -1963,7 +1969,7 @@ async _deleteMoodboardItem(id) {
         </div>
       `;
 
-      // 1. GESTION DE L'AUTOCOMPLÉTION INTÉGRÉE (Saisie dans le nom)
+      // Autocomplétion intégrée au champ Nom
       const attachAutocomplete = (input) => {
         input.addEventListener('input', (e) => {
           const val = e.target.value.trim().toLowerCase();
@@ -2007,7 +2013,6 @@ async _deleteMoodboardItem(id) {
           listDiv.style.display = 'block';
         });
 
-        // Fermer la liste si on clique ailleurs
         document.addEventListener('click', (e) => {
           if (!input.contains(e.target)) {
             const listDiv = input.nextElementSibling;
@@ -2018,7 +2023,7 @@ async _deleteMoodboardItem(id) {
 
       container.querySelectorAll('.autocomplete-name').forEach(attachAutocomplete);
 
-      // 2. BOUTON + POUR AJOUTER UNE LIGNE D'INTERVENANT
+      // Bouton + pour ajouter une ligne d'intervenant
       container.querySelectorAll('.btn-add-role-row').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const role = e.currentTarget.dataset.role;
@@ -2051,24 +2056,22 @@ async _deleteMoodboardItem(id) {
         });
       });
 
-      // Suppression d'une sous-ligne existante
       container.querySelectorAll('.btn-remove-subrow').forEach(btn => {
         btn.addEventListener('click', (e) => e.currentTarget.closest('.role-entry-row').remove());
       });
 
-      // 3. ACTION DISCRÈTE : VIDER TOUTE LA LIGNE
+      // Vider toute la ligne
       container.querySelectorAll('.btn-clear-role').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const role = e.currentTarget.dataset.role;
           const tr = container.querySelector(`tr[data-row-role="${role}"]`);
           tr.querySelectorAll('input').forEach(inp => inp.value = '');
-          // Si on avait ajouté plusieurs lignes via le bouton +, on garde uniquement la première
           const subrows = tr.querySelectorAll('.role-entry-row');
           subrows.forEach((row, idx) => { if (idx > 0) row.remove(); });
         });
       });
 
-      // SAUVEGARDE DES RÔLES
+      // Sauvegarde
       document.getElementById('save-mass-roles-btn').addEventListener('click', async () => {
         const newRoles = {};
         container.querySelectorAll('tr[data-row-role]').forEach(tr => {
@@ -2082,7 +2085,6 @@ async _deleteMoodboardItem(id) {
               entries.push({ name, phone, email });
             }
           });
-          // Si une seule entrée, on l'enregistre en objet simple pour propreté, sinon en tableau
           newRoles[role] = entries.length === 1 ? entries[0] : entries;
         });
         
@@ -2095,12 +2097,13 @@ async _deleteMoodboardItem(id) {
     }
 
     // ════════════════════════════════════════════════════════════
-    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE
+    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE (BOUTONS + DISCRETS)
     // ════════════════════════════════════════════════════════════
     if (activeSubTab === 'schedule') {
+      // 3. Oubli réparé : Ajout de "Deuxième lecture" après Psaume
       const massSteps = [
         'Procession', 'Entrée des mariés', 'Gloria', 'Première lecture', 'Psaume', 
-        'Alléluia', 'Evangile', 'Litanie des saints (facultatif)', 'Credo', 
+        'Deuxième lecture', 'Alléluia', 'Evangile', 'Litanie des saints (facultatif)', 'Credo', 
         'Appel des témoins', 'Dialogue initial', 'Bénédiction et échange des alliances', 
         'Action de grâce', 'Prière des époux (facultative)', 'Prière universelle', 
         'Quête', 'Offertoire', 'Sanctus', 'Notre-Père', 'Bénédiction nuptiale', 
@@ -2108,25 +2111,42 @@ async _deleteMoodboardItem(id) {
         'Bénédiction finale', 'Signature des registres (époux, témoins, prêtre)', 'Sortie'
       ];
 
+      // 4. Utilitaire pour générer une cellule avec bouton "+" ou champ visible selon qu'il y a du contenu ou non
+      const renderToggleField = (step, field, value, label, isTextarea = true) => {
+        const hasValue = value && value.trim() !== '';
+        const inputStyle = `display: ${hasValue ? 'block' : 'none'}; width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); box-sizing:border-box; ${isTextarea ? 'resize:vertical;' : ''}`;
+        const btnStyle = `display: ${hasValue ? 'none' : 'inline-block'}; background:#f8f9fa; border:1px dashed #ced4da; color:#6c757d; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:500; cursor:pointer; transition:all 0.2s;`;
+        
+        return `
+          <div class="field-toggle-wrap">
+            <button type="button" class="btn-reveal-field" style="${btnStyle}">+ ${label}</button>
+            ${isTextarea 
+              ? `<textarea class="mass-sched-input" data-step="${step}" data-field="${field}" rows="2" placeholder="${label}..." style="${inputStyle}">${value || ''}</textarea>`
+              : `<input type="text" class="mass-sched-input" data-step="${step}" data-field="${field}" value="${value || ''}" placeholder="${label}..." style="${inputStyle}">`
+            }
+          </div>
+        `;
+      };
+
       let scheduleRowsHtml = massSteps.map((step, idx) => {
         const sData = scheduleData[step] || { text: '', music: '', sheet: '', responsible: '' };
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
         return `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px 12px; font-weight:700; color:var(--forest); font-size:13px; width:20%;">
+            <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
               ${idx + 1}. ${step}
             </td>
-            <td style="padding:6px; width:22%;">
-              <textarea class="mass-sched-input" data-step="${step}" data-field="text" rows="2" placeholder="Référence, extrait du texte..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.text || ''}</textarea>
+            <td style="padding:8px; width:22%; vertical-align:top;">
+              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence')}
             </td>
-            <td style="padding:6px; width:22%;">
-              <textarea class="mass-sched-input" data-step="${step}" data-field="music" rows="2" placeholder="Titre du chant, lien YouTube..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.music || ''}</textarea>
+            <td style="padding:8px; width:22%; vertical-align:top;">
+              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant')}
             </td>
-            <td style="padding:6px; width:18%;">
-              <textarea class="mass-sched-input" data-step="${step}" data-field="sheet" rows="2" placeholder="Lien PDF, n° partition..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.sheet || ''}</textarea>
+            <td style="padding:8px; width:17%; vertical-align:top;">
+              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)')}
             </td>
-            <td style="padding:6px; width:18%;">
-              <input type="text" class="mass-sched-input" data-step="${step}" data-field="responsible" value="${sData.responsible || ''}" placeholder="Noms..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; box-sizing:border-box;">
+            <td style="padding:8px; width:17%; vertical-align:top;">
+              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom(s)', false)}
             </td>
           </tr>
         `;
@@ -2138,11 +2158,11 @@ async _deleteMoodboardItem(id) {
           <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
             <thead>
               <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
-                <th style="padding:10px 12px;">Étape de la messe</th>
-                <th style="padding:10px 6px;">Texte / Lecture</th>
-                <th style="padding:10px 6px;">Musique / Chants (Liens)</th>
-                <th style="padding:10px 6px;">Partitions (Liens)</th>
-                <th style="padding:10px 6px;">Qui s'en charge</th>
+                <th style="padding:10px 10px;">Étape de la messe</th>
+                <th style="padding:10px 8px;">Texte / Lecture</th>
+                <th style="padding:10px 8px;">Musique / Chants (Liens)</th>
+                <th style="padding:10px 8px;">Partitions</th>
+                <th style="padding:10px 8px;">Qui s'en charge</th>
               </tr>
             </thead>
             <tbody>${scheduleRowsHtml}</tbody>
@@ -2155,7 +2175,19 @@ async _deleteMoodboardItem(id) {
         </div>
       `;
 
-      // Sauvegarde du déroulé
+      // Logique d'ouverture des cases au clic sur les discrets boutons "+"
+      container.querySelectorAll('.btn-reveal-field').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.currentTarget.style.display = 'none';
+          const input = e.currentTarget.nextElementSibling;
+          if (input) {
+            input.style.display = 'block';
+            input.focus();
+          }
+        });
+      });
+
+      // Sauvegarde
       document.getElementById('save-mass-sched-btn').addEventListener('click', async () => {
         const newSched = {};
         container.querySelectorAll('.mass-sched-input').forEach(input => {
@@ -2177,7 +2209,6 @@ async _deleteMoodboardItem(id) {
       btn.addEventListener('click', (e) => this.renderMass(guests, e.currentTarget.dataset.sub));
     });
   },
-  
   // ════════════════════════════════════════════════
   // Covoiturage
  // ════════════════════════════════════════════════════════════
