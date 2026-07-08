@@ -85,15 +85,6 @@ async function supabase(method, table, { filter = '', body = null } = {}) {
   return text ? JSON.parse(text) : [];
 }
 
-async getAnimations() {
-    const { data, error } = await supabase.from('animations').select('*');
-    if (error) {
-      console.error("Erreur lors de la récupération des animations:", error);
-      return [];
-    }
-    return data || [];
-  },
-
 function toApp(g) {
   if (!g) return null;
   return {
@@ -366,6 +357,17 @@ const Store = {
     return auth !== null && auth.authenticated === true;
   },
 
+  // Discours et animations ──────────────────────────────────────
+  
+  async getAnimations() {
+    const { data, error } = await supabase.from('animations').select('*');
+    if (error) {
+      console.error("Erreur lors de la récupération des animations:", error);
+      return [];
+    }
+    return data || [];
+  },
+  
   // ── Statistiques ──────────────────────────────────────
 
   async getStats() {
