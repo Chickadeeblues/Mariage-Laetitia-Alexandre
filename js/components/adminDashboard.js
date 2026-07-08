@@ -177,9 +177,8 @@ init() {
       });
     });
 
-    // 5. Restauration du dernier onglet visité (ou 'guests' par défaut)
-    const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
-    activateTab(savedTab);
+    // 5. Activation forcée de l'onglet 'guests' (Invités) par défaut
+    activateTab('guests');
   },
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
@@ -279,7 +278,8 @@ async renderDashboard() {
 	  this.renderSeatingPlan(guests),
       this.renderCarpools(stats),
       this.renderAccommodations(),
-	  this.renderMoodboard()
+	  this.renderMoodboard(),
+      this.renderMass(guests)
     ]);
 	// Initialiser et positionner les onglets intercalaires
     this.initTabs();
@@ -1816,6 +1816,254 @@ async _deleteMoodboardItem(id) {
       } else {
         alert("Impossible de lire ce lien. Utilisez le bouton 'Coller le lien d'une image' juste au-dessus !");
       }
+    });
+  },
+  
+  // ════════════════════════════════════════════════════════════
+  // API SUPABASE : MESSE
+  // ════════════════════════════════════════════════════════════
+  async _loadMassDb() {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_mass?id=eq.main&select=data`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) return rows[0].data;
+      }
+    } catch (e) { console.error("Erreur chargement messe:", e); }
+    return { roles: {}, schedule: {} };
+  },
+
+  async _saveMassDb(data) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/wedding_mass`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ id: 'main', data })
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // RENDU DE L'ONGLET MESSE
+  // ════════════════════════════════════════════════════════════
+  async renderMass(guests, activeSubTab = 'roles') {
+    const container = document.getElementById('admin-messe');
+    if (!container) return;
+
+    const massData = await this._loadMassDb();
+    const rolesData = massData.roles || {};
+    const scheduleData = massData.schedule || {};
+
+    // 1. Boutons de sous-navigation
+    const subNavHtml = `
+      <div style="display:flex; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
+        <button class="mass-nav-btn ${activeSubTab === 'roles' ? 'active' : ''}" data-sub="roles"
+                style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'roles' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'roles' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
+          👥 1. Qui fait quoi ?
+        </button>
+        <button class="mass-nav-btn ${activeSubTab === 'schedule' ? 'active' : ''}" data-sub="schedule"
+                style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'schedule' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'schedule' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
+          📜 2. Déroulé de la messe
+        </button>
+      </div>
+    `;
+
+    // 2. Génération des options pour le menu déroulant "Invités"
+    const confirmedGuests = guests
+      .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
+      .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
+    
+    const guestOptionsHtml = `<option value="">➕ Remplir depuis un invité...</option>` + 
+      confirmedGuests.map(g => `<option value="${g.id}">${g.firstName || ''} ${g.lastName || ''}</option>`).join('');
+
+    // ════════════════════════════════════════════════════════════
+    // SOUS-ONGLET 1 : QUI FAIT QUOI ?
+    // ════════════════════════════════════════════════════════════
+    if (activeSubTab === 'roles') {
+      const predefinedRoles = [
+        'Prêtre célébrant', 'Curé', 'Sacristine', 'Animation des chants', 
+        'Chorale', 'Service de l\'autel', 'Accueil des invités'
+      ];
+
+      let rowsHtml = predefinedRoles.map((role, idx) => {
+        const rData = rolesData[role] || { name: '', phone: '', email: '' };
+        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+        return `
+          <tr style="background:${bg}; border-bottom:1px solid #eee;">
+            <td style="padding:12px; font-weight:700; color:var(--forest); width:22%;">
+              ${role}
+              ${role.includes('chants') || role.includes('Chorale') || role.includes('autel') ? '<br><small style="font-weight:normal; color:#888; font-size:11px;">(Plusieurs possibles)</small>' : ''}
+            </td>
+            <td style="padding:8px; width:22%;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="name" value="${rData.name || ''}" placeholder="Nom(s)..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </td>
+            <td style="padding:8px; width:18%;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="${rData.phone || ''}" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </td>
+            <td style="padding:8px; width:20%;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="${rData.email || ''}" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </td>
+            <td style="padding:8px; width:18%; text-align:center;">
+              <select class="mass-guest-select" data-role="${role}" style="padding:6px; border:1px solid var(--sage); border-radius:4px; background:#f4f8f3; color:var(--forest); font-size:12px; font-weight:600; cursor:pointer; max-width:100%;">
+                ${guestOptionsHtml}
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        ${subNavHtml}
+        <div class="table-responsive">
+          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
+                <th style="padding:10px 12px;">Rôle / Mission</th>
+                <th style="padding:10px 8px;">Nom(s)</th>
+                <th style="padding:10px 8px;">Téléphone</th>
+                <th style="padding:10px 8px;">Mail</th>
+                <th style="padding:10px 8px; text-align:center;">Auto-remplir</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+          <button id="save-mass-roles-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;">
+            💾 Enregistrer l'équipe liturgique
+          </button>
+        </div>
+      `;
+
+      // Logique d'auto-remplissage depuis un invité
+      container.querySelectorAll('.mass-guest-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const guestId = e.target.value;
+          if (!guestId) return;
+          const selectedGuest = guests.find(g => g.id == guestId);
+          if (selectedGuest) {
+            const role = e.target.dataset.role;
+            const nameInput = container.querySelector(`input[data-role="${role}"][data-field="name"]`);
+            const phoneInput = container.querySelector(`input[data-role="${role}"][data-field="phone"]`);
+            const emailInput = container.querySelector(`input[data-role="${role}"][data-field="email"]`);
+
+            const guestFullName = `${selectedGuest.firstName || ''} ${selectedGuest.lastName || ''}`.trim();
+            const guestPhone = selectedGuest.phone || '';
+            const guestEmail = selectedGuest.email || '';
+
+            // Permet de cumuler plusieurs personnes si le champ contient déjà du texte
+            nameInput.value = nameInput.value ? `${nameInput.value}, ${guestFullName}` : guestFullName;
+            if (guestPhone) phoneInput.value = phoneInput.value ? `${phoneInput.value} / ${guestPhone}` : guestPhone;
+            if (guestEmail) emailInput.value = emailInput.value ? `${emailInput.value}; ${guestEmail}` : guestEmail;
+
+            e.target.value = ""; // Réinitialise le menu déroulant
+          }
+        });
+      });
+
+      // Sauvegarde des rôles
+      document.getElementById('save-mass-roles-btn').addEventListener('click', async () => {
+        const newRoles = {};
+        container.querySelectorAll('.mass-role-input').forEach(input => {
+          const role = input.dataset.role;
+          const field = input.dataset.field;
+          if (!newRoles[role]) newRoles[role] = {};
+          newRoles[role][field] = input.value.trim();
+        });
+        massData.roles = newRoles;
+        await this._saveMassDb(massData);
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Équipe liturgique enregistrée !", "success");
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE
+    // ════════════════════════════════════════════════════════════
+    if (activeSubTab === 'schedule') {
+      const massSteps = [
+        'Procession', 'Entrée des mariés', 'Gloria', 'Première lecture', 'Psaume', 
+        'Alléluia', 'Evangile', 'Litanie des saints (facultatif)', 'Credo', 
+        'Appel des témoins', 'Dialogue initial', 'Bénédiction et échange des alliances', 
+        'Action de grâce', 'Prière des époux (facultative)', 'Prière universelle', 
+        'Quête', 'Offertoire', 'Sanctus', 'Notre-Père', 'Bénédiction nuptiale', 
+        'Agnus Dei', 'Communion', 'Consécration à Marie (facultatif)', 
+        'Bénédiction finale', 'Signature des registres (époux, témoins, prêtre)', 'Sortie'
+      ];
+
+      let scheduleRowsHtml = massSteps.map((step, idx) => {
+        const sData = scheduleData[step] || { text: '', music: '', sheet: '', responsible: '' };
+        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+        return `
+          <tr style="background:${bg}; border-bottom:1px solid #eee;">
+            <td style="padding:10px 12px; font-weight:700; color:var(--forest); font-size:13px; width:20%;">
+              ${idx + 1}. ${step}
+            </td>
+            <td style="padding:6px; width:22%;">
+              <textarea class="mass-sched-input" data-step="${step}" data-field="text" rows="2" placeholder="Référence, extrait du texte..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.text || ''}</textarea>
+            </td>
+            <td style="padding:6px; width:22%;">
+              <textarea class="mass-sched-input" data-step="${step}" data-field="music" rows="2" placeholder="Titre du chant, lien YouTube..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.music || ''}</textarea>
+            </td>
+            <td style="padding:6px; width:18%;">
+              <textarea class="mass-sched-input" data-step="${step}" data-field="sheet" rows="2" placeholder="Lien PDF, n° partition..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); resize:vertical; box-sizing:border-box;">${sData.sheet || ''}</textarea>
+            </td>
+            <td style="padding:6px; width:18%;">
+              <input type="text" class="mass-sched-input" data-step="${step}" data-field="responsible" value="${sData.responsible || ''}" placeholder="Noms..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; box-sizing:border-box;">
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        ${subNavHtml}
+        <div class="table-responsive">
+          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
+                <th style="padding:10px 12px;">Étape de la messe</th>
+                <th style="padding:10px 6px;">Texte / Lecture</th>
+                <th style="padding:10px 6px;">Musique / Chants (Liens)</th>
+                <th style="padding:10px 6px;">Partitions (Liens)</th>
+                <th style="padding:10px 6px;">Qui s'en charge</th>
+              </tr>
+            </thead>
+            <tbody>${scheduleRowsHtml}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+          <button id="save-mass-sched-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;">
+            💾 Enregistrer le déroulé de la messe
+          </button>
+        </div>
+      `;
+
+      // Sauvegarde du déroulé
+      document.getElementById('save-mass-sched-btn').addEventListener('click', async () => {
+        const newSched = {};
+        container.querySelectorAll('.mass-sched-input').forEach(input => {
+          const step = input.dataset.step;
+          const field = input.dataset.field;
+          if (!newSched[step]) newSched[step] = {};
+          newSched[step][field] = input.value.trim();
+        });
+        massData.schedule = newSched;
+        await this._saveMassDb(massData);
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Déroulé de la messe enregistré !", "success");
+      });
+    }
+
+    // Changement de sous-onglet
+    container.querySelectorAll('.mass-nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => this.renderMass(guests, e.currentTarget.dataset.sub));
     });
   },
   
