@@ -62,30 +62,60 @@ const INFO_PAGES = {
   },
 
   animations: {
-    pageId: 'page-infos-animations',
-    route:  '#/infos/animations',
-    render() {
-      return `
-        <div class="container">
-          <div class="section-header animate-on-scroll">
-            <h2>🎤 Animations &amp; Discours</h2>
-            <div class="ornament"></div>
+  pageId: 'page-infos-animations',
+  route: '#/infos/animations',
+  render() {
+    return `
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>🎤 Animations &amp; Discours</h2>
+          <div class="ornament"></div>
+          <p>Pour que la fête soit belle, merci de ne pas dépasser <strong>5 minutes</strong> par intervention.</p>
+        </div>
+        
+        <form id="animation-form" class="card" style="max-width:600px;margin:0 auto;padding:24px;">
+          <div class="form-group" style="margin-bottom:15px;">
+            <label>Relation aux mariés :</label>
+            <select id="rel" class="form-control" required style="width:100%;padding:8px;">
+              <option value="">Choisissez...</option>
+              <option>Famille de la mariée</option><option>Famille du marié</option>
+              <option>Témoin de la mariée</option><option>Témoin du marié</option>
+              <option>Ami(e) de la mariée</option><option>Ami(e) du marié</option>
+              <option>Ami(e) des mariés</option>
+            </select>
           </div>
-          <div class="info-content card" style="max-width:680px;margin:0 auto;padding:32px;text-align:center;">
-            <span style="font-size:3rem;display:block;margin-bottom:16px;">🎶</span>
-            <p style="font-size:16px;color:#5c4e35;font-style:italic;line-height:1.7;">
-              Le programme des animations et des discours sera révélé très bientôt.<br>
-              Tenez-vous prêts pour une soirée mémorable !
-            </p>
-            <p class="info-placeholder-note" style="margin-top:24px;">
-              ✏️ Si vous souhaitez prendre la parole ou proposer une animation, 
-              contactez les mariés via la page <a href="#/infos/contacts">Contacts utiles</a>.
-            </p>
-          </div>
-        </div>`;
-    }
-  },
 
+          <div class="form-group" style="margin-bottom:15px;">
+            <label>Type d'animation :</label>
+            <select id="type" class="form-control" required style="width:100%;padding:8px;">
+              <option value="">Choisissez...</option>
+              <option value="Discours">Discours</option>
+              <option value="Sketch">Sketch</option>
+              <option value="Vidéo">Vidéo</option>
+              <option value="Chant">Chant</option>
+              <option value="Musique">Musique</option>
+              <option value="Jeu">Jeu</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:15px;">
+            <label>Moment (auto) :</label>
+            <input type="text" id="timing" class="form-control" readonly style="width:100%;padding:8px;background:#f9f9f9;">
+          </div>
+
+          <div class="form-group" style="margin-bottom:15px;">
+            <label>Besoin de matériel :</label><br>
+            <label><input type="checkbox" name="equip" value="Micro/Enceinte"> Micro et enceinte</label><br>
+            <label><input type="checkbox" name="equip" value="Projecteur"> Projecteur vidéo</label><br>
+            <input type="text" id="other_equip" placeholder="Autre besoin..." style="width:100%;padding:8px;margin-top:5px;">
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="width:100%;padding:10px;background:#2D5A3D;color:white;border:none;cursor:pointer;">Envoyer ma proposition</button>
+        </form>
+      </div>`;
+  }
+},
+  
   contacts: {
     pageId: 'page-infos-contacts',
     route:  '#/infos/contacts',
@@ -157,20 +187,57 @@ const InfoPages = {
       if (el && el.innerHTML.trim() === '') el.innerHTML = p.render();
     });
 
-    window.addEventListener('route-changed', (e) => {
-      const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
-      if (page) {
-        const el = document.getElementById(page.pageId);
-        if (el) el.innerHTML = page.render();
-        // Liens SPA internes
-        el?.querySelectorAll('a[href^="#"]').forEach(a => {
-          a.addEventListener('click', ev => {
-            ev.preventDefault();
-            import('../utils/router.js').then(m => m.default.navigate(a.getAttribute('href')));
+window.addEventListener('route-changed', (e) => {
+  const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
+  if (page) {
+    const el = document.getElementById(page.pageId);
+    if (el) {
+      el.innerHTML = page.render();
+      
+      // Si c'est la page animations, on active la logique du formulaire
+      if (e.detail.route === '#/infos/animations') {
+        const form = document.getElementById('animation-form');
+        const typeSelect = document.getElementById('type');
+        const timingInput = document.getElementById('timing');
+
+        // 1. Calcul auto du timing
+        typeSelect.addEventListener('change', (ev) => {
+          timingInput.value = (ev.target.value === 'Discours') ? 'Vin d\'honneur' : 'Repas';
+        });
+
+        // 2. Soumission du formulaire
+        form.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          
+          // Récupération dynamique via Store (assurez-vous d'importer Store)
+          import('../store.js').then(async (m) => {
+            const guest = await m.default.getCurrentGuest();
+            const equip = Array.from(document.querySelectorAll('input[name="equip"]:checked')).map(c => c.value);
+            const other = document.getElementById('other_equip').value;
+            if(other) equip.push(other);
+
+            const payload = {
+              guest_id: guest.id,
+              name: `${guest.firstName} ${guest.lastName}`,
+              relation: document.getElementById('rel').value,
+              type: typeSelect.value,
+              timing: timingInput.value,
+              equipment: equip
+            };
+
+            const { error } = await m.default.supabase.from('animations').insert([payload]);
+            if (!error) {
+              alert('Merci ! Votre animation a bien été enregistrée.');
+              form.reset();
+            } else {
+              alert('Une erreur est survenue.');
+            }
           });
         });
       }
-    });
+    }
+  }
+});
   },
   destroy() {}
 };
