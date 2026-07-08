@@ -64,9 +64,7 @@ const INFO_PAGES = {
   animations: {
   pageId: 'page-infos-animations',
   route:  '#/infos/animations',
-  
-  // Utilisation d'une fonction async pour le rendu
-  async render() {
+  render() {
     return `
       <div class="container" id="animations-container">
         <div class="section-header animate-on-scroll">
@@ -75,21 +73,16 @@ const INFO_PAGES = {
         </div>
         
         <div id="animations-view-switcher" style="text-align:center; margin-bottom:20px;">
-          <button id="btn-toggle-view" class="btn" style="background:#2D5A3D; color:white; padding:10px 20px; border:none; border-radius:5px;">Je veux participer</button>
-          <button id="btn-reveal" class="btn" style="background:#c8960c; color:white; padding:10px 20px; border:none; border-radius:5px; margin-left:10px;">Révéler les surprises</button>
+          <button id="btn-toggle-view" class="btn">Je veux participer</button>
+          <button id="btn-reveal" class="btn" style="margin-left:10px;">Révéler les surprises</button>
         </div>
 
-        <div id="program-content">
-          <!-- Le programme sera injecté ici par JS -->
-        </div>
-
-        <div id="form-content" style="display:none;">
-          <!-- Le formulaire sera injecté ici par JS -->
-        </div>
+        <div id="program-content"></div>
+        <div id="form-content" style="display:none;"></div>
       </div>`;
   }
 },
-
+  
   contacts: {
     pageId: 'page-infos-contacts',
     route:  '#/infos/contacts',
@@ -156,50 +149,55 @@ const INFO_PAGES = {
 
 const InfoPages = {
   init() {
-    Object.values(INFO_PAGES).forEach(p => {
-      const el = document.getElementById(p.pageId);
-      if (el && el.innerHTML.trim() === '') el.innerHTML = p.render();
-    });
-
-window.addEventListener('route-changed', async (e) => {
+    window.addEventListener('route-changed', async (e) => {
       const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
-      if (page) {
-        const el = document.getElementById(page.pageId);
-        if (!el) return;
+      if (!page) return;
 
-        el.innerHTML = await page.render();
+      const el = document.getElementById(page.pageId);
+      if (!el) return;
 
-        if (e.detail.route === '#/infos/animations') {
-          const progEl = document.getElementById('program-content');
-          const formEl = document.getElementById('form-content');
-          const btnToggle = document.getElementById('btn-toggle-view');
-          const btnReveal = document.getElementById('btn-reveal');
+      // 1. On injecte le HTML
+      el.innerHTML = page.render(); 
+
+      // 2. Si c'est la page animations, on attache les écouteurs ICI
+      if (e.detail.route === '#/infos/animations') {
+        const progEl = document.getElementById('program-content');
+        const formEl = document.getElementById('form-content');
+        const btnToggle = document.getElementById('btn-toggle-view');
+        const btnReveal = document.getElementById('btn-reveal');
+        
+        let isFormVisible = false;
+        let isRevealed = false;
+
+        // Charger et afficher les données
+        import('../store.js').then(async (m) => {
+           const anims = await m.default.getAnimations();
+           if(progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
+        });
+
+        // Toggle Formulaire
+        btnToggle?.addEventListener('click', () => {
+          isFormVisible = !isFormVisible;
+          progEl.style.display = isFormVisible ? 'none' : 'block';
+          formEl.style.display = isFormVisible ? 'block' : 'none';
+          btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
           
-          let isFormVisible = false;
-          let isRevealed = false;
+          if(isFormVisible) {
+            formEl.innerHTML = renderParticipationForm();
+            // Important : attacher l'écouteur de soumission ici aussi
+            document.getElementById('animation-form')?.addEventListener('submit', (ev) => {
+               ev.preventDefault();
+               alert('Soumission en cours...'); // Ajoutez votre logique d'envoi ici
+            });
+          }
+        });
 
-          // Charger les animations
-          import('../store.js').then(async (m) => {
-             const anims = await m.default.getAnimations();
-             if(progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
-          });
-
-          // Toggle Formulaire
-          btnToggle?.addEventListener('click', () => {
-            isFormVisible = !isFormVisible;
-            progEl.style.display = isFormVisible ? 'none' : 'block';
-            formEl.style.display = isFormVisible ? 'block' : 'none';
-            btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
-            if(isFormVisible) formEl.innerHTML = renderParticipationForm();
-          });
-
-          // Révéler
-          btnReveal?.addEventListener('click', () => {
-            isRevealed = !isRevealed;
-            progEl.classList.toggle('revealed', isRevealed);
-            btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
-          });
-        }
+        // Révéler
+        btnReveal?.addEventListener('click', () => {
+          isRevealed = !isRevealed;
+          progEl.classList.toggle('revealed', isRevealed);
+          btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
+        });
       }
     });
   },
