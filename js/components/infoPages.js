@@ -61,12 +61,7 @@ const INFO_PAGES = {
     }
   },
 
-  /**
- * infoPages.js — Modification de la section animations
- */
-// ... (gardez le début du fichier existant)
-
-animations: {
+  animations: {
   pageId: 'page-infos-animations',
   route:  '#/infos/animations',
   
@@ -159,57 +154,6 @@ animations: {
   }
 };
 
-const InfoPages = {
-  init() {
-    Object.values(INFO_PAGES).forEach(p => {
-      const el = document.getElementById(p.pageId);
-      if (el && el.innerHTML.trim() === '') el.innerHTML = p.render();
-    });
-
-window.addEventListener('route-changed', async (e) => {
-  const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
-  if (page) {
-    const el = document.getElementById(page.pageId);
-    if (!el) return;
-
-    // Rendu initial
-    el.innerHTML = await page.render();
-
-    // Logique spécifique pour la page animations
-    if (e.detail.route === '#/infos/animations') {
-      const progEl = document.getElementById('program-content');
-      const formEl = document.getElementById('form-content');
-      const btnToggle = document.getElementById('btn-toggle-view');
-      const btnReveal = document.getElementById('btn-reveal');
-      let isFormVisible = false;
-      let isRevealed = false;
-
-      // 1. Charger les animations
-      import('../store.js').then(async (m) => {
-        const anims = await m.default.getAnimations();
-        progEl.innerHTML = renderProgram(anims, isRevealed);
-      });
-
-      // 2. Bouton "Je veux participer"
-      btnToggle.addEventListener('click', () => {
-        isFormVisible = !isFormVisible;
-        progEl.style.display = isFormVisible ? 'none' : 'block';
-        formEl.style.display = isFormVisible ? 'block' : 'none';
-        btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
-        if(isFormVisible) formEl.innerHTML = renderParticipationForm(); // Créer cette fonction
-      });
-
-      // 3. Bouton "Révéler"
-      btnReveal.addEventListener('click', () => {
-        isRevealed = !isRevealed;
-        progEl.classList.toggle('revealed', isRevealed);
-        btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
-      });
-    }
-  }
-});
-
-// Fonction utilitaire pour rendre le programme (flouté ou non)
 function renderProgram(anims, revealed) {
   const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
   return slots.map(slot => `
@@ -223,6 +167,71 @@ function renderProgram(anims, revealed) {
     </div>
   `).join('');
 }
+
+function renderParticipationForm() {
+  return `
+    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
+      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max).</em></p>
+      <input type="text" id="anim-type" placeholder="Type d'animation (ex: Discours)" class="form-control" required style="width:100%; margin-bottom:10px;">
+      <select id="anim-timing" class="form-control" style="width:100%; margin-bottom:10px;">
+        <option>Vin d'honneur</option>
+        <option>Pendant le repas</option>
+        <option>Premier intermède</option>
+        <option>Deuxième intermède</option>
+      </select>
+      <button type="submit" class="btn btn--primary">Envoyer</button>
+    </form>
+  `;
+}
+
+const InfoPages = {
+  init() {
+    Object.values(INFO_PAGES).forEach(p => {
+      const el = document.getElementById(p.pageId);
+      if (el && el.innerHTML.trim() === '') el.innerHTML = p.render();
+    });
+
+window.addEventListener('route-changed', async (e) => {
+      const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
+      if (page) {
+        const el = document.getElementById(page.pageId);
+        if (!el) return;
+
+        el.innerHTML = await page.render();
+
+        if (e.detail.route === '#/infos/animations') {
+          const progEl = document.getElementById('program-content');
+          const formEl = document.getElementById('form-content');
+          const btnToggle = document.getElementById('btn-toggle-view');
+          const btnReveal = document.getElementById('btn-reveal');
+          
+          let isFormVisible = false;
+          let isRevealed = false;
+
+          // Charger les animations
+          import('../store.js').then(async (m) => {
+             const anims = await m.default.getAnimations();
+             if(progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
+          });
+
+          // Toggle Formulaire
+          btnToggle?.addEventListener('click', () => {
+            isFormVisible = !isFormVisible;
+            progEl.style.display = isFormVisible ? 'none' : 'block';
+            formEl.style.display = isFormVisible ? 'block' : 'none';
+            btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
+            if(isFormVisible) formEl.innerHTML = renderParticipationForm();
+          });
+
+          // Révéler
+          btnReveal?.addEventListener('click', () => {
+            isRevealed = !isRevealed;
+            progEl.classList.toggle('revealed', isRevealed);
+            btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
+          });
+        }
+      }
+    });
   },
   destroy() {}
 };
