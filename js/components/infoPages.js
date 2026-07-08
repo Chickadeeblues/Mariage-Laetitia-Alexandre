@@ -61,61 +61,40 @@ const INFO_PAGES = {
     }
   },
 
-  animations: {
+  /**
+ * infoPages.js — Modification de la section animations
+ */
+// ... (gardez le début du fichier existant)
+
+animations: {
   pageId: 'page-infos-animations',
-  route: '#/infos/animations',
-  render() {
+  route:  '#/infos/animations',
+  
+  // Utilisation d'une fonction async pour le rendu
+  async render() {
     return `
-      <div class="container">
+      <div class="container" id="animations-container">
         <div class="section-header animate-on-scroll">
-          <h2>🎤 Animations &amp; Discours</h2>
+          <h2>Discours &amp; animations</h2>
           <div class="ornament"></div>
-          <p>Pour que la fête soit belle, merci de ne pas dépasser <strong>5 minutes</strong> par intervention.</p>
         </div>
         
-        <form id="animation-form" class="card" style="max-width:600px;margin:0 auto;padding:24px;">
-          <div class="form-group" style="margin-bottom:15px;">
-            <label>Relation aux mariés :</label>
-            <select id="rel" class="form-control" required style="width:100%;padding:8px;">
-              <option value="">Choisissez...</option>
-              <option>Famille de la mariée</option><option>Famille du marié</option>
-              <option>Témoin de la mariée</option><option>Témoin du marié</option>
-              <option>Ami(e) de la mariée</option><option>Ami(e) du marié</option>
-              <option>Ami(e) des mariés</option>
-            </select>
-          </div>
+        <div id="animations-view-switcher" style="text-align:center; margin-bottom:20px;">
+          <button id="btn-toggle-view" class="btn" style="background:#2D5A3D; color:white; padding:10px 20px; border:none; border-radius:5px;">Je veux participer</button>
+          <button id="btn-reveal" class="btn" style="background:#c8960c; color:white; padding:10px 20px; border:none; border-radius:5px; margin-left:10px;">Révéler les surprises</button>
+        </div>
 
-          <div class="form-group" style="margin-bottom:15px;">
-            <label>Type d'animation :</label>
-            <select id="type" class="form-control" required style="width:100%;padding:8px;">
-              <option value="">Choisissez...</option>
-              <option value="Discours">Discours</option>
-              <option value="Sketch">Sketch</option>
-              <option value="Vidéo">Vidéo</option>
-              <option value="Chant">Chant</option>
-              <option value="Musique">Musique</option>
-              <option value="Jeu">Jeu</option>
-            </select>
-          </div>
+        <div id="program-content">
+          <!-- Le programme sera injecté ici par JS -->
+        </div>
 
-          <div class="form-group" style="margin-bottom:15px;">
-            <label>Moment (auto) :</label>
-            <input type="text" id="timing" class="form-control" readonly style="width:100%;padding:8px;background:#f9f9f9;">
-          </div>
-
-          <div class="form-group" style="margin-bottom:15px;">
-            <label>Besoin de matériel :</label><br>
-            <label><input type="checkbox" name="equip" value="Micro/Enceinte"> Micro et enceinte</label><br>
-            <label><input type="checkbox" name="equip" value="Projecteur"> Projecteur vidéo</label><br>
-            <input type="text" id="other_equip" placeholder="Autre besoin..." style="width:100%;padding:8px;margin-top:5px;">
-          </div>
-
-          <button type="submit" class="btn btn--primary" style="width:100%;padding:10px;background:#2D5A3D;color:white;border:none;cursor:pointer;">Envoyer ma proposition</button>
-        </form>
+        <div id="form-content" style="display:none;">
+          <!-- Le formulaire sera injecté ici par JS -->
+        </div>
       </div>`;
   }
 },
-  
+
   contacts: {
     pageId: 'page-infos-contacts',
     route:  '#/infos/contacts',
@@ -187,57 +166,63 @@ const InfoPages = {
       if (el && el.innerHTML.trim() === '') el.innerHTML = p.render();
     });
 
-window.addEventListener('route-changed', (e) => {
+window.addEventListener('route-changed', async (e) => {
   const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
   if (page) {
     const el = document.getElementById(page.pageId);
-    if (el) {
-      el.innerHTML = page.render();
-      
-      // Si c'est la page animations, on active la logique du formulaire
-      if (e.detail.route === '#/infos/animations') {
-        const form = document.getElementById('animation-form');
-        const typeSelect = document.getElementById('type');
-        const timingInput = document.getElementById('timing');
+    if (!el) return;
 
-        // 1. Calcul auto du timing
-        typeSelect.addEventListener('change', (ev) => {
-          timingInput.value = (ev.target.value === 'Discours') ? 'Vin d\'honneur' : 'Repas';
-        });
+    // Rendu initial
+    el.innerHTML = await page.render();
 
-        // 2. Soumission du formulaire
-        form.addEventListener('submit', async (ev) => {
-          ev.preventDefault();
-          
-          // Récupération dynamique via Store (assurez-vous d'importer Store)
-          import('../store.js').then(async (m) => {
-            const guest = await m.default.getCurrentGuest();
-            const equip = Array.from(document.querySelectorAll('input[name="equip"]:checked')).map(c => c.value);
-            const other = document.getElementById('other_equip').value;
-            if(other) equip.push(other);
+    // Logique spécifique pour la page animations
+    if (e.detail.route === '#/infos/animations') {
+      const progEl = document.getElementById('program-content');
+      const formEl = document.getElementById('form-content');
+      const btnToggle = document.getElementById('btn-toggle-view');
+      const btnReveal = document.getElementById('btn-reveal');
+      let isFormVisible = false;
+      let isRevealed = false;
 
-            const payload = {
-              guest_id: guest.id,
-              name: `${guest.firstName} ${guest.lastName}`,
-              relation: document.getElementById('rel').value,
-              type: typeSelect.value,
-              timing: timingInput.value,
-              equipment: equip
-            };
+      // 1. Charger les animations
+      import('../store.js').then(async (m) => {
+        const anims = await m.default.getAnimations();
+        progEl.innerHTML = renderProgram(anims, isRevealed);
+      });
 
-            const { error } = await m.default.supabase.from('animations').insert([payload]);
-            if (!error) {
-              alert('Merci ! Votre animation a bien été enregistrée.');
-              form.reset();
-            } else {
-              alert('Une erreur est survenue.');
-            }
-          });
-        });
-      }
+      // 2. Bouton "Je veux participer"
+      btnToggle.addEventListener('click', () => {
+        isFormVisible = !isFormVisible;
+        progEl.style.display = isFormVisible ? 'none' : 'block';
+        formEl.style.display = isFormVisible ? 'block' : 'none';
+        btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
+        if(isFormVisible) formEl.innerHTML = renderParticipationForm(); // Créer cette fonction
+      });
+
+      // 3. Bouton "Révéler"
+      btnReveal.addEventListener('click', () => {
+        isRevealed = !isRevealed;
+        progEl.classList.toggle('revealed', isRevealed);
+        btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
+      });
     }
   }
 });
+
+// Fonction utilitaire pour rendre le programme (flouté ou non)
+function renderProgram(anims, revealed) {
+  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
+  return slots.map(slot => `
+    <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
+      <h3>${slot}</h3>
+      <div class="${revealed ? '' : 'blur-effect'}">
+        ${anims.filter(a => a.timing === slot).map(a => `
+          <p><strong>${a.name}</strong> - ${a.type}</p>
+        `).join('') || '<p style="color:#ccc;">Aucune animation pour le moment</p>'}
+      </div>
+    </div>
+  `).join('');
+}
   },
   destroy() {}
 };
