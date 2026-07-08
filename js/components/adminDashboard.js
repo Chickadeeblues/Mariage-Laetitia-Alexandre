@@ -2137,16 +2137,16 @@ async _deleteMoodboardItem(id) {
               ${idx + 1}. ${step}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence')}
+              ${renderToggleField(step, 'text', sData.text, '')}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant')}
+              ${renderToggleField(step, 'music', sData.music, '')}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
-              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)')}
+              ${renderToggleField(step, 'sheet', sData.sheet, '')}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
-              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom(s)', false)}
+              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom', false)}
             </td>
           </tr>
         `;
