@@ -1877,45 +1877,66 @@ async _deleteMoodboardItem(id) {
       </div>
     `;
 
-    // 2. Génération des options pour le menu déroulant "Invités"
+    // Filtre des invités confirmés pour l'autocomplétion
     const confirmedGuests = guests
       .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
       .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
-    
-    const guestOptionsHtml = `<option value="">➕ Remplir depuis un invité...</option>` + 
-      confirmedGuests.map(g => `<option value="${g.id}">${g.firstName || ''} ${g.lastName || ''}</option>`).join('');
 
     // ════════════════════════════════════════════════════════════
-    // SOUS-ONGLET 1 : QUI FAIT QUOI ?
+    // SOUS-ONGLET 1 : QUI FAIT QUOI ? (AUTOCOMPLETE & BOUTON +)
     // ════════════════════════════════════════════════════════════
     if (activeSubTab === 'roles') {
+      // 4. Nouvel ordre et ajouts
       const predefinedRoles = [
-        'Prêtre célébrant', 'Curé', 'Sacristine', 'Animation des chants', 
-        'Chorale', 'Service de l\'autel', 'Accueil des invités'
+        { label: 'Prêtre célébrant', multi: false },
+        { label: 'Curé', multi: false },
+        { label: 'Sacristine', multi: false },
+        { label: 'Service de l\'autel', multi: true },
+        { label: 'Animation des chants', multi: true },
+        { label: 'Chorale', multi: true },
+        { label: 'Instruments', multi: true },
+        { label: 'Première lecture', multi: true },
+        { label: 'Deuxième lecture', multi: true },
+        { label: 'Prière universelle', multi: true },
+        { label: 'Accueil des invités', multi: true }
       ];
 
-      let rowsHtml = predefinedRoles.map((role, idx) => {
-        const rData = rolesData[role] || { name: '', phone: '', email: '' };
+      let rowsHtml = predefinedRoles.map((roleObj, idx) => {
+        const role = roleObj.label;
+        const stored = rolesData[role];
+        // Transformation en tableau pour uniformiser la gestion du multi-lignes
+        const rArray = Array.isArray(stored) ? stored : (stored ? [stored] : [{ name: '', phone: '', email: '' }]);
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+
+        const inputsHtml = rArray.map((item, subIdx) => `
+          <div class="role-entry-row" style="display:flex; gap:8px; margin-bottom:${subIdx < rArray.length - 1 ? '8px' : '0'}; align-items:center;">
+            <div style="position:relative; flex:1;">
+              <input type="text" class="mass-role-input autocomplete-name" data-role="${role}" data-field="name" value="${item.name || ''}" placeholder="Nom..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+              <div class="autocomplete-list" style="position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; border-radius:4px; max-height:150px; overflow-y:auto; z-index:1000; display:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="${item.phone || ''}" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="${item.email || ''}" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            ${subIdx > 0 ? `<button type="button" class="btn-remove-subrow" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 4px;" title="Supprimer cette ligne">×</button>` : `<div style="width:20px;"></div>`}
+          </div>
+        `).join('');
+
         return `
-          <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:12px; font-weight:700; color:var(--forest); width:22%;">
-              ${role}
-              ${role.includes('chants') || role.includes('Chorale') || role.includes('autel') ? '<br><small style="font-weight:normal; color:#888; font-size:11px;">(Plusieurs possibles)</small>' : ''}
+          <tr style="background:${bg}; border-bottom:1px solid #eee;" data-row-role="${role}">
+            <td style="padding:12px; font-weight:700; color:var(--forest); width:24%; vertical-align:top;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span>${role}</span>
+                ${roleObj.multi ? `<button type="button" class="btn-add-role-row" data-role="${role}" style="background:var(--sage); color:#fff; border:none; border-radius:4px; width:22px; height:22px; font-size:14px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Ajouter une personne">+</button>` : ''}
+              </div>
             </td>
-            <td style="padding:8px; width:22%;">
-              <input type="text" class="mass-role-input" data-role="${role}" data-field="name" value="${rData.name || ''}" placeholder="Nom(s)..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            <td style="padding:10px; width:66%;" class="role-inputs-container">
+              ${inputsHtml}
             </td>
-            <td style="padding:8px; width:18%;">
-              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="${rData.phone || ''}" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
-            </td>
-            <td style="padding:8px; width:20%;">
-              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="${rData.email || ''}" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
-            </td>
-            <td style="padding:8px; width:18%; text-align:center;">
-              <select class="mass-guest-select" data-role="${role}" style="padding:6px; border:1px solid var(--sage); border-radius:4px; background:#f4f8f3; color:var(--forest); font-size:12px; font-weight:600; cursor:pointer; max-width:100%;">
-                ${guestOptionsHtml}
-              </select>
+            <td style="padding:10px; width:10%; text-align:center; vertical-align:top;">
+              <button type="button" class="btn-clear-role" data-role="${role}" style="background:none; border:1px solid #ddd; border-radius:4px; padding:4px 8px; color:var(--text-muted); cursor:pointer; font-size:11px;" title="Effacer la ligne">🗑️</button>
             </td>
           </tr>
         `;
@@ -1924,64 +1945,152 @@ async _deleteMoodboardItem(id) {
       container.innerHTML = `
         ${subNavHtml}
         <div class="table-responsive">
-          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
+          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:visible;">
             <thead>
               <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
                 <th style="padding:10px 12px;">Rôle / Mission</th>
-                <th style="padding:10px 8px;">Nom(s)</th>
-                <th style="padding:10px 8px;">Téléphone</th>
-                <th style="padding:10px 8px;">Mail</th>
-                <th style="padding:10px 8px; text-align:center;">Auto-remplir</th>
+                <th style="padding:10px 10px;">Intervenant(s) (Nom, Téléphone, Mail)</th>
+                <th style="padding:10px 8px; text-align:center;">Actions</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
         <div style="margin-top:16px; display:flex; justify-content:flex-end;">
-          <button id="save-mass-roles-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;">
-            💾 Enregistrer l'équipe liturgique
+          <button id="save-mass-roles-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 24px; border-radius:6px; font-weight:600; cursor:pointer;">
+            Valider
           </button>
         </div>
       `;
 
-      // Logique d'auto-remplissage depuis un invité
-      container.querySelectorAll('.mass-guest-select').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-          const guestId = e.target.value;
-          if (!guestId) return;
-          const selectedGuest = guests.find(g => g.id == guestId);
-          if (selectedGuest) {
-            const role = e.target.dataset.role;
-            const nameInput = container.querySelector(`input[data-role="${role}"][data-field="name"]`);
-            const phoneInput = container.querySelector(`input[data-role="${role}"][data-field="phone"]`);
-            const emailInput = container.querySelector(`input[data-role="${role}"][data-field="email"]`);
+      // 1. GESTION DE L'AUTOCOMPLÉTION INTÉGRÉE (Saisie dans le nom)
+      const attachAutocomplete = (input) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.trim().toLowerCase();
+          const listDiv = e.target.nextElementSibling;
+          listDiv.innerHTML = '';
 
-            const guestFullName = `${selectedGuest.firstName || ''} ${selectedGuest.lastName || ''}`.trim();
-            const guestPhone = selectedGuest.phone || '';
-            const guestEmail = selectedGuest.email || '';
-
-            // Permet de cumuler plusieurs personnes si le champ contient déjà du texte
-            nameInput.value = nameInput.value ? `${nameInput.value}, ${guestFullName}` : guestFullName;
-            if (guestPhone) phoneInput.value = phoneInput.value ? `${phoneInput.value} / ${guestPhone}` : guestPhone;
-            if (guestEmail) emailInput.value = emailInput.value ? `${emailInput.value}; ${guestEmail}` : guestEmail;
-
-            e.target.value = ""; // Réinitialise le menu déroulant
+          if (val.length < 1) {
+            listDiv.style.display = 'none';
+            return;
           }
+
+          const matches = confirmedGuests.filter(g => {
+            const fullName = `${g.firstName || ''} ${g.lastName || ''}`.toLowerCase();
+            return fullName.includes(val);
+          });
+
+          if (matches.length === 0) {
+            listDiv.style.display = 'none';
+            return;
+          }
+
+          matches.forEach(g => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = "padding:8px; font-size:12px; cursor:pointer; border-bottom:1px solid #eee; background:#fff; color:var(--forest);";
+            itemDiv.textContent = `${g.firstName || ''} ${g.lastName || ''} (${g.phone || 'Sans tel'})`;
+            
+            itemDiv.addEventListener('mouseover', () => itemDiv.style.background = '#f4f8f3');
+            itemDiv.addEventListener('mouseout', () => itemDiv.style.background = '#fff');
+            
+            itemDiv.addEventListener('click', () => {
+              const row = input.closest('.role-entry-row');
+              input.value = `${g.firstName || ''} ${g.lastName || ''}`.trim();
+              const phoneInput = row.querySelector('input[data-field="phone"]');
+              const emailInput = row.querySelector('input[data-field="email"]');
+              if (phoneInput) phoneInput.value = g.phone || '';
+              if (emailInput) emailInput.value = g.email || '';
+              listDiv.style.display = 'none';
+            });
+            listDiv.appendChild(itemDiv);
+          });
+          listDiv.style.display = 'block';
+        });
+
+        // Fermer la liste si on clique ailleurs
+        document.addEventListener('click', (e) => {
+          if (!input.contains(e.target)) {
+            const listDiv = input.nextElementSibling;
+            if (listDiv) listDiv.style.display = 'none';
+          }
+        });
+      };
+
+      container.querySelectorAll('.autocomplete-name').forEach(attachAutocomplete);
+
+      // 2. BOUTON + POUR AJOUTER UNE LIGNE D'INTERVENANT
+      container.querySelectorAll('.btn-add-role-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.dataset.role;
+          const tr = container.querySelector(`tr[data-row-role="${role}"]`);
+          const tdInputs = tr.querySelector('.role-inputs-container');
+          
+          const newRow = document.createElement('div');
+          newRow.className = "role-entry-row";
+          newRow.style.cssText = "display:flex; gap:8px; margin-top:8px; align-items:center;";
+          newRow.innerHTML = `
+            <div style="position:relative; flex:1;">
+              <input type="text" class="mass-role-input autocomplete-name" data-role="${role}" data-field="name" value="" placeholder="Nom..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+              <div class="autocomplete-list" style="position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; border-radius:4px; max-height:150px; overflow-y:auto; z-index:1000; display:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <button type="button" class="btn-remove-subrow" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 4px;" title="Supprimer cette ligne">×</button>
+          `;
+          
+          tdInputs.appendChild(newRow);
+          attachAutocomplete(newRow.querySelector('.autocomplete-name'));
+          
+          newRow.querySelector('.btn-remove-subrow').addEventListener('click', () => {
+            newRow.remove();
+          });
         });
       });
 
-      // Sauvegarde des rôles
+      // Suppression d'une sous-ligne existante
+      container.querySelectorAll('.btn-remove-subrow').forEach(btn => {
+        btn.addEventListener('click', (e) => e.currentTarget.closest('.role-entry-row').remove());
+      });
+
+      // 3. ACTION DISCRÈTE : VIDER TOUTE LA LIGNE
+      container.querySelectorAll('.btn-clear-role').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.dataset.role;
+          const tr = container.querySelector(`tr[data-row-role="${role}"]`);
+          tr.querySelectorAll('input').forEach(inp => inp.value = '');
+          // Si on avait ajouté plusieurs lignes via le bouton +, on garde uniquement la première
+          const subrows = tr.querySelectorAll('.role-entry-row');
+          subrows.forEach((row, idx) => { if (idx > 0) row.remove(); });
+        });
+      });
+
+      // SAUVEGARDE DES RÔLES
       document.getElementById('save-mass-roles-btn').addEventListener('click', async () => {
         const newRoles = {};
-        container.querySelectorAll('.mass-role-input').forEach(input => {
-          const role = input.dataset.role;
-          const field = input.dataset.field;
-          if (!newRoles[role]) newRoles[role] = {};
-          newRoles[role][field] = input.value.trim();
+        container.querySelectorAll('tr[data-row-role]').forEach(tr => {
+          const role = tr.dataset.rowRole;
+          const entries = [];
+          tr.querySelectorAll('.role-entry-row').forEach(row => {
+            const name = row.querySelector('input[data-field="name"]').value.trim();
+            const phone = row.querySelector('input[data-field="phone"]').value.trim();
+            const email = row.querySelector('input[data-field="email"]').value.trim();
+            if (name || phone || email) {
+              entries.push({ name, phone, email });
+            }
+          });
+          // Si une seule entrée, on l'enregistre en objet simple pour propreté, sinon en tableau
+          newRoles[role] = entries.length === 1 ? entries[0] : entries;
         });
+        
         massData.roles = newRoles;
         await this._saveMassDb(massData);
-        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Équipe liturgique enregistrée !", "success");
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast("Équipe liturgique enregistrée", "success");
+        }
       });
     }
 
@@ -2040,8 +2149,8 @@ async _deleteMoodboardItem(id) {
           </table>
         </div>
         <div style="margin-top:16px; display:flex; justify-content:flex-end;">
-          <button id="save-mass-sched-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;">
-            💾 Enregistrer le déroulé de la messe
+          <button id="save-mass-sched-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 24px; border-radius:6px; font-weight:600; cursor:pointer;">
+            Valider
           </button>
         </div>
       `;
@@ -2057,7 +2166,9 @@ async _deleteMoodboardItem(id) {
         });
         massData.schedule = newSched;
         await this._saveMassDb(massData);
-        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Déroulé de la messe enregistré !", "success");
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast("Déroulé de la messe enregistré", "success");
+        }
       });
     }
 
