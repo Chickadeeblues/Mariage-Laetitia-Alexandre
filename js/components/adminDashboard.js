@@ -1886,7 +1886,6 @@ async _deleteMoodboardItem(id) {
     // SOUS-ONGLET 1 : QUI FAIT QUOI ?
     // ════════════════════════════════════════════════════════════
     if (activeSubTab === 'roles') {
-      // 2. Correction : Première et Deuxième lecture ne sont plus multi-choix (multi: false)
       const predefinedRoles = [
         { label: 'Prêtre célébrant', multi: false },
         { label: 'Curé', multi: false },
@@ -1905,8 +1904,6 @@ async _deleteMoodboardItem(id) {
         const role = roleObj.label;
         const stored = rolesData[role];
         
-        // 1. Correctif Anti-Bug : On garantit qu'il y a toujours AU MOINS UNE case vide affichée,
-        // même si la sauvegarde précédente avait enregistré un tableau vide []
         let rArray = Array.isArray(stored) ? stored : (stored ? [stored] : []);
         if (!rArray || rArray.length === 0) {
           rArray = [{ name: '', phone: '', email: '' }];
@@ -1969,7 +1966,6 @@ async _deleteMoodboardItem(id) {
         </div>
       `;
 
-      // Autocomplétion intégrée au champ Nom
       const attachAutocomplete = (input) => {
         input.addEventListener('input', (e) => {
           const val = e.target.value.trim().toLowerCase();
@@ -2023,7 +2019,6 @@ async _deleteMoodboardItem(id) {
 
       container.querySelectorAll('.autocomplete-name').forEach(attachAutocomplete);
 
-      // Bouton + pour ajouter une ligne d'intervenant
       container.querySelectorAll('.btn-add-role-row').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const role = e.currentTarget.dataset.role;
@@ -2060,7 +2055,6 @@ async _deleteMoodboardItem(id) {
         btn.addEventListener('click', (e) => e.currentTarget.closest('.role-entry-row').remove());
       });
 
-      // Vider toute la ligne
       container.querySelectorAll('.btn-clear-role').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const role = e.currentTarget.dataset.role;
@@ -2071,7 +2065,6 @@ async _deleteMoodboardItem(id) {
         });
       });
 
-      // Sauvegarde
       document.getElementById('save-mass-roles-btn').addEventListener('click', async () => {
         const newRoles = {};
         container.querySelectorAll('tr[data-row-role]').forEach(tr => {
@@ -2097,10 +2090,9 @@ async _deleteMoodboardItem(id) {
     }
 
     // ════════════════════════════════════════════════════════════
-    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE (BOUTONS + DISCRETS)
+    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE (ERGO OPTIMISÉE)
     // ════════════════════════════════════════════════════════════
     if (activeSubTab === 'schedule') {
-      // 3. Oubli réparé : Ajout de "Deuxième lecture" après Psaume
       const massSteps = [
         'Procession', 'Entrée des mariés', 'Gloria', 'Première lecture', 'Psaume', 
         'Deuxième lecture', 'Alléluia', 'Evangile', 'Litanie des saints (facultatif)', 'Credo', 
@@ -2111,19 +2103,27 @@ async _deleteMoodboardItem(id) {
         'Bénédiction finale', 'Signature des registres (époux, témoins, prêtre)', 'Sortie'
       ];
 
-      // 4. Utilitaire pour générer une cellule avec bouton "+" ou champ visible selon qu'il y a du contenu ou non
+      // Générateur de cellules intelligentes : Bouton minimaliste +, Auto-resize, Bouton × et Liens cliquables
       const renderToggleField = (step, field, value, label, isTextarea = true) => {
         const hasValue = value && value.trim() !== '';
-        const inputStyle = `display: ${hasValue ? 'block' : 'none'}; width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); box-sizing:border-box; ${isTextarea ? 'resize:vertical;' : ''}`;
-        const btnStyle = `display: ${hasValue ? 'none' : 'inline-block'}; background:#f8f9fa; border:1px dashed #ced4da; color:#6c757d; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:500; cursor:pointer; transition:all 0.2s;`;
+        const inputStyle = `width:100%; padding:6px 22px 6px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); box-sizing:border-box; overflow:hidden; ${isTextarea ? 'resize:none; min-height:34px;' : ''}`;
+        
+        // 1. Bouton + minimaliste (plus esthétique sans texte)
+        const btnStyle = `display: ${hasValue ? 'none' : 'inline-flex'}; align-items:center; justify-content:center; background:#f8f9fa; border:1px dashed #ced4da; color:#6c757d; width:28px; height:28px; border-radius:4px; font-size:15px; font-weight:bold; cursor:pointer; transition:all 0.2s;`;
         
         return `
-          <div class="field-toggle-wrap">
-            <button type="button" class="btn-reveal-field" style="${btnStyle}">+ ${label}</button>
-            ${isTextarea 
-              ? `<textarea class="mass-sched-input" data-step="${step}" data-field="${field}" rows="2" placeholder="${label}..." style="${inputStyle}">${value || ''}</textarea>`
-              : `<input type="text" class="mass-sched-input" data-step="${step}" data-field="${field}" value="${value || ''}" placeholder="${label}..." style="${inputStyle}">`
-            }
+          <div class="field-toggle-wrap" style="position:relative;">
+            <button type="button" class="btn-reveal-field" style="${btnStyle}" title="Ajouter : ${label}">+</button>
+            <div class="input-wrapper" style="display: ${hasValue ? 'block' : 'none'}; position:relative;">
+              ${isTextarea 
+                ? `<textarea class="mass-sched-input auto-expand" data-step="${step}" data-field="${field}" rows="1" placeholder="${label}..." style="${inputStyle}">${value || ''}</textarea>`
+                : `<input type="text" class="mass-sched-input" data-step="${step}" data-field="${field}" value="${value || ''}" placeholder="${label}..." style="${inputStyle}">`
+              }
+              <!-- 2. Bouton × pour supprimer et refermer la case -->
+              <button type="button" class="btn-close-field" style="position:absolute; top:4px; right:4px; background:none; border:none; color:#aaa; font-size:15px; cursor:pointer; padding:0 4px; line-height:1;" title="Vider et fermer">×</button>
+              <!-- 3. Conteneur pour afficher le badge de lien cliquable -->
+              <div class="links-preview-container"></div>
+            </div>
           </div>
         `;
       };
@@ -2137,16 +2137,16 @@ async _deleteMoodboardItem(id) {
               ${idx + 1}. ${step}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'text', sData.text, '')}
+              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence')}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'music', sData.music, '')}
+              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant')}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
-              ${renderToggleField(step, 'sheet', sData.sheet, '')}
+              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)')}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
-              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom', false)}
+              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom(s)', false)}
             </td>
           </tr>
         `;
@@ -2175,15 +2175,93 @@ async _deleteMoodboardItem(id) {
         </div>
       `;
 
-      // Logique d'ouverture des cases au clic sur les discrets boutons "+"
+      // 4. Fonction pour ajuster automatiquement la hauteur du textarea selon son contenu
+      const autoResize = (el) => {
+        if (!el || el.tagName !== 'TEXTAREA') return;
+        el.style.height = 'auto';
+        el.style.height = (el.scrollHeight + 2) + 'px';
+      };
+
+      // 3. Fonction pour extraire et afficher un lien cliquable sous la zone de saisie
+      const updateLinksPreview = (inputEl) => {
+        const container = inputEl.closest('.input-wrapper').querySelector('.links-preview-container');
+        if (!container) return;
+        
+        const val = inputEl.value || '';
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const links = val.match(urlRegex);
+        
+        if (links && links.length > 0) {
+          container.innerHTML = links.map(url => `
+            <a href="${url}" target="_blank" rel="noopener noreferrer" 
+               style="display:inline-flex; align-items:center; gap:4px; margin-top:6px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+              🔗 Ouvrir le lien
+            </a>
+          `).join(' ');
+        } else {
+          container.innerHTML = '';
+        }
+      };
+
+      // Initialisation : Ajustement hauteur et affichage des liens existants au chargement
+      container.querySelectorAll('.mass-sched-input').forEach(input => {
+        if (input.closest('.input-wrapper').style.display !== 'none') {
+          autoResize(input);
+          updateLinksPreview(input);
+        }
+
+        // Événement lors de la frappe ou copier/coller
+        input.addEventListener('input', () => {
+          autoResize(input);
+          updateLinksPreview(input);
+        });
+
+        // 2. Magic Blur : Si on quitte une case vide, elle se referme automatiquement !
+        input.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (input.value.trim() === '') {
+              const wrap = input.closest('.field-toggle-wrap');
+              const inputWrap = wrap?.querySelector('.input-wrapper');
+              const revealBtn = wrap?.querySelector('.btn-reveal-field');
+              if (inputWrap) inputWrap.style.display = 'none';
+              if (revealBtn) revealBtn.style.display = 'inline-flex';
+            }
+          }, 150);
+        });
+      });
+
+      // Révéler la case au clic sur le bouton +
       container.querySelectorAll('.btn-reveal-field').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          const wrap = e.currentTarget.closest('.field-toggle-wrap');
           e.currentTarget.style.display = 'none';
-          const input = e.currentTarget.nextElementSibling;
-          if (input) {
-            input.style.display = 'block';
-            input.focus();
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          if (inputWrap) {
+            inputWrap.style.display = 'block';
+            const input = inputWrap.querySelector('.mass-sched-input');
+            if (input) {
+              input.focus();
+              autoResize(input);
+              updateLinksPreview(input);
+            }
           }
+        });
+      });
+
+      // 2. Bouton × : Vider le texte et refermer manuellement la case
+      container.querySelectorAll('.btn-close-field').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const wrap = e.currentTarget.closest('.field-toggle-wrap');
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          const input = wrap.querySelector('.mass-sched-input');
+          const revealBtn = wrap.querySelector('.btn-reveal-field');
+          
+          if (input) {
+            input.value = '';
+            updateLinksPreview(input);
+          }
+          if (inputWrap) inputWrap.style.display = 'none';
+          if (revealBtn) revealBtn.style.display = 'inline-flex';
         });
       });
 
