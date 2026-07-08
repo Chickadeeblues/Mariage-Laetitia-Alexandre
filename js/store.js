@@ -426,4 +426,35 @@ const Store = {
   }
 };
 
+function renderProgram(anims, revealed) {
+  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
+  return slots.map(slot => `
+    <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
+      <h3>${slot}</h3>
+      <div class="${revealed ? '' : 'blur-effect'}">
+        ${anims.filter(a => a.timing === slot).map(a => `
+          <p><strong>${a.name}</strong> - ${a.type}</p>
+        `).join('') || '<p style="color:#ccc;">Aucune animation pour le moment</p>'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderParticipationForm() {
+  return `
+    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
+      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max).</em></p>
+      <input type="text" id="anim-type" placeholder="Type d'animation (ex: Discours)" class="form-control" required style="width:100%; margin-bottom:10px;">
+      <select id="anim-timing" class="form-control" style="width:100%; margin-bottom:10px;">
+        <option>Vin d'honneur</option>
+        <option>Pendant le repas</option>
+        <option>Premier intermède</option>
+        <option>Deuxième intermède</option>
+      </select>
+      <button type="submit" class="btn btn--primary">Envoyer</button>
+    </form>
+  `;
+}
+
+
 export default Store;
