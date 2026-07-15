@@ -35,6 +35,13 @@
   <div class="nav__inner container">
     <a href="#/" class="nav__logo">L &amp; A</a>
 	
+		  <!-- Sélecteur de langue -->
+      <div class="nav__lang-switcher" style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-lang" onclick="window.I18n.setLang('fr')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Français">🇫🇷</button>
+        <button class="btn-lang" onclick="window.I18n.setLang('es')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Español">🇪🇸</button>
+      </div>
+    </div>
+	
     <div class="nav__links" id="nav-links">
       <a href="#/" class="nav__link" data-page="home" data-i18n="nav.home">Accueil</a>
       <a href="#/rsvp" class="nav__link" data-page="rsvp" data-i18n="nav.rsvp">RSVP</a>
@@ -56,14 +63,7 @@
 		  <div class="nav__dropdown-sep"></div>
         </div>
       </div>
-	  
-	  <!-- Sélecteur de langue -->
-      <div class="nav__lang-switcher" style="display:flex; gap:8px; margin-left:16px">
-        <button class="btn-lang" onclick="window.I18n.setLang('fr')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Français">🇫🇷</button>
-        <button class="btn-lang" onclick="window.I18n.setLang('es')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Español">🇪🇸</button>
-      </div>
-    </div>
- 
+
       <a href="#/admin" class="nav__admin-link" data-page="admin" data-i18n="nav.admin">Espace mariés</a>
       
     <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false">
