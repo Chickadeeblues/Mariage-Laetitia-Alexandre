@@ -6,7 +6,7 @@ const translations = {
   fr: {
     // Navigation
     'nav.home': 'Accueil',
-    'nav.info': 'Informations pratiques ▾',
+    'nav.info': 'Informations pratiques',
     'nav.rsvp': 'RSVP',
     'nav.howToGet': 'Comment venir ?',
     'nav.accommodations': 'Hébergements',
@@ -15,9 +15,9 @@ const translations = {
     'nav.faq': 'Questions fréquentes',
     'nav.admin': 'Espace mariés',
     'nav.myResponses': 'Mes réponses',
-    'nav.sub.messe': '💒 Messe & Réception',
-    'nav.sub.animations': '🎤 Animations & Discours',
-    'nav.sub.contacts': '✉️ Contacts utiles',
+    'nav.sub.messe': 'Messe & Réception',
+    'nav.sub.animations': 'Animations & Discours',
+    'nav.sub.contacts': 'Contacts utiles',
 
     // Hero (Page d'accueil)
     'hero.invite': 'Nous avons le bonheur de vous convier',
