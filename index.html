@@ -34,6 +34,13 @@
 <nav class="nav" id="main-nav">
   <div class="nav__inner container">
     <a href="#/" class="nav__logo">L &amp; A</a>
+	
+	  <!-- Sélecteur de langue -->
+      <div class="nav__lang-switcher" style="display:flex; gap:8px; margin-left:16px; align-items:center;">
+        <button class="btn-lang" onclick="window.I18n.setLang('fr')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Français">🇫🇷</button>
+        <button class="btn-lang" onclick="window.I18n.setLang('es')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Español">🇪🇸</button>
+      </div>
+    </div>
  
     <div class="nav__links" id="nav-links">
       <a href="#/" class="nav__link" data-page="home" data-i18n="nav.home">Accueil</a>
@@ -41,31 +48,24 @@
  
       <div class="nav__dropdown">
         <a href="#/infos" class="nav__link nav__link--dropdown" data-page="infos" data-i18n="nav.info">
-          Informations pratiques ▾
+          Informations pratiques
         </a>
         <div class="nav__dropdown-menu">
           <a href="#/infos"            class="nav__dropdown-item" data-i18n="nav.info">Vue d'ensemble</a>
           <div class="nav__dropdown-sep"></div>
-          <a href="#/infos/messe"      class="nav__dropdown-item" data-i18n="nav.sub.messe">💒 Messe &amp; Réception</a>
-          <a href="#/comment-venir"    class="nav__dropdown-item" data-i18n="nav.howToGet">Comment venir ?</a>
-          <a href="#/covoiturage"      class="nav__dropdown-item" data-i18n="nav.carpool">Covoiturage</a>
-		  <a href="#/hebergements"     class="nav__dropdown-item" data-i18n="nav.accommodations">Où dormir ?</a>
-		   <a href="#/infos/animations" class="nav__dropdown-item" data-i18n="nav.sub.animations">🎤 Animations &amp; Discours</a>
-          <a href="#/liste"            class="nav__dropdown-item" data-i18n="nav.giftList">Liste de mariage</a>
-          <a href="#/faq" class="nav__dropdown-item" data-i18n="nav.faq">Questions fréquentes</a>
+          <a href="#/infos/messe"      	class="nav__dropdown-item" data-i18n="nav.sub.messe">Messe &amp; Réception</a>
+          <a href="#/comment-venir"    	class="nav__dropdown-item" data-i18n="nav.howToGet">Comment venir ?</a>
+          <a href="#/covoiturage"     	class="nav__dropdown-item" data-i18n="nav.carpool">Covoiturage</a>
+		  <a href="#/hebergements"     	class="nav__dropdown-item" data-i18n="nav.accommodations">Où dormir ?</a>
+		   <a href="#/infos/animations" class="nav__dropdown-item" data-i18n="nav.sub.animations">Discours &amp; Animations</a>
+          <a href="#/liste"            	class="nav__dropdown-item" data-i18n="nav.giftList">Liste de mariage</a>
+          <a href="#/faq" 				class="nav__dropdown-item" data-i18n="nav.faq">Questions fréquentes</a>
 		  <div class="nav__dropdown-sep"></div>
         </div>
       </div>
  
       <a href="#/admin" class="nav__admin-link" data-page="admin" data-i18n="nav.admin">Espace mariés</a>
       
-      <!-- Sélecteur de langue -->
-      <div class="nav__lang-switcher" style="display:flex; gap:8px; margin-left:16px; align-items:center;">
-        <button class="btn-lang" onclick="window.I18n.setLang('fr')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Français">🇫🇷</button>
-        <button class="btn-lang" onclick="window.I18n.setLang('es')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Español">🇪🇸</button>
-      </div>
-    </div>
- 
     <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false">
       <span class="nav__hamburger-line"></span>
       <span class="nav__hamburger-line"></span>
