@@ -48,7 +48,7 @@ const translations = {
     'hub.card.contact.desc': 'Les personnes à contacter le jour J',
 
     // Info Pages (Messe)
-    'messe.title': '💒 Messe & Réception',
+    'messe.title': 'Messe & Réception',
     'messe.welcome.title': 'Accueil des invités',
     'messe.welcome.desc': 'Église Notre-Dame-de-Pitié, Malleval (42520)<br><em>Prévoyez d\'arriver 15 min à l\'avance — parking au Bourg du village.</em>',
     'messe.ceremony.title': 'Cérémonie religieuse',
@@ -59,7 +59,7 @@ const translations = {
     'messe.cocktail.desc': 'Cocktails et amuse-bouches dans les jardins du domaine.',
     'messe.dinner.title': 'Dîner & Soirée',
     'messe.dinner.desc': 'Repas assis, discours, animations et piste de danse.',
-    'messe.note': '✏️ Ces horaires sont indicatifs et seront confirmés prochainement.',
+    'messe.note': 'Ces horaires sont indicatifs et seront confirmés prochainement.',
 
     // Info Pages (Animations)
     'anim.title': 'Discours & animations',
@@ -73,12 +73,10 @@ const translations = {
     'contact.title': '✉️ Contacts utiles',
     'contact.bridegroom.title': '💑 Les mariés',
     'contact.bridegroom.desc': 'Laetitia & Alexandre<br>Pour toute question sur le mariage, les hébergements ou le programme.<br><em>Contact à venir.</em>',
-    'contact.witnessBride.title': '🎯 Témoin de la mariée',
+    'contact.witnessBride.title': '🎯 Témoins de la mariée',
     'contact.witnessBride.desc': '<em>Contact à venir.</em>',
-    'contact.witnessGroom.title': '🎯 Témoin du marié',
+    'contact.witnessGroom.title': '🎯 Témoins du marié',
     'contact.witnessGroom.desc': '<em>Contact à venir.</em>',
-    'contact.domain.title': '🏰 Domaine de la Scie du May',
-    'contact.domain.desc': 'Doizieux, 42740<br><em>Contact à venir.</em>',
     'contact.note': '✏️ Les contacts seront complétés prochainement.',
 
     // Info Pages (Liste)
@@ -122,18 +120,18 @@ const translations = {
   es: {
     // Navigation
     'nav.home': 'Inicio',
-    'nav.info': 'Información práctica ▾',
+    'nav.info': 'Información práctica',
     'nav.rsvp': 'Asistencia',
     'nav.howToGet': '¿Cómo llegar?',
     'nav.accommodations': 'Alojamiento',
     'nav.carpool': 'Viaje compartido',
     'nav.giftList': 'Lista de bodas',
     'nav.faq': 'Preguntas frecuentes',
-    'nav.admin': 'Área de novios',
+    'nav.admin': 'Espace mariés',
     'nav.myResponses': 'Mis respuestas',
-    'nav.sub.messe': '💒 Ceremonia y Recepción',
-    'nav.sub.animations': '🎤 Animaciones y Discursos',
-    'nav.sub.contacts': '✉️ Contactos útiles',
+    'nav.sub.messe': 'Ceremonia y Recepción',
+    'nav.sub.animations': 'Animaciones y Discursos',
+    'nav.sub.contacts': 'Contactos útiles',
 
     // Hero (Page d'accueil)
     'hero.invite': 'Tenemos la alegría de invitarles',
@@ -164,7 +162,7 @@ const translations = {
     'hub.card.contact.desc': 'Personas a contactar el gran día',
 
     // Info Pages (Messe)
-    'messe.title': '💒 Ceremonia y Recepción',
+    'messe.title': 'Ceremonia y Recepción',
     'messe.welcome.title': 'Bienvenida de invitados',
     'messe.welcome.desc': 'Iglesia Notre-Dame-de-Pitié, Malleval (42520)<br><em>Se recomienda llegar 15 min antes — aparcamiento en el pueblo.</em>',
     'messe.ceremony.title': 'Ceremonia religiosa',
@@ -189,13 +187,11 @@ const translations = {
     'contact.title': '✉️ Contactos útiles',
     'contact.bridegroom.title': '💑 Los novios',
     'contact.bridegroom.desc': 'Laetitia y Alexandre<br>Para cualquier pregunta sobre la boda, el alojamiento o el programa.<br><em>Contacto próximamente.</em>',
-    'contact.witnessBride.title': '🎯 Testigo de la novia',
+    'contact.witnessBride.title': '🎯 Testigos de la novia',
     'contact.witnessBride.desc': '<em>Contacto próximamente.</em>',
-    'contact.witnessGroom.title': '🎯 Testigo del novio',
+    'contact.witnessGroom.title': '🎯 Testigos del novio',
     'contact.witnessGroom.desc': '<em>Contacto próximamente.</em>',
-    'contact.domain.title': '🏰 Finca de la Scie du May',
-    'contact.domain.desc': 'Doizieux, 42740<br><em>Contacto próximamente.</em>',
-    'contact.note': '✏️ Los contactos se actualizarán próximamente.',
+
 
     // Info Pages (Liste)
     'liste.title': '🎁 Lista de bodas',
