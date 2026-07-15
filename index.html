@@ -36,28 +36,34 @@
     <a href="#/" class="nav__logo">L &amp; A</a>
  
     <div class="nav__links" id="nav-links">
-      <a href="#/" class="nav__link" data-page="home">Accueil</a>
-      <a href="#/rsvp" class="nav__link" data-page="rsvp">RSVP</a>
+      <a href="#/" class="nav__link" data-page="home" data-i18n="nav.home">Accueil</a>
+      <a href="#/rsvp" class="nav__link" data-page="rsvp" data-i18n="nav.rsvp">RSVP</a>
  
       <div class="nav__dropdown">
-        <a href="#/infos" class="nav__link nav__link--dropdown" data-page="infos">
-          Informations pratiques
+        <a href="#/infos" class="nav__link nav__link--dropdown" data-page="infos" data-i18n="nav.info">
+          Informations pratiques ▾
         </a>
         <div class="nav__dropdown-menu">
-          <a href="#/infos"            class="nav__dropdown-item">Vue d'ensemble</a>
+          <a href="#/infos"            class="nav__dropdown-item" data-i18n="nav.info">Vue d'ensemble</a>
           <div class="nav__dropdown-sep"></div>
-          <a href="#/infos/messe"      class="nav__dropdown-item">Messe &amp; Réception</a>
-          <a href="#/comment-venir"    class="nav__dropdown-item">Comment venir ?</a>
-          <a href="#/covoiturage"      class="nav__dropdown-item">Covoiturage</a>
-		  <a href="#/hebergements"     class="nav__dropdown-item">Où dormir ?</a>
-		   <a href="#/infos/animations" class="nav__dropdown-item">Animations &amp; Discours</a>
-          <a href="#/liste"            class="nav__dropdown-item">Liste de mariage</a>
-          <a href="#/faq" class="nav__dropdown-item">Questions fréquentes</a>
+          <a href="#/infos/messe"      class="nav__dropdown-item" data-i18n="nav.sub.messe">💒 Messe &amp; Réception</a>
+          <a href="#/comment-venir"    class="nav__dropdown-item" data-i18n="nav.howToGet">Comment venir ?</a>
+          <a href="#/covoiturage"      class="nav__dropdown-item" data-i18n="nav.carpool">Covoiturage</a>
+		  <a href="#/hebergements"     class="nav__dropdown-item" data-i18n="nav.accommodations">Où dormir ?</a>
+		   <a href="#/infos/animations" class="nav__dropdown-item" data-i18n="nav.sub.animations">🎤 Animations &amp; Discours</a>
+          <a href="#/liste"            class="nav__dropdown-item" data-i18n="nav.giftList">Liste de mariage</a>
+          <a href="#/faq" class="nav__dropdown-item" data-i18n="nav.faq">Questions fréquentes</a>
 		  <div class="nav__dropdown-sep"></div>
         </div>
       </div>
  
-      <a href="#/admin" class="nav__admin-link" data-page="admin">Espace mariés</a>
+      <a href="#/admin" class="nav__admin-link" data-page="admin" data-i18n="nav.admin">Espace mariés</a>
+      
+      <!-- Sélecteur de langue -->
+      <div class="nav__lang-switcher" style="display:flex; gap:8px; margin-left:16px; align-items:center;">
+        <button class="btn-lang" onclick="window.I18n.setLang('fr')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Français">🇫🇷</button>
+        <button class="btn-lang" onclick="window.I18n.setLang('es')" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" title="Español">🇪🇸</button>
+      </div>
     </div>
  
     <button class="nav__hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false">
@@ -71,8 +77,8 @@
 	<!-- ===================== PAGE : ACCUEIL ===================== -->
 <section id="page-home" class="page active">
     <div class="hero">
-      <p class="hero__prelude animate-on-scroll">Nous avons le bonheur de vous convier</p>
-      <p class="hero__prelude animate-on-scroll">à célébrer le mariage de</p>
+      <p class="hero__prelude animate-on-scroll" data-i18n="hero.invite">Nous avons le bonheur de vous convier</p>
+      <p class="hero__prelude animate-on-scroll" data-i18n="hero.celebrate">à célébrer le mariage de</p>
       
       <h1 class="hero__names animate-on-scroll">Laetitia &amp; Alexandre</h1>
 
@@ -80,17 +86,17 @@
         <div class="hero__details">
           <div class="hero__date">
             <span class="hero__date-icon">✦</span>
-            8 MAI 2027
+            <span data-i18n="hero.date">8 MAI 2027</span>
             <span class="hero__date-icon">✦</span>
           </div>
         </div>
 
-        <p class="hero__rsvp animate-on-scroll">RSVP avant le <b>30 décembre 2026</b></p>
+        <p class="hero__rsvp animate-on-scroll" data-i18n="hero.rsvpBefore">RSVP avant le <b>30 décembre 2026</b></p>
 
 	  <div class="hero__actions">
-		<a href="#/rsvp" class="btn btn--primary">Confirmer ma présence</a>
-        <a href="#/infos" class="btn--secondary">Informations pratiques</a>
-		<a href="#/mes-reponses" class="btn btn--outline btn--full">Modifier ma réponse</a>
+		<a href="#/rsvp" class="btn btn--primary" data-i18n="hero.btn.rsvp">Confirmer ma présence</a>
+        <a href="#/infos" class="btn--secondary" data-i18n="hero.btn.info">Informations pratiques</a>
+		<a href="#/mes-reponses" class="btn btn--outline btn--full" data-i18n="hero.btn.edit">Modifier ma réponse</a>
 		</div>
       </div> 
 	</div>   
@@ -110,9 +116,22 @@
 	<!-- PAGE : COMMENT VENIR -->
 <section id="page-comment-venir" class="page"></section>
 	<!-- PAGE : COVOITURAGE -->
-<section id="page-covoiturage" class="page"></section>
+<section id="page-covoiturage" class="page">
+    <div class="container">
+      <div id="carpool-container"></div>
+    </div>
+</section>
 	<!-- PAGE : HERBEGEMENT -->
-<section id="page-hebergements" class="page"></section>
+<section id="page-hebergements" class="page">
+    <div class="container">
+        <div class="section-header animate-on-scroll">
+            <h2>Où dormir ?</h2>
+            <div class="ornament"></div>
+        </div>
+        <div id="map-container" style="height:400px; width:100%; border-radius:16px; margin-bottom:24px;"></div>
+        <div id="accommodations-list"></div>
+    </div>
+</section>
 	<!-- PAGE : ANIMATIONS & DISCOURS -->
 <section id="page-infos-animations" class="page"></section>
 	<!-- PAGE : LISTE DE MARIAGE -->
@@ -189,6 +208,7 @@
         <button class="admin-tab" data-tab="seating" role="tab">Plan de table</button>
         <button class="admin-tab" data-tab="carpools" role="tab">Covoiturage</button>
         <button class="admin-tab" data-tab="accommodations" role="tab">Hébergements</button>
+        <button class="admin-tab" data-tab="publication" role="tab">Publication</button>
       </nav>
 
       <div class="admin-tabs-content">
@@ -231,6 +251,12 @@
         <div class="admin-tab-panel" id="tab-panel-accommodations" role="tabpanel">
           <section id="admin-accommodations" class="admin-section">
             <h3>Gestion des hébergements</h3>
+          </section>
+        </div>
+        
+        <div class="admin-tab-panel" id="tab-panel-publication" role="tabpanel">
+          <section id="admin-publication" class="admin-section">
+            <h3>Contrôle de publication</h3>
           </section>
         </div>
       </div>

@@ -10,6 +10,7 @@
 import Store from './store.js';
 import Router from './utils/router.js';
 import Animations from './utils/animations.js';
+import I18n from './utils/i18n.js';
 
 import Hero from './components/hero.js';
 import RSVP from './components/rsvp.js';
@@ -52,6 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('║  📍 Domaine de la Scie du May            ║');
   console.log('╚══════════════════════════════════════════╝');
   await Store.init();
+  
+  // Rendre i18n global pour les boutons onClick et l'initialiser
+  window.I18n = I18n;
+  I18n.init();
+
   Router.init(ROUTES);
   await initComponents();
   

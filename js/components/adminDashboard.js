@@ -279,7 +279,8 @@ async renderDashboard() {
       this.renderCarpools(stats),
       this.renderAccommodations(),
 	  this.renderMoodboard(),
-      this.renderMass(guests)
+      this.renderMass(guests),
+      this.renderContentPublication()
     ]);
 	// Initialiser et positionner les onglets intercalaires
     this.initTabs();
@@ -2730,7 +2731,75 @@ async renderAccommodations() {
         }
       }
     };
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // renderContentPublication()
+  // ════════════════════════════════════════════════════════════
+  async renderContentPublication() {
+    const container = document.getElementById('admin-publication');
+    if (!container) return;
+    
+    const settings = await Store.getSettings('publication');
+    
+    container.innerHTML = `
+      <h3>Contrôle de publication</h3>
+      <p class="text-muted" style="margin-bottom: 20px;">
+        Activez ou désactivez l'affichage des informations pour les invités. 
+        Si désactivé, le message "Plus d'informations à venir" sera affiché.
+      </p>
+      <div class="publication-toggles" style="display:flex; flex-direction:column; gap:12px; max-width: 400px;">
+        ${['messe', 'animations', 'contacts', 'liste', 'covoiturage', 'hebergements'].map(key => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #e8e0d0;">
+            <span style="font-weight: 500; text-transform: capitalize;">${key === 'messe' ? 'Messe & Réception' : key}</span>
+            <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+              <input type="checkbox" data-pub-key="${key}" ${settings[key] ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+              <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;">
+                <span class="slider-knob" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: ${settings[key] ? 'translateX(20px)' : 'translateX(0)'};"></span>
+              </span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    // Style for toggles dynamically injected since it's a new feature
+    if (!document.getElementById('pub-toggles-style')) {
+      document.head.insertAdjacentHTML('beforeend', `
+        <style id="pub-toggles-style">
+          .publication-toggles input:checked + .slider { background-color: var(--sage, #9CAF88); }
+          .publication-toggles input:focus + .slider { box-shadow: 0 0 1px var(--sage, #9CAF88); }
+        </style>
+      `);
+    }
+
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', async (e) => {
+        const key = e.target.dataset.pubKey;
+        const isChecked = e.target.checked;
+        
+        // Animate knob visually immediately for UX
+        const knob = e.target.nextElementSibling.querySelector('.slider-knob');
+        if (isChecked) {
+          knob.style.transform = 'translateX(20px)';
+        } else {
+          knob.style.transform = 'translateX(0)';
+        }
+        
+        settings[key] = isChecked;
+        const success = await Store.updateSettings('publication', settings);
+        if (success) {
+          Animations.showToast(`Section ${key} mise à jour`, 'success');
+        } else {
+          Animations.showToast(`Erreur lors de la mise à jour`, 'error');
+          // Revert UI
+          e.target.checked = !isChecked;
+          knob.style.transform = !isChecked ? 'translateX(20px)' : 'translateX(0)';
+          settings[key] = !isChecked;
+        }
+      });
+    });
   }
-};  // ← fermeture de l'objet AdminDashboard
+}; // Fin de AdminDashboard
 
 export default AdminDashboard;

@@ -121,6 +121,23 @@ async _getPassengers() {
    */
   async _render() {
   if (!this._elements.container) return;
+  
+  // 1. Check publication settings
+  let isPublished = true;
+  try {
+    isPublished = await Store.getSettings('publication').then(s => s['covoiturage']);
+  } catch (err) {}
+
+  if (!isPublished) {
+    this._elements.container.innerHTML = `
+      <div class="container" style="text-align: center; padding: 4rem 1rem;">
+         <span style="font-size:3rem;display:block;margin-bottom:16px;">⏳</span>
+         <h3 style="color:#2D5A3D; font-family: var(--font-display);">${window.I18n.t('publication.comingSoon')}</h3>
+      </div>
+    `;
+    return;
+  }
+
   const allDrivers = await this._getDrivers();
   const allPassengers = await this._getPassengers();
   const drivers = this._filterByCity(allDrivers);

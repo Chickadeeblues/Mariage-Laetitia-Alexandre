@@ -156,7 +156,35 @@ const InfoPages = {
       const el = document.getElementById(page.pageId);
       if (!el) return;
 
-      // 1. On injecte le HTML
+      // 1. Charger les paramètres de publication
+      let settings = { messe: true, animations: true, contacts: true, liste: true };
+      try {
+        const StoreModule = await import('../store.js');
+        settings = await StoreModule.default.getSettings('publication');
+      } catch (err) {}
+
+      // Trouver la clé correspondante
+      const keyMap = {
+        '#/infos/messe': 'messe',
+        '#/infos/animations': 'animations',
+        '#/infos/contacts': 'contacts',
+        '#/liste': 'liste'
+      };
+      const pubKey = keyMap[e.detail.route];
+      
+      const isPublished = pubKey ? settings[pubKey] : true;
+
+      if (!isPublished) {
+        el.innerHTML = `
+          <div class="container" style="text-align: center; padding: 4rem 1rem;">
+             <span style="font-size:3rem;display:block;margin-bottom:16px;">⏳</span>
+             <h3 style="color:#2D5A3D; font-family: var(--font-display);">${window.I18n.t('publication.comingSoon')}</h3>
+          </div>
+        `;
+        return; // on s'arrête ici
+      }
+
+      // 1b. Si publié, on injecte le vrai HTML
       el.innerHTML = page.render(); 
 
       // 2. Si c'est la page animations, on attache les écouteurs ICI

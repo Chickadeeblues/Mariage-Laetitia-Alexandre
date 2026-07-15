@@ -14,6 +14,11 @@ const InfoHub = {
     window.addEventListener('route-changed', (e) => {
       if (e.detail.route === '#/infos') this._render();
     });
+    
+    // Re-render si la langue change
+    window.addEventListener('language-changed', () => {
+       if (Router.getCurrentRoute() === '#/infos') this._render();
+    });
   },
 
   _render() {
@@ -21,9 +26,9 @@ const InfoHub = {
     this._elements.page.innerHTML = `
       <div class="container">
         <div class="section-header animate-on-scroll">
-          <h2>Informations pratiques</h2>
+          <h2>${window.I18n.t('hub.title')}</h2>
           <div class="ornament"></div>
-          <p class="text-muted">Tout ce qu'il faut savoir pour préparer votre venue.</p>
+          <p class="text-muted">${window.I18n.t('hub.subtitle')}</p>
         </div>
         <div class="info-grid">
           ${this._cards().map(c => `
@@ -57,12 +62,12 @@ const InfoHub = {
 
   _cards() {
     return [
-      { icon:'💒', title:'Messe & Réception',      hash:'#/infos/messe',      desc:'Horaires, lieux et déroulé de la journée' },
-      { icon:'🛌', title:'Où dormir ?',             hash:'#/hebergements',     desc:'Hébergements à proximité du domaine' },
-      { icon:'🚗', title:'Comment venir ?',         hash:'#/comment-venir',    desc:'Itinéraires, parkings et covoiturage' },
-      { icon:'🎁', title:'Liste de mariage',        hash:'#/liste',            desc:'Nos envies pour débuter notre vie ensemble' },
-      { icon:'🎤', title:'Animations & Discours',   hash:'#/infos/animations', desc:'Programme des animations de la soirée' },
-      { icon:'✉️', title:'Contacts utiles',         hash:'#/infos/contacts',   desc:'Les personnes à contacter le jour J' },
+      { icon:'💒', title:window.I18n.t('hub.card.messe.title'),      hash:'#/infos/messe',      desc:window.I18n.t('hub.card.messe.desc') },
+      { icon:'🛌', title:window.I18n.t('hub.card.sleep.title'),      hash:'#/hebergements',     desc:window.I18n.t('hub.card.sleep.desc') },
+      { icon:'🚗', title:window.I18n.t('hub.card.travel.title'),     hash:'#/comment-venir',    desc:window.I18n.t('hub.card.travel.desc') },
+      { icon:'🎁', title:window.I18n.t('hub.card.gift.title'),       hash:'#/liste',            desc:window.I18n.t('hub.card.gift.desc') },
+      { icon:'🎤', title:window.I18n.t('hub.card.anim.title'),       hash:'#/infos/animations', desc:window.I18n.t('hub.card.anim.desc') },
+      { icon:'✉️', title:window.I18n.t('hub.card.contact.title'),    hash:'#/infos/contacts',   desc:window.I18n.t('hub.card.contact.desc') },
     ];
   },
 

@@ -188,6 +188,33 @@ const Store = {
     }
   },
 
+  // ── Paramètres globaux (Publication) ────────────────
+
+  async getSettings(key) {
+    try {
+      const rows = await supabase('GET', 'wedding_settings', { filter: `select=value&key=eq.${key}` });
+      if (rows && rows.length > 0) {
+        return rows[0].value;
+      }
+    } catch (e) {
+      console.warn('[Store] Impossible de charger les paramètres, fallback par défaut.', e);
+    }
+    // Valeurs par défaut si échec
+    return { messe: true, animations: true, contacts: true, liste: true, covoiturage: true, hebergements: true };
+  },
+
+  async updateSettings(key, value) {
+    try {
+      // Puisque la ligne est insérée par défaut, un PATCH suffit
+      await supabase('PATCH', 'wedding_settings', { filter: `key=eq.${key}`, body: { value } });
+      this._emit('settings-changed');
+      return true;
+    } catch (e) {
+      console.error('[Store] Erreur updateSettings :', e);
+      return false;
+    }
+  },
+
   // ── Invités ──────────────────────────────────────────
 
   async getGuests() {
