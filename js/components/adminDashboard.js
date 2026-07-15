@@ -276,8 +276,6 @@ async renderDashboard() {
       this.renderGuestsList(guests),
 	  this.renderTeam(guests),
 	  this.renderSeatingPlan(guests),
-      this.renderCarpools(stats),
-      this.renderAccommodations(),
 	  this.renderMoodboard(),
       this.renderMass(guests),
       this.renderContentPublication()
