@@ -10,7 +10,7 @@ const INFO_PAGES = {
       return `
         <div class="container">
           <div class="section-header animate-on-scroll">
-            <h2>💒 Messe &amp; Réception</h2>
+            <h2>${window.I18n.t('messe.title')}</h2>
             <div class="ornament"></div>
           </div>
           <div class="info-content card" style="max-width:680px;margin:0 auto;padding:32px;">
@@ -18,43 +18,41 @@ const INFO_PAGES = {
               <div class="tl-item">
                 <div class="tl-time">14h30</div>
                 <div class="tl-body">
-                  <h4>Accueil des invités</h4>
-                  <p>Église Notre-Dame-de-Pitié, Malleval (42520)<br>
-                  <em>Prévoyez d'arriver 15 min à l'avance — parking au Bourg du village.</em></p>
+                  <h4>${window.I18n.t('messe.welcome.title')}</h4>
+                  <p>${window.I18n.t('messe.welcome.desc')}</p>
                 </div>
               </div>
               <div class="tl-item">
                 <div class="tl-time">15h00</div>
                 <div class="tl-body">
-                  <h4>Cérémonie religieuse</h4>
-                  <p>Mariage de Laetitia &amp; Alexandre.</p>
+                  <h4>${window.I18n.t('messe.ceremony.title')}</h4>
+                  <p>${window.I18n.t('messe.ceremony.desc')}</p>
                 </div>
               </div>
               <div class="tl-item">
                 <div class="tl-time">16h30</div>
                 <div class="tl-body">
-                  <h4>Convoi vers le Domaine</h4>
-                  <p>Domaine de la Scie du May, Doizieux (42740)<br>
-                  <em>Suivez les ballons ! Parking sur place.</em></p>
+                  <h4>${window.I18n.t('messe.convoy.title')}</h4>
+                  <p>${window.I18n.t('messe.convoy.desc')}</p>
                 </div>
               </div>
               <div class="tl-item">
                 <div class="tl-time">17h00</div>
                 <div class="tl-body">
-                  <h4>Vin d'honneur</h4>
-                  <p>Cocktails et amuse-bouches dans les jardins du domaine.</p>
+                  <h4>${window.I18n.t('messe.cocktail.title')}</h4>
+                  <p>${window.I18n.t('messe.cocktail.desc')}</p>
                 </div>
               </div>
               <div class="tl-item">
                 <div class="tl-time">20h00</div>
                 <div class="tl-body">
-                  <h4>Dîner &amp; Soirée</h4>
-                  <p>Repas assis, discours, animations et piste de danse.</p>
+                  <h4>${window.I18n.t('messe.dinner.title')}</h4>
+                  <p>${window.I18n.t('messe.dinner.desc')}</p>
                 </div>
               </div>
             </div>
             <p class="info-placeholder-note">
-              ✏️ Ces horaires sont indicatifs et seront confirmés prochainement.
+              ${window.I18n.t('messe.note')}
             </p>
           </div>
         </div>`;
@@ -68,13 +66,13 @@ const INFO_PAGES = {
     return `
       <div class="container" id="animations-container">
         <div class="section-header animate-on-scroll">
-          <h2>Discours &amp; animations</h2>
+          <h2>${window.I18n.t('anim.title')}</h2>
           <div class="ornament"></div>
         </div>
         
         <div id="animations-view-switcher" style="text-align:center; margin-bottom:20px;">
-          <button id="btn-toggle-view" class="btn">Je veux participer</button>
-          <button id="btn-reveal" class="btn" style="margin-left:10px;">Révéler les surprises</button>
+          <button id="btn-toggle-view" class="btn">${window.I18n.t('anim.btn.participate')}</button>
+          <button id="btn-reveal" class="btn" style="margin-left:10px;">${window.I18n.t('anim.btn.reveal')}</button>
         </div>
 
         <div id="program-content"></div>
@@ -90,31 +88,28 @@ const INFO_PAGES = {
       return `
         <div class="container">
           <div class="section-header animate-on-scroll">
-            <h2>✉️ Contacts utiles</h2>
+            <h2>${window.I18n.t('contact.title')}</h2>
             <div class="ornament"></div>
           </div>
           <div class="info-content" style="max-width:680px;margin:0 auto;">
             <div class="card" style="padding:24px;margin-bottom:16px;">
-              <h4 style="color:#2D5A3D;margin-bottom:4px;">💑 Les mariés</h4>
-              <p style="font-size:14px;color:#666;">Laetitia &amp; Alexandre<br>
-              Pour toute question sur le mariage, les hébergements ou le programme.<br>
-              <em>Contact à venir.</em></p>
+              <h4 style="color:#2D5A3D;margin-bottom:4px;">${window.I18n.t('contact.bridegroom.title')}</h4>
+              <p style="font-size:14px;color:#666;">${window.I18n.t('contact.bridegroom.desc')}</p>
             </div>
             <div class="card" style="padding:24px;margin-bottom:16px;">
-              <h4 style="color:#2D5A3D;margin-bottom:4px;">🎯 Témoin de la mariée</h4>
-              <p style="font-size:14px;color:#666;"><em>Contact à venir.</em></p>
+              <h4 style="color:#2D5A3D;margin-bottom:4px;">${window.I18n.t('contact.witnessBride.title')}</h4>
+              <p style="font-size:14px;color:#666;">${window.I18n.t('contact.witnessBride.desc')}</p>
             </div>
             <div class="card" style="padding:24px;margin-bottom:16px;">
-              <h4 style="color:#2D5A3D;margin-bottom:4px;">🎯 Témoin du marié</h4>
-              <p style="font-size:14px;color:#666;"><em>Contact à venir.</em></p>
+              <h4 style="color:#2D5A3D;margin-bottom:4px;">${window.I18n.t('contact.witnessGroom.title')}</h4>
+              <p style="font-size:14px;color:#666;">${window.I18n.t('contact.witnessGroom.desc')}</p>
             </div>
             <div class="card" style="padding:24px;">
-              <h4 style="color:#2D5A3D;margin-bottom:4px;">🏰 Domaine de la Scie du May</h4>
-              <p style="font-size:14px;color:#666;">Doizieux, 42740<br>
-              <em>Contact à venir.</em></p>
+              <h4 style="color:#2D5A3D;margin-bottom:4px;">${window.I18n.t('contact.domain.title')}</h4>
+              <p style="font-size:14px;color:#666;">${window.I18n.t('contact.domain.desc')}</p>
             </div>
             <p class="info-placeholder-note" style="margin-top:16px;">
-              ✏️ Les contacts seront complétés prochainement.
+              ${window.I18n.t('contact.note')}
             </p>
           </div>
         </div>`;
@@ -128,18 +123,16 @@ const INFO_PAGES = {
       return `
         <div class="container">
           <div class="section-header animate-on-scroll">
-            <h2>🎁 Liste de mariage</h2>
+            <h2>${window.I18n.t('liste.title')}</h2>
             <div class="ornament"></div>
           </div>
           <div class="info-content card" style="max-width:680px;margin:0 auto;padding:32px;text-align:center;">
             <span style="font-size:3rem;display:block;margin-bottom:16px;">💝</span>
             <p style="font-size:16px;color:#5c4e35;font-style:italic;line-height:1.8;">
-              Votre présence est le plus beau des cadeaux.<br>
-              Si vous souhaitez tout de même nous gâter, 
-              notre liste de mariage sera bientôt disponible ici.
+              ${window.I18n.t('liste.desc')}
             </p>
             <p class="info-placeholder-note" style="margin-top:24px;">
-              ✏️ Liste à venir.
+              ${window.I18n.t('liste.note')}
             </p>
           </div>
         </div>`;
@@ -148,9 +141,10 @@ const INFO_PAGES = {
 };
 
 const InfoPages = {
+  currentRoute: null,
   init() {
-    window.addEventListener('route-changed', async (e) => {
-      const page = Object.values(INFO_PAGES).find(p => p.route === e.detail.route);
+    const renderPage = async (route) => {
+      const page = Object.values(INFO_PAGES).find(p => p.route === route);
       if (!page) return;
 
       const el = document.getElementById(page.pageId);
@@ -170,7 +164,7 @@ const InfoPages = {
         '#/infos/contacts': 'contacts',
         '#/liste': 'liste'
       };
-      const pubKey = keyMap[e.detail.route];
+      const pubKey = keyMap[route];
       
       const isPublished = pubKey ? settings[pubKey] : true;
 
@@ -188,7 +182,7 @@ const InfoPages = {
       el.innerHTML = page.render(); 
 
       // 2. Si c'est la page animations, on attache les écouteurs ICI
-      if (e.detail.route === '#/infos/animations') {
+      if (route === '#/infos/animations') {
         const progEl = document.getElementById('program-content');
         const formEl = document.getElementById('form-content');
         const btnToggle = document.getElementById('btn-toggle-view');
@@ -208,14 +202,14 @@ const InfoPages = {
           isFormVisible = !isFormVisible;
           progEl.style.display = isFormVisible ? 'none' : 'block';
           formEl.style.display = isFormVisible ? 'block' : 'none';
-          btnToggle.textContent = isFormVisible ? 'Voir le programme' : 'Je veux participer';
+          btnToggle.textContent = isFormVisible ? window.I18n.t('anim.btn.program') : window.I18n.t('anim.btn.participate');
           
           if(isFormVisible) {
             formEl.innerHTML = renderParticipationForm();
             // Important : attacher l'écouteur de soumission ici aussi
             document.getElementById('animation-form')?.addEventListener('submit', (ev) => {
                ev.preventDefault();
-               alert('Soumission en cours...'); // Ajoutez votre logique d'envoi ici
+               alert(window.I18n.t('anim.submit')); // Ajoutez votre logique d'envoi ici
             });
           }
         });
@@ -224,8 +218,19 @@ const InfoPages = {
         btnReveal?.addEventListener('click', () => {
           isRevealed = !isRevealed;
           progEl.classList.toggle('revealed', isRevealed);
-          btnReveal.textContent = isRevealed ? 'Masquer les surprises' : 'Révéler les surprises';
+          btnReveal.textContent = isRevealed ? window.I18n.t('anim.btn.hide') : window.I18n.t('anim.btn.reveal');
         });
+      }
+    };
+    
+    window.addEventListener('route-changed', async (e) => {
+      InfoPages.currentRoute = e.detail.route;
+      await renderPage(e.detail.route);
+    });
+    
+    window.addEventListener('language-changed', async () => {
+      if (InfoPages.currentRoute) {
+        await renderPage(InfoPages.currentRoute);
       }
     });
   },

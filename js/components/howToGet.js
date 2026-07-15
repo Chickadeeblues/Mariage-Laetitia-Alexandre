@@ -11,6 +11,9 @@ const HowToGet = {
     window.addEventListener('route-changed', (e) => {
       if (e.detail.route === '#/comment-venir') this._render();
     });
+    window.addEventListener('language-changed', () => {
+      if (window.location.hash === '#/comment-venir') this._render();
+    });
   },
 
   _render() {
@@ -18,7 +21,7 @@ const HowToGet = {
     this._elements.page.innerHTML = `
       <div class="container">
         <div class="section-header animate-on-scroll">
-          <h2>Comment venir ?</h2>
+          <h2>${window.I18n.t('htg.title')}</h2>
           <div class="ornament"></div>
         </div>
 
@@ -29,39 +32,38 @@ const HowToGet = {
             <div class="htg-card__head">
               <span class="htg-icon">💒</span>
               <div>
-                <h3>Cérémonie religieuse</h3>
-                <p class="htg-subtitle">Église Notre-Dame-de-Pitié — Malleval (42520)</p>
+                <h3>${window.I18n.t('htg.church.title')}</h3>
+                <p class="htg-subtitle">${window.I18n.t('htg.church.subtitle')}</p>
               </div>
             </div>
             <p class="htg-desc">
-              Malleval est un village médiéval perché sur un éperon rocheux. Les rues sont étroites et le stationnement limité — 
-              prévoyez d'arriver <strong>au moins 20 min à l'avance</strong>.
+              ${window.I18n.t('htg.church.desc')}
             </p>
 
-            <h4 class="htg-section-title">🅿️ Parkings disponibles</h4>
+            <h4 class="htg-section-title">${window.I18n.t('htg.parking.title')}</h4>
             <div class="htg-parking-list">
               <div class="htg-parking">
-                <strong>Parking du Bourg</strong>
-                <span class="htg-badge htg-badge--green">Principal</span>
-                <p>Entrée du village, route du Bourg. <em>~3 min à pied jusqu'à l'église.</em></p>
+                <strong>${window.I18n.t('htg.parking.1.name')}</strong>
+                <span class="htg-badge htg-badge--green">${window.I18n.t('htg.parking.1.badge')}</span>
+                <p>${window.I18n.t('htg.parking.1.desc')}</p>
               </div>
               <div class="htg-parking">
-                <strong>Parking de la Mairie</strong>
-                <p>Place de la Mairie, centre-bourg. <em>~2 min à pied jusqu'à l'église.</em></p>
+                <strong>${window.I18n.t('htg.parking.2.name')}</strong>
+                <p>${window.I18n.t('htg.parking.2.desc')}</p>
               </div>
               <div class="htg-parking">
-                <strong>Stationnement route de Pélussin</strong>
-                <p>En bas du village, sur la D386. <em>~8 min à pied en montée.</em></p>
+                <strong>${window.I18n.t('htg.parking.3.name')}</strong>
+                <p>${window.I18n.t('htg.parking.3.desc')}</p>
               </div>
             </div>
 
             <div class="htg-alert">
-              ⚠️ Les ruelles du centre médiéval sont inaccessibles en voiture. Ne remontez pas le village en voiture.
+              ${window.I18n.t('htg.alert.noCar')}
             </div>
 
             <a href="https://maps.google.com/?q=Église+Notre-Dame-de-Pitié,Malleval,42520" 
                target="_blank" rel="noopener" class="htg-link">
-              📍 Ouvrir dans Google Maps →
+              ${window.I18n.t('htg.link.maps')}
             </a>
           </div>
 
@@ -70,24 +72,22 @@ const HowToGet = {
             <div class="htg-card__head">
               <span class="htg-icon">🏰</span>
               <div>
-                <h3>Réception</h3>
-                <p class="htg-subtitle">Domaine de la Scie du May — Doizieux (42740)</p>
+                <h3>${window.I18n.t('htg.domain.title')}</h3>
+                <p class="htg-subtitle">${window.I18n.t('htg.domain.subtitle')}</p>
               </div>
             </div>
             <p class="htg-desc">
-              Le domaine est accessible par la route de Doizieux. Un <strong>parking gratuit sur place</strong> vous accueille — 
-              suivez simplement les <strong>ballons</strong> à partir du village !
+              ${window.I18n.t('htg.domain.desc')}
             </p>
 
-            <h4 class="htg-section-title">🗺️ Depuis l'église (après la cérémonie)</h4>
+            <h4 class="htg-section-title">${window.I18n.t('htg.domain.fromChurch')}</h4>
             <p style="font-size:14px;color:#666;">
-              Comptez environ <strong>20 minutes en voiture</strong> depuis Malleval. L'itinéraire vous sera communiqué le jour J. 
-              Un convoi depuis l'église sera organisé pour ceux qui le souhaitent.
+              ${window.I18n.t('htg.domain.fromChurch.desc')}
             </p>
 
             <a href="https://maps.google.com/?q=Domaine+de+la+Scie+du+May,Doizieux,42740" 
                target="_blank" rel="noopener" class="htg-link" style="margin-top:14px;">
-              📍 Ouvrir dans Google Maps →
+              ${window.I18n.t('htg.link.maps')}
             </a>
           </div>
 
@@ -96,27 +96,25 @@ const HowToGet = {
             <div class="htg-card__head">
               <span class="htg-icon">🚆</span>
               <div>
-                <h3>Venir en train</h3>
-                <p class="htg-subtitle">Gare TER Le Péage-de-Roussillon</p>
+                <h3>${window.I18n.t('htg.train.title')}</h3>
+                <p class="htg-subtitle">${window.I18n.t('htg.train.subtitle')}</p>
               </div>
             </div>
             <p class="htg-desc">
-              La gare la plus proche est <strong>Le Péage-de-Roussillon</strong>, desservie par la ligne TER Lyon ↔ Valence. 
-              Depuis Lyon Part-Dieu, comptez environ <strong>40 minutes</strong>.
+              ${window.I18n.t('htg.train.desc1')}
             </p>
             <p style="font-size:14px;color:#666;margin-top:8px;">
-              Depuis la gare, il n'y a pas de transport en commun jusqu'à Malleval ou Doizieux — 
-              pensez à vous organiser avec d'autres invités !
+              ${window.I18n.t('htg.train.desc2')}
             </p>
 
             <div class="htg-alert htg-alert--info">
-              💡 Des invités proposent du covoiturage depuis la gare. Consultez la page covoiturage !
+              ${window.I18n.t('htg.train.alert')}
             </div>
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
               <a href="https://maps.google.com/?q=Gare+Le+Péage-de-Roussillon" 
-                 target="_blank" rel="noopener" class="htg-link">📍 Gare sur Maps →</a>
-              <a href="#/covoiturage" class="htg-link htg-link--gold">🚗 Voir le covoiturage →</a>
+                 target="_blank" rel="noopener" class="htg-link">${window.I18n.t('htg.link.station')}</a>
+              <a href="#/covoiturage" class="htg-link htg-link--gold">${window.I18n.t('htg.carpool.btn')}</a>
             </div>
           </div>
 
