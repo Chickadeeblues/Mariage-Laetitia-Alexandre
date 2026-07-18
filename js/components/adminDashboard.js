@@ -847,6 +847,30 @@ async renderGuestsList(guests) {
       return;
     }
 
+    // 1. DÉFINITION DE L'ORDRE DE PRIORITÉ DES TAGS
+    const tagPriority = {
+      'Mariée': 1,
+      'Marié': 2,
+      'Prêtre': 3,
+      'Famille': 4,
+      'Amis': 5
+    };
+
+    // 2. TRI DES INVITÉS (Tag puis Nom de famille)
+    const sortedGuests = [...guests].sort((a, b) => {
+      const priorityA = tagPriority[a.tag] || 99; // 99 pour les sans-tag ou autres
+      const priorityB = tagPriority[b.tag] || 99;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Si même priorité, tri alphabétique sur le nom de famille
+      const nameA = (a.lastName || '').toLowerCase();
+      const nameB = (b.lastName || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
     const badgeFor = (attending) => {
       if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓ Oui</span>';
       if (attending === false || attending === 'false' || attending === 'non') return '<span class="badge badge--declined">✗ Non</span>';
@@ -864,6 +888,21 @@ async renderGuestsList(guests) {
         badges.push(`<span class="badge" style="background:#FDF9EE; color:#8C7326; border:1px solid #E8D5A3; font-size:11px;" title="${details}">⚠️ Allergie</span>`);
       }
       return badges.length > 0 ? badges.join(' ') : '—';
+    };
+
+    // 3. GÉNÉRATEUR DE BADGES COLORÉS SELON LE TAG
+    const buildTagBadge = (tag, id = null) => {
+      if (!tag) return id ? `<span id="tag-display-${id}" style="display:none;"></span>` : '';
+      
+      let bg = '#f3f4f6', color = '#374151', border = '#d1d5db';
+      if (tag === 'Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
+      else if (tag === 'Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
+      else if (tag === 'Famille') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
+      else if (tag === 'Amis') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
+      
+      const idAttr = id ? `id="tag-display-${id}"` : '';
+      return `<span ${idAttr} class="badge" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block;">${tag}</span>`;
     };
 
     let html = `
@@ -884,30 +923,25 @@ async renderGuestsList(guests) {
           <tbody>
     `;
 
-    // Options d'étiquettes
     const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille', 'Amis'];
 
-    guests.forEach((g, idx) => {
+    // On boucle désormais sur le tableau trié
+    sortedGuests.forEach((g, idx) => {
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+      const currentTag = g.tag || ''; 
       
       let transportText = '—';
       if (g.transport?.mode) {
         const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
         transportText = modes[g.transport.mode] || g.transport.mode;
       }
-      if (g.transport?.carpoolRole === 'offer') {
-        transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose covoiturage</span>`;
-      } else if (g.transport?.carpoolRole === 'need') {
-        transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande covoiturage</span>`;
-      }
+      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose</span>`;
+      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande</span>`;
 
       const isBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
       const brunchText = isBrunch ? '☕ Oui' : '🙏 Non';
       const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
-
-      // Valeur de l'étiquette actuelle (à supposer stockée dans g.tag ou g.groupe)
-      const currentTag = g.tag || ''; 
 
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
@@ -923,12 +957,9 @@ async renderGuestsList(guests) {
             ` : ''}
           </td>
           
-          <!-- NOUVELLE COLONNE : GROUPE / ÉTIQUETTE -->
           <td style="padding:10px;">
             <div style="display:flex; align-items:center; gap:6px;">
-              <span id="tag-display-${g.id}" style="font-size:11px; font-weight:600; color:var(--forest); ${!currentTag ? 'display:none;' : ''}">
-                ${currentTag}
-              </span>
+              ${buildTagBadge(currentTag, g.id)}
               <div style="position:relative;">
                 <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:#999; font-size:14px; padding:0;" title="Définir le groupe">➕</button>
                 <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
@@ -951,22 +982,24 @@ async renderGuestsList(guests) {
         </tr>
       `;
 
+      // ACCOMPAGNANTS (qui héritent du badge)
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:10px; position:relative;">
-                <span style="position:absolute; left:-6px; top:-10px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
+              <td style="padding:10px; position:relative; padding-left: 15px;">
+                <span style="position:absolute; left:-4px; top:12px; border-left: 2px solid #ccc; border-bottom: 2px solid #ccc; width:12px; height:12px; display:inline-block; border-bottom-left-radius: 4px;"></span>
                 <strong>${comp.name}</strong>
               </td>
-              <td style="padding:10px;"><span class="text-muted" style="font-size:11px; font-style:italic;">(Accompagnant)</span></td>
+              <td style="padding:10px;">
+                ${currentTag ? buildTagBadge(currentTag) : '<span class="text-muted">—</span>'}
+              </td>
               <td style="padding:10px;">${badgeFor(g.attending)}</td>
               <td style="padding:10px;">${brunchText}</td>
               <td style="padding:10px;">${getDietBadges(comp)}</td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <!-- AJOUT DES BOUTONS D'ACTION POUR LES ACCOMPAGNANTS -->
               <td style="padding:10px; display:flex; gap:6px;">
                 <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
                 <button class="btn btn--outline delete-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer l'accompagnant">×</button>
@@ -980,26 +1013,9 @@ async renderGuestsList(guests) {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // --- Événements existants ---
-    container.querySelectorAll('.delete-guest-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm("Supprimer cet invité et toutes ses données ?")) {
-          await Store.deleteGuest(id);
-          if(typeof Animations !== 'undefined') Animations.showToast("Invité supprimé", "success");
-        }
-      });
-    });
-
-    container.querySelectorAll('.edit-guest-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        const targetGuest = guests.find(g => g.id == id);
-        if (targetGuest) this.openEditModal(targetGuest);
-      });
-    });
-
-    // --- Nouveaux événements pour les Étiquettes ---
+    // --- Événements ---
+    
+    // Bascule de l'affichage du Select
     container.querySelectorAll('.btn-tag-toggle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.dataset.id;
@@ -1008,24 +1024,22 @@ async renderGuestsList(guests) {
       });
     });
 
+    // Modification du Tag : Met à jour la donnée locale, puis re-rend le tableau (pour appliquer le nouveau tri et les bonnes couleurs instantanément)
     container.querySelectorAll('.tag-select').forEach(select => {
       select.addEventListener('change', async (e) => {
         const id = e.currentTarget.dataset.id;
         const newTag = e.currentTarget.value;
-        const displaySpan = container.querySelector(`#tag-display-${id}`);
         
-        // Mise à jour visuelle instantanée
-        if (newTag) {
-          displaySpan.textContent = newTag;
-          displaySpan.style.display = 'inline';
-        } else {
-          displaySpan.style.display = 'none';
-        }
-        e.currentTarget.style.display = 'none'; // refermer le menu
-
-        // ⚠️ Ici tu devras t'assurer que ta méthode Update sauvegarde "tag" dans ta base de données :
+        // ⚠️ Enregistrer en Base de données :
         // await Store.updateGuest(id, { tag: newTag });
-        // if(typeof Animations !== 'undefined') Animations.showToast("Étiquette mise à jour", "success");
+
+        // Mise à jour de l'état local et re-rendu complet pour réappliquer le tri et colorer l'accompagnant :
+        const guestIndex = guests.findIndex(g => g.id == id);
+        if (guestIndex > -1) {
+          guests[guestIndex].tag = newTag;
+          this.renderGuestsList(guests); 
+          if(typeof Animations !== 'undefined') Animations.showToast("Groupe mis à jour", "success");
+        }
       });
     });
 
