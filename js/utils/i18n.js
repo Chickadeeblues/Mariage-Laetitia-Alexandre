@@ -266,7 +266,7 @@ const I18n = {
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
            el.placeholder = translation;
         } else {
-           el.innerHTML = translation;
+           el.textContent = translation;
         }
       }
     });
