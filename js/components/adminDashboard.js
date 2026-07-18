@@ -34,6 +34,8 @@ const getCountdownText = () => {
   return `J-${months > 0 ? `${months} mois et ` : ''}${days} jour${days > 1 ? 's' : ''} avant le mariage`;
 };
 
+console.log("Liste complète des invités reçue par le dashboard :", guests);
+
 const AdminDashboard = {
   logoutBtn: null,
 init() {
