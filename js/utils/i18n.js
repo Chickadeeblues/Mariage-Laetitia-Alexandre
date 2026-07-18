@@ -23,7 +23,7 @@ const translations = {
     'hero.invite': 'Nous avons le bonheur de vous convier',
     'hero.celebrate': 'à célébrer le mariage de',
     'hero.date': '8 MAI 2027',
-    'hero.rsvpBefore': 'RSVP avant le <strong>30 décembre 2026</strong>',
+    'hero.rsvpBefore': 'RSVP avant le 30 décembre 2026',
     'hero.btn.rsvp': 'Confirmer ma présence',
     'hero.btn.info': 'Informations pratiques',
     'hero.btn.edit': 'Modifier ma réponse',
