@@ -837,8 +837,8 @@ toggleTask(id) {
   // Liste des invités
   // ════════════════════════════════════════════════
 
-  async renderGuestsList(guests) {
-	console.log("Données brutes des invités :", guests);
+async renderGuestsList(guests) {
+    console.log("Données brutes des invités :", guests);
     const container = document.getElementById('admin-guests-list');
     if (!container) return;
 
@@ -871,7 +871,8 @@ toggleTask(id) {
         <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding:10px;">Nom & Téléphone</th>
+              <th style="padding:10px;">Nom & Contact</th>
+              <th style="padding:10px;">Groupe</th>
               <th style="padding:10px;">Présence</th>
               <th style="padding:10px;">Brunch</th>
               <th style="padding:10px;">Régime</th>
@@ -882,6 +883,9 @@ toggleTask(id) {
           </thead>
           <tbody>
     `;
+
+    // Options d'étiquettes
+    const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille', 'Amis'];
 
     guests.forEach((g, idx) => {
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
@@ -902,12 +906,39 @@ toggleTask(id) {
       const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
+      // Valeur de l'étiquette actuelle (à supposer stockée dans g.tag ou g.groupe)
+      const currentTag = g.tag || ''; 
+
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
           <td style="padding:10px;">
             <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
-            ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+            ${formattedPhone ? `
+              <span style="cursor:pointer; margin-left:6px; filter: grayscale(20%); transition: transform 0.2s;" 
+                    onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                    title="Afficher/Masquer le numéro">📞</span>
+              <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px; padding-left:4px; border-left: 2px solid var(--sage);">
+                ${formattedPhone}
+              </div>
+            ` : ''}
           </td>
+          
+          <!-- NOUVELLE COLONNE : GROUPE / ÉTIQUETTE -->
+          <td style="padding:10px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="tag-display-${g.id}" style="font-size:11px; font-weight:600; color:var(--forest); ${!currentTag ? 'display:none;' : ''}">
+                ${currentTag}
+              </span>
+              <div style="position:relative;">
+                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:#999; font-size:14px; padding:0;" title="Définir le groupe">➕</button>
+                <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
+                  <option value="">Sélectionner...</option>
+                  ${tagOptions.map(t => `<option value="${t}" ${currentTag === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </td>
+
           <td style="padding:10px;">${badgeFor(g.attending)}</td>
           <td style="padding:10px;">${brunchText}</td>
           <td style="padding:10px;">${getDietBadges(g)}</td>
@@ -929,12 +960,17 @@ toggleTask(id) {
                 <span style="position:absolute; left:-6px; top:-10px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
                 <strong>${comp.name}</strong>
               </td>
+              <td style="padding:10px;"><span class="text-muted" style="font-size:11px; font-style:italic;">(Accompagnant)</span></td>
               <td style="padding:10px;">${badgeFor(g.attending)}</td>
               <td style="padding:10px;">${brunchText}</td>
               <td style="padding:10px;">${getDietBadges(comp)}</td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px;"></td>
+              <!-- AJOUT DES BOUTONS D'ACTION POUR LES ACCOMPAGNANTS -->
+              <td style="padding:10px; display:flex; gap:6px;">
+                <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
+                <button class="btn btn--outline delete-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer l'accompagnant">×</button>
+              </td>
             </tr>
           `;
         });
@@ -944,18 +980,17 @@ toggleTask(id) {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // Action : Supprimer (×)
+    // --- Événements existants ---
     container.querySelectorAll('.delete-guest-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.currentTarget.dataset.id;
         if (confirm("Supprimer cet invité et toutes ses données ?")) {
           await Store.deleteGuest(id);
-          Animations.showToast("Invité supprimé", "success");
+          if(typeof Animations !== 'undefined') Animations.showToast("Invité supprimé", "success");
         }
       });
     });
 
-    // Action : Modifier (✏️) via Modale complète
     container.querySelectorAll('.edit-guest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.dataset.id;
@@ -963,8 +998,57 @@ toggleTask(id) {
         if (targetGuest) this.openEditModal(targetGuest);
       });
     });
-  },
 
+    // --- Nouveaux événements pour les Étiquettes ---
+    container.querySelectorAll('.btn-tag-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const select = container.querySelector(`.tag-select[data-id="${id}"]`);
+        select.style.display = select.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    container.querySelectorAll('.tag-select').forEach(select => {
+      select.addEventListener('change', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const newTag = e.currentTarget.value;
+        const displaySpan = container.querySelector(`#tag-display-${id}`);
+        
+        // Mise à jour visuelle instantanée
+        if (newTag) {
+          displaySpan.textContent = newTag;
+          displaySpan.style.display = 'inline';
+        } else {
+          displaySpan.style.display = 'none';
+        }
+        e.currentTarget.style.display = 'none'; // refermer le menu
+
+        // ⚠️ Ici tu devras t'assurer que ta méthode Update sauvegarde "tag" dans ta base de données :
+        // await Store.updateGuest(id, { tag: newTag });
+        // if(typeof Animations !== 'undefined') Animations.showToast("Étiquette mise à jour", "success");
+      });
+    });
+
+    // --- Nouveaux événements pour supprimer un accompagnant spécifique ---
+    container.querySelectorAll('.delete-comp-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const parentId = e.currentTarget.dataset.parentId;
+        const compIndex = parseInt(e.currentTarget.dataset.compIndex, 10);
+        
+        if (confirm("Supprimer uniquement cet accompagnant ?")) {
+          const parentGuest = guests.find(g => g.id == parentId);
+          if (parentGuest && parentGuest.companions) {
+            parentGuest.companions.splice(compIndex, 1);
+            // ⚠️ Enregistrer les modifications dans Supabase/Store
+            // await Store.updateGuest(parentId, { companions: parentGuest.companions });
+            // this.renderDashboard(); 
+            if(typeof Animations !== 'undefined') Animations.showToast("Accompagnant supprimé", "success");
+          }
+        }
+      });
+    });
+  }
+  
 // ════════════════════════════════════════════════════════════
   // GESTION DE L'ÉQUIPE PRÉPA (API Supabase)
   // ════════════════════════════════════════════════════════════
