@@ -74,7 +74,7 @@ const _listeners = {};
 
 async function supabase(method, table, { filter = '', body = null } = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${table}${filter ? '?' + filter : ''}`;
-  const opts = { method, headers: { ...HEADERS } };
+  const opts = { method, headers: { ...HEADERS }, cache: 'no-store'};
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
   if (!res.ok) {
