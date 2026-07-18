@@ -1047,7 +1047,7 @@ async renderGuestsList(guests) {
         }
       });
     });
-  }
+  },
   
 // ════════════════════════════════════════════════════════════
   // GESTION DE L'ÉQUIPE PRÉPA (API Supabase)
