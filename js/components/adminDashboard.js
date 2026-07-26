@@ -2203,12 +2203,14 @@ async _deleteMoodboardItem(id) {
       ];
 
       // Générateur de cellules intelligentes : Bouton minimaliste +, Auto-resize, Bouton × et Liens cliquables
-      const renderToggleField = (step, field, value, label, isTextarea = true) => {
+      // linkLabelValue : nom personnalisé affiché à la place de "Ouvrir le lien" (n'empêche pas l'ouverture du lien)
+      const renderToggleField = (step, field, value, label, isTextarea = true, linkLabelValue = '') => {
         const hasValue = value && value.trim() !== '';
         const inputStyle = `width:100%; padding:6px 22px 6px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); box-sizing:border-box; overflow:hidden; ${isTextarea ? 'resize:none; min-height:34px;' : ''}`;
         
         // 1. Bouton + minimaliste (plus esthétique sans texte)
         const btnStyle = `display: ${hasValue ? 'none' : 'inline-flex'}; align-items:center; justify-content:center; background:#f8f9fa; border:1px dashed #ced4da; color:#6c757d; width:28px; height:28px; border-radius:4px; font-size:15px; font-weight:bold; cursor:pointer; transition:all 0.2s;`;
+        const safeLinkLabel = (linkLabelValue || '').replace(/"/g, '&quot;');
         
         return `
           <div class="field-toggle-wrap" style="position:relative;">
@@ -2218,24 +2220,65 @@ async _deleteMoodboardItem(id) {
                 ? `<textarea class="mass-sched-input auto-expand" data-step="${step}" data-field="${field}" rows="1" placeholder="${label}..." style="${inputStyle}">${value || ''}</textarea>`
                 : `<input type="text" class="mass-sched-input" data-step="${step}" data-field="${field}" value="${value || ''}" placeholder="${label}..." style="${inputStyle}">`
               }
-              <!-- 2. Bouton × pour supprimer et refermer la case -->
+              <!-- Nom personnalisé du lien (masqué, modifié uniquement via la popup crayon) -->
+              <input type="hidden" class="mass-sched-input mass-sched-link-label" data-step="${step}" data-field="${field}Label" value="${safeLinkLabel}">
+              <!-- Bouton × : uniquement visible tant qu'aucun lien n'est détecté -->
               <button type="button" class="btn-close-field" style="position:absolute; top:4px; right:4px; background:none; border:none; color:#aaa; font-size:15px; cursor:pointer; padding:0 4px; line-height:1;" title="Vider et fermer">×</button>
-              <!-- 3. Zone affichée UNIQUEMENT quand un lien est détecté : masque le champ texte et montre juste le bouton -->
+              <!-- Zone affichée UNIQUEMENT quand un lien est détecté : masque le champ texte, montre le lien + un seul bouton crayon -->
               <div class="link-display-container" style="display:none; align-items:center; gap:6px; margin-top:2px;"></div>
             </div>
           </div>
         `;
       };
 
+      // Un « document de préparation » = un champ-lien de plus, identifié par un id unique (doc0, doc169...)
+      const renderPrepDocEntry = (entry, removable) => `
+        <div class="prep-doc-entry" data-doc-id="${entry.id}" style="display:flex; align-items:flex-start; gap:6px; margin-bottom:8px;">
+          <div style="flex:1;">
+            ${renderToggleField('__prep_docs__', entry.id, entry.text, 'Lien vers un document', true, entry.label)}
+          </div>
+          ${removable
+            ? `<button type="button" class="btn-remove-prepdoc" title="Supprimer ce document" style="background:none; border:none; color:#c0392b; font-size:16px; cursor:pointer; padding:4px; flex-shrink:0;">×</button>`
+            : `<div style="width:24px; flex-shrink:0;"></div>`}
+        </div>
+      `;
+
+      // b) Reconstruction de la liste des documents de préparation à partir des clés doc0, doc0Label, doc1...
+      const prepDocsRaw = scheduleData['__prep_docs__'] || {};
+      const prepDocsMap = {};
+      Object.keys(prepDocsRaw).forEach(key => {
+        const mLabel = key.match(/^(doc\d+)Label$/);
+        const mValue = key.match(/^(doc\d+)$/);
+        if (mLabel) {
+          const id = mLabel[1];
+          prepDocsMap[id] = prepDocsMap[id] || { text: '', label: '' };
+          prepDocsMap[id].label = prepDocsRaw[key] || '';
+        } else if (mValue) {
+          const id = mValue[1];
+          prepDocsMap[id] = prepDocsMap[id] || { text: '', label: '' };
+          prepDocsMap[id].text = prepDocsRaw[key] || '';
+        }
+      });
+      // Compatibilité avec l'ancien format à un seul champ ({ text: "..." })
+      if (prepDocsRaw.text && !prepDocsMap['doc0']) {
+        prepDocsMap['doc0'] = { text: prepDocsRaw.text, label: prepDocsRaw.textLabel || '' };
+      }
+      let prepDocsEntries = Object.keys(prepDocsMap).map(id => ({ id, ...prepDocsMap[id] }));
+      if (prepDocsEntries.length === 0) prepDocsEntries = [{ id: 'doc0', text: '', label: '' }];
+
+      const prepDocsListHtml = prepDocsEntries.map((entry, i) => renderPrepDocEntry(entry, i > 0)).join('');
+
       // Ligne spéciale, non numérotée, pour les documents généraux de préparation (livret, feuille de chants...)
-      const prepDocsData = scheduleData['__prep_docs__'] || { text: '' };
       const prepDocsRowHtml = `
         <tr style="background:#fdf8ec; border-bottom:2px solid var(--gold);">
           <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
             📄 Documents pour la préparation
           </td>
           <td colspan="4" style="padding:8px; vertical-align:top;">
-            ${renderToggleField('__prep_docs__', 'text', prepDocsData.text, 'Lien(s) vers documents (livret, chants...)')}
+            <div id="prep-docs-list">${prepDocsListHtml}</div>
+            <button type="button" id="btn-add-prepdoc" style="margin-top:2px; background:var(--sage); color:#fff; border:none; border-radius:14px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer;">
+              + Ajouter un document
+            </button>
           </td>
         </tr>
       `;
@@ -2251,13 +2294,13 @@ async _deleteMoodboardItem(id) {
               ${idx + 1}. ${step}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence')}
+              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence', true, sData.textLabel)}
             </td>
             <td style="padding:8px; width:22%; vertical-align:top;">
-              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant')}
+              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant', true, sData.musicLabel)}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
-              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)')}
+              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)', true, sData.sheetLabel)}
             </td>
             <td style="padding:8px; width:17%; vertical-align:top;">
               ${renderToggleField(step, 'responsible', sData.responsible, 'Nom(s)', false)}
@@ -2300,69 +2343,180 @@ async _deleteMoodboardItem(id) {
         el.style.height = (el.scrollHeight + 2) + 'px';
       };
 
-      // 3. Fonction pour détecter un lien : si présent, masque le champ texte brut
-      //    et n'affiche QUE le bouton "Ouvrir le lien" (+ un bouton discret pour repasser en édition)
+      // 3. Fonction pour détecter un lien : si présent, masque le champ texte brut et n'affiche
+      //    QUE le lien (avec son nom personnalisé le cas échéant) + un seul bouton crayon (modifier/supprimer)
       const updateLinksPreview = (inputEl) => {
         const wrapper = inputEl.closest('.input-wrapper');
-        const linkDisplay = wrapper?.querySelector('.link-display-container');
+        if (!wrapper) return;
+        const linkDisplay = wrapper.querySelector('.link-display-container');
+        const closeBtn = wrapper.querySelector('.btn-close-field');
+        const labelInput = wrapper.querySelector('.mass-sched-link-label');
         if (!linkDisplay) return;
 
         const val = inputEl.value || '';
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const links = val.match(urlRegex);
+        const customName = labelInput ? labelInput.value.trim() : '';
 
         if (links && links.length > 0) {
-          // On masque le champ de saisie : seul le bouton reste visible
+          // On masque le champ de saisie ET le bouton × : seul le lien + le crayon restent visibles
           inputEl.style.display = 'none';
-          linkDisplay.innerHTML = links.map(url => `
-            <a href="${url}" target="_blank" rel="noopener noreferrer" 
-               style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
-              🔗 Ouvrir le lien
+          if (closeBtn) closeBtn.style.display = 'none';
+          linkDisplay.innerHTML = `
+            <a href="${links[0]}" target="_blank" rel="noopener noreferrer" 
+               style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15); max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              🔗 ${customName || 'Ouvrir le lien'}
             </a>
-          `).join(' ') + `
-            <button type="button" class="btn-edit-link" title="Modifier le lien" 
-                    style="background:none; border:none; color:#aaa; font-size:12px; cursor:pointer; padding:2px 4px;">✎</button>
+            <button type="button" class="btn-edit-link" title="Modifier ou supprimer" 
+                    style="background:#f8f9fa; border:1px solid #ced4da; color:#6c757d; width:22px; height:22px; border-radius:50%; font-size:11px; cursor:pointer; flex-shrink:0;">✎</button>
           `;
           linkDisplay.style.display = 'flex';
         } else {
-          // Pas de lien : on ré-affiche le champ de saisie normal
+          // Pas de lien : on ré-affiche le champ de saisie normal et le bouton ×
           inputEl.style.display = '';
+          if (closeBtn) closeBtn.style.display = '';
           linkDisplay.style.display = 'none';
           linkDisplay.innerHTML = '';
         }
       };
 
-      // Clic sur le bouton ✎ (délégation, car ces boutons sont créés dynamiquement) :
-      // ré-affiche le champ de saisie pour permettre de modifier le lien
+      // ── Popup unique de modification/suppression de lien (créée une seule fois, réutilisée partout) ──
+      if (!document.getElementById('link-edit-modal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+          <div id="link-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:#fff; border-radius:12px; padding:20px; width:100%; max-width:380px; box-shadow:0 8px 30px rgba(0,0,0,0.25); font-family:var(--font-body);">
+              <h4 style="margin:0 0 14px; color:var(--forest); font-size:15px;">🔗 Modifier le lien</h4>
+              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Nom affiché (n'empêche pas l'ouverture du lien)</label>
+              <input id="link-modal-name" type="text" placeholder="Ex : Chant d'entrée (PDF)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:13px; box-sizing:border-box; margin-bottom:12px;">
+              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Lien / Contenu</label>
+              <textarea id="link-modal-value" rows="3" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:13px; box-sizing:border-box; margin-bottom:16px; resize:vertical; font-family:var(--font-body);"></textarea>
+              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                <button type="button" id="link-modal-delete" style="background:#fdecea; color:#c0392b; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">🗑️ Supprimer</button>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" id="link-modal-cancel" style="background:#f1f1f1; color:#555; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">Annuler</button>
+                  <button type="button" id="link-modal-save" style="background:var(--forest); color:#fff; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">Enregistrer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+
+        const modalEl = document.getElementById('link-edit-modal');
+        const closeModal = () => { modalEl.style.display = 'none'; modalEl._currentWrapper = null; };
+
+        document.getElementById('link-modal-cancel').addEventListener('click', closeModal);
+        modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+
+        document.getElementById('link-modal-save').addEventListener('click', () => {
+          const wrapper = modalEl._currentWrapper;
+          if (!wrapper) return closeModal();
+          const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrapper.querySelector('.mass-sched-link-label');
+          if (input) input.value = document.getElementById('link-modal-value').value;
+          if (labelInput) labelInput.value = document.getElementById('link-modal-name').value.trim();
+          if (input) updateLinksPreview(input);
+          closeModal();
+        });
+
+        document.getElementById('link-modal-delete').addEventListener('click', () => {
+          const wrapper = modalEl._currentWrapper;
+          if (!wrapper) return closeModal();
+          const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrapper.querySelector('.mass-sched-link-label');
+          const fieldWrap = wrapper.closest('.field-toggle-wrap');
+          const revealBtn = fieldWrap?.querySelector('.btn-reveal-field');
+          if (input) { input.value = ''; updateLinksPreview(input); }
+          if (labelInput) labelInput.value = '';
+          wrapper.style.display = 'none';
+          if (revealBtn) revealBtn.style.display = 'inline-flex';
+          closeModal();
+        });
+      }
+
+      const openLinkModal = (wrapper) => {
+        const modalEl = document.getElementById('link-edit-modal');
+        const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+        const labelInput = wrapper.querySelector('.mass-sched-link-label');
+        if (!modalEl || !input) return;
+        modalEl._currentWrapper = wrapper;
+        document.getElementById('link-modal-name').value = labelInput ? labelInput.value : '';
+        document.getElementById('link-modal-value').value = input.value;
+        modalEl.style.display = 'flex';
+        document.getElementById('link-modal-name').focus();
+      };
+
+      // ── Délégation d'événements globale : fonctionne aussi pour les documents ajoutés dynamiquement ──
       container.addEventListener('click', (e) => {
+        // Bouton "+" : révéler un champ
+        const revealBtn = e.target.closest('.btn-reveal-field');
+        if (revealBtn) {
+          const wrap = revealBtn.closest('.field-toggle-wrap');
+          revealBtn.style.display = 'none';
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          if (inputWrap) {
+            inputWrap.style.display = 'block';
+            const input = inputWrap.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+            if (input) { input.focus(); autoResize(input); updateLinksPreview(input); }
+          }
+          return;
+        }
+
+        // Bouton × : vider le champ et refermer la case (uniquement visible sans lien actif)
+        const closeBtn = e.target.closest('.btn-close-field');
+        if (closeBtn) {
+          const wrap = closeBtn.closest('.field-toggle-wrap');
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          const input = wrap.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrap.querySelector('.mass-sched-link-label');
+          const revealBtn2 = wrap.querySelector('.btn-reveal-field');
+          if (input) { input.value = ''; updateLinksPreview(input); }
+          if (labelInput) labelInput.value = '';
+          if (inputWrap) inputWrap.style.display = 'none';
+          if (revealBtn2) revealBtn2.style.display = 'inline-flex';
+          return;
+        }
+
+        // 1° Bouton crayon unique : ouvre la popup pour modifier le nom / le lien, ou le supprimer
         const editBtn = e.target.closest('.btn-edit-link');
-        if (!editBtn) return;
-        const wrapper = editBtn.closest('.input-wrapper');
-        const input = wrapper?.querySelector('.mass-sched-input');
-        const linkDisplay = wrapper?.querySelector('.link-display-container');
-        if (input) {
-          input.style.display = '';
-          if (linkDisplay) linkDisplay.style.display = 'none';
-          input.focus();
-          autoResize(input);
+        if (editBtn) {
+          const wrap = editBtn.closest('.input-wrapper');
+          if (wrap) openLinkModal(wrap);
+          return;
+        }
+
+        // Bouton × d'une entrée "document de préparation" : supprime la ligne entière
+        const removeDocBtn = e.target.closest('.btn-remove-prepdoc');
+        if (removeDocBtn) {
+          removeDocBtn.closest('.prep-doc-entry')?.remove();
+          return;
+        }
+
+        // 2° Bouton "+ Ajouter un document" sur la 1ère ligne
+        const addDocBtn = e.target.closest('#btn-add-prepdoc');
+        if (addDocBtn) {
+          const list = document.getElementById('prep-docs-list');
+          if (!list) return;
+          const newEntry = { id: `doc${Date.now()}`, text: '', label: '' };
+          const tmp = document.createElement('div');
+          tmp.innerHTML = renderPrepDocEntry(newEntry, true).trim();
+          const entryEl = tmp.firstElementChild;
+          list.appendChild(entryEl);
+          const revealBtn3 = entryEl.querySelector('.btn-reveal-field');
+          if (revealBtn3) revealBtn3.click();
         }
       });
 
-      // Initialisation : Ajustement hauteur et affichage des liens existants au chargement
-      container.querySelectorAll('.mass-sched-input').forEach(input => {
-        if (input.closest('.input-wrapper').style.display !== 'none') {
-          autoResize(input);
-          updateLinksPreview(input);
+      container.addEventListener('input', (e) => {
+        if (e.target.matches && e.target.matches('.mass-sched-input:not(.mass-sched-link-label)')) {
+          autoResize(e.target);
+          updateLinksPreview(e.target);
         }
+      });
 
-        // Événement lors de la frappe ou copier/coller
-        input.addEventListener('input', () => {
-          autoResize(input);
-          updateLinksPreview(input);
-        });
-
-        // 2. Magic Blur : Si on quitte une case vide, elle se referme automatiquement !
-        input.addEventListener('blur', () => {
+      // 'blur' ne remonte pas naturellement : on écoute en phase de capture pour la délégation
+      container.addEventListener('blur', (e) => {
+        if (e.target.matches && e.target.matches('.mass-sched-input:not(.mass-sched-link-label)')) {
+          const input = e.target;
           setTimeout(() => {
             if (input.value.trim() === '') {
               const wrap = input.closest('.field-toggle-wrap');
@@ -2372,42 +2526,15 @@ async _deleteMoodboardItem(id) {
               if (revealBtn) revealBtn.style.display = 'inline-flex';
             }
           }, 150);
-        });
-      });
+        }
+      }, true);
 
-      // Révéler la case au clic sur le bouton +
-      container.querySelectorAll('.btn-reveal-field').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const wrap = e.currentTarget.closest('.field-toggle-wrap');
-          e.currentTarget.style.display = 'none';
-          const inputWrap = wrap.querySelector('.input-wrapper');
-          if (inputWrap) {
-            inputWrap.style.display = 'block';
-            const input = inputWrap.querySelector('.mass-sched-input');
-            if (input) {
-              input.focus();
-              autoResize(input);
-              updateLinksPreview(input);
-            }
-          }
-        });
-      });
-
-      // 2. Bouton × : Vider le texte et refermer manuellement la case
-      container.querySelectorAll('.btn-close-field').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const wrap = e.currentTarget.closest('.field-toggle-wrap');
-          const inputWrap = wrap.querySelector('.input-wrapper');
-          const input = wrap.querySelector('.mass-sched-input');
-          const revealBtn = wrap.querySelector('.btn-reveal-field');
-          
-          if (input) {
-            input.value = '';
-            updateLinksPreview(input);
-          }
-          if (inputWrap) inputWrap.style.display = 'none';
-          if (revealBtn) revealBtn.style.display = 'inline-flex';
-        });
+      // Initialisation : ajustement de hauteur et affichage des liens déjà existants au chargement
+      container.querySelectorAll('.mass-sched-input:not(.mass-sched-link-label)').forEach(input => {
+        if (input.closest('.input-wrapper').style.display !== 'none') {
+          autoResize(input);
+          updateLinksPreview(input);
+        }
       });
 
       // Sauvegarde
