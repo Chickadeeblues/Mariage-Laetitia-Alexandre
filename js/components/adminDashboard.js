@@ -2321,7 +2321,7 @@ async _deleteMoodboardItem(id) {
               <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
                 <th style="padding:10px 10px;">Étape de la messe</th>
                 <th style="padding:10px 8px;">Texte / Lecture</th>
-                <th style="padding:10px 8px;">Musique / Chants (Liens)</th>
+                <th style="padding:10px 8px;">Musique / Chants</th>
                 <th style="padding:10px 8px;">Partitions</th>
                 <th style="padding:10px 8px;">Qui s'en charge</th>
               </tr>
@@ -2491,7 +2491,7 @@ async _deleteMoodboardItem(id) {
           return;
         }
 
-        // 2° Bouton "+ Ajouter un document" sur la 1ère ligne
+        // 2° Bouton "+" sur la 1ère ligne
         const addDocBtn = e.target.closest('#btn-add-prepdoc');
         if (addDocBtn) {
           const list = document.getElementById('prep-docs-list');
