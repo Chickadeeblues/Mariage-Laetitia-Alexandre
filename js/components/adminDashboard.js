@@ -2220,18 +2220,33 @@ async _deleteMoodboardItem(id) {
               }
               <!-- 2. Bouton × pour supprimer et refermer la case -->
               <button type="button" class="btn-close-field" style="position:absolute; top:4px; right:4px; background:none; border:none; color:#aaa; font-size:15px; cursor:pointer; padding:0 4px; line-height:1;" title="Vider et fermer">×</button>
-              <!-- 3. Conteneur pour afficher le badge de lien cliquable -->
-              <div class="links-preview-container"></div>
+              <!-- 3. Zone affichée UNIQUEMENT quand un lien est détecté : masque le champ texte et montre juste le bouton -->
+              <div class="link-display-container" style="display:none; align-items:center; gap:6px; margin-top:2px;"></div>
             </div>
           </div>
         `;
       };
 
+      // Ligne spéciale, non numérotée, pour les documents généraux de préparation (livret, feuille de chants...)
+      const prepDocsData = scheduleData['__prep_docs__'] || { text: '' };
+      const prepDocsRowHtml = `
+        <tr style="background:#fdf8ec; border-bottom:2px solid var(--gold);">
+          <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
+            📄 Documents pour la préparation
+          </td>
+          <td colspan="4" style="padding:8px; vertical-align:top;">
+            ${renderToggleField('__prep_docs__', 'text', prepDocsData.text, 'Lien(s) vers documents (livret, chants...)')}
+          </td>
+        </tr>
+      `;
+
       let scheduleRowsHtml = massSteps.map((step, idx) => {
         const sData = scheduleData[step] || { text: '', music: '', sheet: '', responsible: '' };
-        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+        // Zebra plus contrasté (blanc / vert sauge très clair) pour mieux distinguer chaque ligne
+        const bg = idx % 2 === 0 ? '#ffffff' : '#eef4ea';
+        const accent = idx % 2 === 0 ? 'var(--gold)' : 'var(--sage)';
         return `
-          <tr style="background:${bg}; border-bottom:1px solid #eee;">
+          <tr class="mass-sched-row" style="background:${bg}; border-bottom:1px solid #e2e2e2; border-left:3px solid ${accent}; transition: background 0.15s;">
             <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
               ${idx + 1}. ${step}
             </td>
@@ -2253,6 +2268,10 @@ async _deleteMoodboardItem(id) {
 
       container.innerHTML = `
         ${subNavHtml}
+        <style>
+          /* c) Surbrillance au survol pour renforcer la distinction entre les lignes */
+          .mass-sched-row:hover { background: #e3edf0 !important; }
+        </style>
         <div class="table-responsive">
           <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
             <thead>
@@ -2264,7 +2283,7 @@ async _deleteMoodboardItem(id) {
                 <th style="padding:10px 8px;">Qui s'en charge</th>
               </tr>
             </thead>
-            <tbody>${scheduleRowsHtml}</tbody>
+            <tbody>${prepDocsRowHtml}${scheduleRowsHtml}</tbody>
           </table>
         </div>
         <div style="margin-top:16px; display:flex; justify-content:flex-end;">
@@ -2281,26 +2300,53 @@ async _deleteMoodboardItem(id) {
         el.style.height = (el.scrollHeight + 2) + 'px';
       };
 
-      // 3. Fonction pour extraire et afficher un lien cliquable sous la zone de saisie
+      // 3. Fonction pour détecter un lien : si présent, masque le champ texte brut
+      //    et n'affiche QUE le bouton "Ouvrir le lien" (+ un bouton discret pour repasser en édition)
       const updateLinksPreview = (inputEl) => {
-        const container = inputEl.closest('.input-wrapper').querySelector('.links-preview-container');
-        if (!container) return;
-        
+        const wrapper = inputEl.closest('.input-wrapper');
+        const linkDisplay = wrapper?.querySelector('.link-display-container');
+        if (!linkDisplay) return;
+
         const val = inputEl.value || '';
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const links = val.match(urlRegex);
-        
+
         if (links && links.length > 0) {
-          container.innerHTML = links.map(url => `
+          // On masque le champ de saisie : seul le bouton reste visible
+          inputEl.style.display = 'none';
+          linkDisplay.innerHTML = links.map(url => `
             <a href="${url}" target="_blank" rel="noopener noreferrer" 
-               style="display:inline-flex; align-items:center; gap:4px; margin-top:6px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+               style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
               🔗 Ouvrir le lien
             </a>
-          `).join(' ');
+          `).join(' ') + `
+            <button type="button" class="btn-edit-link" title="Modifier le lien" 
+                    style="background:none; border:none; color:#aaa; font-size:12px; cursor:pointer; padding:2px 4px;">✎</button>
+          `;
+          linkDisplay.style.display = 'flex';
         } else {
-          container.innerHTML = '';
+          // Pas de lien : on ré-affiche le champ de saisie normal
+          inputEl.style.display = '';
+          linkDisplay.style.display = 'none';
+          linkDisplay.innerHTML = '';
         }
       };
+
+      // Clic sur le bouton ✎ (délégation, car ces boutons sont créés dynamiquement) :
+      // ré-affiche le champ de saisie pour permettre de modifier le lien
+      container.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.btn-edit-link');
+        if (!editBtn) return;
+        const wrapper = editBtn.closest('.input-wrapper');
+        const input = wrapper?.querySelector('.mass-sched-input');
+        const linkDisplay = wrapper?.querySelector('.link-display-container');
+        if (input) {
+          input.style.display = '';
+          if (linkDisplay) linkDisplay.style.display = 'none';
+          input.focus();
+          autoResize(input);
+        }
+      });
 
       // Initialisation : Ajustement hauteur et affichage des liens existants au chargement
       container.querySelectorAll('.mass-sched-input').forEach(input => {
