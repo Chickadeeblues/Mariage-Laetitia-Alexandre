@@ -34,6 +34,7 @@ const getCountdownText = () => {
   return `J-${months > 0 ? `${months} mois et ` : ''}${days} jour${days > 1 ? 's' : ''} avant le mariage`;
 };
 
+
 const AdminDashboard = {
   logoutBtn: null,
 init() {
@@ -80,9 +81,6 @@ init() {
     });
   },
   // ════════════════════════════════════════════════════════════
-  // Gestion des onglets intercalaires
-  // ════════════════════════════════════════════════════════════
- // ════════════════════════════════════════════════════════════
   // Gestion des onglets intercalaires
   // ════════════════════════════════════════════════════════════
   initTabs() {
@@ -180,9 +178,8 @@ init() {
       });
     });
 
-    // 5. Restauration du dernier onglet visité (ou 'guests' par défaut)
-    const savedTab = localStorage.getItem('wedding_admin_active_tab') || 'guests';
-    activateTab(savedTab);
+    // 5. Activation forcée de l'onglet 'guests' (Invités) par défaut
+    activateTab('guests');
   },
   // ════════════════════════════════════════════════════════════
   // Chargement des tâches depuis Supabase
@@ -280,8 +277,9 @@ async renderDashboard() {
       this.renderGuestsList(guests),
 	  this.renderTeam(guests),
 	  this.renderSeatingPlan(guests),
-      this.renderCarpools(stats),
-      this.renderAccommodations()
+	  this.renderMoodboard(),
+      this.renderMass(guests),
+      this.renderContentPublication()
     ]);
 	// Initialiser et positionner les onglets intercalaires
     this.initTabs();
@@ -839,7 +837,8 @@ toggleTask(id) {
   // Liste des invités
   // ════════════════════════════════════════════════
 
-  async renderGuestsList(guests) {
+async renderGuestsList(guests) {
+    console.log("Données brutes des invités :", guests);
     const container = document.getElementById('admin-guests-list');
     if (!container) return;
 
@@ -847,6 +846,30 @@ toggleTask(id) {
       container.innerHTML = '<p class="text-muted text-center mt-4">Aucune réponse pour le moment.</p>';
       return;
     }
+
+    // 1. DÉFINITION DE L'ORDRE DE PRIORITÉ DES TAGS
+    const tagPriority = {
+      'Mariée': 1,
+      'Marié': 2,
+      'Prêtre': 3,
+      'Famille': 4,
+      'Amis': 5
+    };
+
+    // 2. TRI DES INVITÉS (Tag puis Nom de famille)
+    const sortedGuests = [...guests].sort((a, b) => {
+      const priorityA = tagPriority[a.tag] || 99; // 99 pour les sans-tag ou autres
+      const priorityB = tagPriority[b.tag] || 99;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Si même priorité, tri alphabétique sur le nom de famille
+      const nameA = (a.lastName || '').toLowerCase();
+      const nameB = (b.lastName || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     const badgeFor = (attending) => {
       if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓ Oui</span>';
@@ -867,12 +890,28 @@ toggleTask(id) {
       return badges.length > 0 ? badges.join(' ') : '—';
     };
 
+    // 3. GÉNÉRATEUR DE BADGES COLORÉS SELON LE TAG
+    const buildTagBadge = (tag, id = null) => {
+      if (!tag) return id ? `<span id="tag-display-${id}" style="display:none;"></span>` : '';
+      
+      let bg = '#f3f4f6', color = '#374151', border = '#d1d5db';
+      if (tag === 'Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
+      else if (tag === 'Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
+      else if (tag === 'Famille') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
+      else if (tag === 'Amis') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
+      
+      const idAttr = id ? `id="tag-display-${id}"` : '';
+      return `<span ${idAttr} class="badge" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block;">${tag}</span>`;
+    };
+
     let html = `
       <div class="table-responsive">
         <table class="admin-table" style="width:100%; border-collapse:collapse; margin-top:20px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding:10px;">Nom & Téléphone</th>
+              <th style="padding:10px;">Nom & Contact</th>
+              <th style="padding:10px;">Groupe</th>
               <th style="padding:10px;">Présence</th>
               <th style="padding:10px;">Brunch</th>
               <th style="padding:10px;">Régime</th>
@@ -884,19 +923,20 @@ toggleTask(id) {
           <tbody>
     `;
 
-    guests.forEach((g, idx) => {
+    const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille', 'Amis'];
+
+    // On boucle désormais sur le tableau trié
+    sortedGuests.forEach((g, idx) => {
       const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+      const currentTag = g.tag || ''; 
       
       let transportText = '—';
       if (g.transport?.mode) {
         const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
         transportText = modes[g.transport.mode] || g.transport.mode;
       }
-      if (g.transport?.carpoolRole === 'offer') {
-        transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose covoiturage</span>`;
-      } else if (g.transport?.carpoolRole === 'need') {
-        transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande covoiturage</span>`;
-      }
+      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose</span>`;
+      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande</span>`;
 
       const isBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
       const brunchText = isBrunch ? '☕ Oui' : '🙏 Non';
@@ -907,8 +947,29 @@ toggleTask(id) {
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
           <td style="padding:10px;">
             <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
-            ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+            ${formattedPhone ? `
+              <span style="cursor:pointer; margin-left:6px; filter: grayscale(20%); transition: transform 0.2s;" 
+                    onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                    title="Afficher/Masquer le numéro">📞</span>
+              <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px; padding-left:4px; border-left: 2px solid var(--sage);">
+                ${formattedPhone}
+              </div>
+            ` : ''}
           </td>
+          
+          <td style="padding:10px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${buildTagBadge(currentTag, g.id)}
+              <div style="position:relative;">
+                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:#999; font-size:14px; padding:0;" title="Définir le groupe">➕</button>
+                <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
+                  <option value="">Sélectionner...</option>
+                  ${tagOptions.map(t => `<option value="${t}" ${currentTag === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </td>
+
           <td style="padding:10px;">${badgeFor(g.attending)}</td>
           <td style="padding:10px;">${brunchText}</td>
           <td style="padding:10px;">${getDietBadges(g)}</td>
@@ -921,21 +982,28 @@ toggleTask(id) {
         </tr>
       `;
 
+      // ACCOMPAGNANTS (qui héritent du badge)
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:10px; position:relative;">
-                <span style="position:absolute; left:-6px; top:-10px; background:var(--gold); color:#fff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:2;">+</span>
+              <td style="padding:10px; position:relative; padding-left: 15px;">
+                <span style="position:absolute; left:-4px; top:12px; border-left: 2px solid #ccc; border-bottom: 2px solid #ccc; width:12px; height:12px; display:inline-block; border-bottom-left-radius: 4px;"></span>
                 <strong>${comp.name}</strong>
+              </td>
+              <td style="padding:10px;">
+                ${currentTag ? buildTagBadge(currentTag) : '<span class="text-muted">—</span>'}
               </td>
               <td style="padding:10px;">${badgeFor(g.attending)}</td>
               <td style="padding:10px;">${brunchText}</td>
               <td style="padding:10px;">${getDietBadges(comp)}</td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px;"></td>
+              <td style="padding:10px; display:flex; gap:6px;">
+                <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
+                <button class="btn btn--outline delete-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer l'accompagnant">×</button>
+              </td>
             </tr>
           `;
         });
@@ -945,38 +1013,72 @@ toggleTask(id) {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // Action : Supprimer (×)
-    container.querySelectorAll('.delete-guest-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+    // --- Événements ---
+    
+    // Bascule de l'affichage du Select
+    container.querySelectorAll('.btn-tag-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
         const id = e.currentTarget.dataset.id;
-        if (confirm("Supprimer cet invité et toutes ses données ?")) {
-          await Store.deleteGuest(id);
-          Animations.showToast("Invité supprimé", "success");
+        const select = container.querySelector(`.tag-select[data-id="${id}"]`);
+        select.style.display = select.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    // Modification du Tag : Met à jour la donnée locale, puis re-rend le tableau (pour appliquer le nouveau tri et les bonnes couleurs instantanément)
+    container.querySelectorAll('.tag-select').forEach(select => {
+      select.addEventListener('change', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const newTag = e.currentTarget.value;
+        
+        // ⚠️ Enregistrer en Base de données :
+        // await Store.updateGuest(id, { tag: newTag });
+
+        // Mise à jour de l'état local et re-rendu complet pour réappliquer le tri et colorer l'accompagnant :
+        const guestIndex = guests.findIndex(g => g.id == id);
+        if (guestIndex > -1) {
+          guests[guestIndex].tag = newTag;
+          this.renderGuestsList(guests); 
+          if(typeof Animations !== 'undefined') Animations.showToast("Groupe mis à jour", "success");
         }
       });
     });
 
-    // Action : Modifier (✏️) via Modale complète
-    container.querySelectorAll('.edit-guest-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        const targetGuest = guests.find(g => g.id == id);
-        if (targetGuest) this.openEditModal(targetGuest);
+    // --- Nouveaux événements pour supprimer un accompagnant spécifique ---
+    container.querySelectorAll('.delete-comp-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const parentId = e.currentTarget.dataset.parentId;
+        const compIndex = parseInt(e.currentTarget.dataset.compIndex, 10);
+        
+        if (confirm("Supprimer uniquement cet accompagnant ?")) {
+          const parentGuest = guests.find(g => g.id == parentId);
+          if (parentGuest && parentGuest.companions) {
+            parentGuest.companions.splice(compIndex, 1);
+            // ⚠️ Enregistrer les modifications dans Supabase/Store
+            // await Store.updateGuest(parentId, { companions: parentGuest.companions });
+            // this.renderDashboard(); 
+            if(typeof Animations !== 'undefined') Animations.showToast("Accompagnant supprimé", "success");
+          }
+        }
       });
     });
   },
-
-  // ════════════════════════════════════════════════════════════
+  
+// ════════════════════════════════════════════════════════════
   // GESTION DE L'ÉQUIPE PRÉPA (API Supabase)
   // ════════════════════════════════════════════════════════════
   async _loadTeam() {
     const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?select=*&order=name.asc`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    });
-    if (!res.ok) return [];
-    return await res.json();
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_team?select=*&order=name.asc`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      console.error("Erreur chargement équipe:", e);
+      return [];
+    }
   },
 
   async _saveTeamMember(data, id = null) {
@@ -986,6 +1088,14 @@ toggleTask(id) {
       ? `${SUPABASE_URL}/rest/v1/wedding_team?id=eq.${id}` 
       : `${SUPABASE_URL}/rest/v1/wedding_team`;
     
+    // Nettoyage pour s'assurer que les heures sont bien transmises
+    const cleanData = {
+      ...data,
+      time_thursday: data.time_thursday || null,
+      time_friday: data.time_friday || null,
+      time_saturday: data.time_saturday || null
+    };
+
     await fetch(url, {
       method: id ? 'PATCH' : 'POST',
       headers: {
@@ -994,7 +1104,7 @@ toggleTask(id) {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(cleanData)
     });
   },
 
@@ -1007,7 +1117,7 @@ toggleTask(id) {
     });
   },
 
-  // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
   // RENDU DU TABLEAU ÉQUIPE PRÉPA
   // ════════════════════════════════════════════════════════════
   async renderTeam(guests) {
@@ -1017,57 +1127,71 @@ toggleTask(id) {
     container.innerHTML = '<p class="text-muted" style="padding:10px 0;">Chargement de l\'équipe...</p>';
     const team = await this._loadTeam();
 
+    // Formatage de l'heure sans coche (ex: 14h30)
     const formatDayBadge = (active, time) => {
       if (!active) return '<span style="color:#ccc;">—</span>';
-      return `✓ Oui <span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:4px;">${time || 'NC'}</span>`;
+      let formattedTime = time ? time.slice(0, 5).replace(':', 'h') : 'NC';
+      return `<span style="background:var(--gold-light, #E8D5A3); color:#5c4718; font-size:11px; padding:3px 8px; border-radius:4px; font-weight:700; display:inline-block;">${formattedTime}</span>`;
     };
 
-    let html = `
-      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <p class="text-muted" style="margin:0; font-size:14px;">Gérez ici les personnes mobilisées pour l'installation, les animations et la logistique.</p>
-        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
-      </div>
+    // Calcul des totaux pour le pied de page (uniquement si loge sur place = oui)
+    const totalPeople = team ? team.length : 0;
+    // Calcul cumulé : une arrivée le jeudi compte pour le ven/sam, une arrivée le vendredi compte pour le sam
+    const totalThu = team ? team.filter(m => m.stays_on_site && m.arrival_thursday).length : 0;
+    const totalFri = team ? team.filter(m => m.stays_on_site && (m.arrival_thursday || m.arrival_friday)).length : 0;
+    const totalSat = team ? team.filter(m => m.stays_on_site && (m.arrival_thursday || m.arrival_friday || m.arrival_saturday)).length : 0;
 
-      <div class="table-responsive">
-        <table class="admin-table" style="width:100%; border-collapse:collapse;">
+    // 1. Tableau collé aux onglets (margin-top: 0)
+    let html = `
+      <div class="table-responsive" style="margin-top:0;">
+        <table class="admin-table" style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th style="padding:10px;">Nom &amp; Téléphone</th>
-              <th style="padding:10px;">Rôle</th>
-              <th style="padding:10px;">Arrivée Jeudi</th>
-              <th style="padding:10px;">Arrivée Vendredi</th>
-              <th style="padding:10px;">Arrivée Samedi</th>
-              <th style="padding:10px; text-align:center;">Loge sur place</th>
-              <th style="padding:10px; width:70px;">Actions</th>
+              <th rowspan="2" style="padding:10px; width:26%; vertical-align:bottom;">Nom &amp; Téléphone</th>
+              <th rowspan="2" style="padding:10px; width:20%; vertical-align:bottom;">Rôle(s)</th>
+              <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
+              <th rowspan="2" style="padding:10px; width:11%; text-align:center; vertical-align:bottom;">Loge sur place</th>
+              <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom; text-align:center;">Actions</th>
+            </tr>
+            <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
+              <th style="padding:6px 4px; width:12%; text-align:center;">Jeudi</th>
+              <th style="padding:6px 4px; width:12%; text-align:center;">Vendredi</th>
+              <th style="padding:6px 4px; width:12%; text-align:center;">Samedi</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    if (team.length === 0) {
-      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment. Cliquez sur "+ Ajouter un membre".</td></tr>`;
+    if (!team || team.length === 0) {
+      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
     } else {
       team.forEach((m, idx) => {
         const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
-        const formattedPhone = formatPhone(m.phone);
+        const formattedPhone = typeof formatPhone === 'function' ? formatPhone(m.phone) : (m.phone || '');
+        
+        // 2. Gestion de l'affichage multi-rôles (max 3)
+        const rolesArray = m.role ? m.role.split(',').map(r => r.trim()).slice(0, 3) : ['Organisation'];
+        const rolesHtml = rolesArray.map(r => `
+          <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">
+            ${r}
+          </span>`).join('');
+
         html += `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px;">
-              <strong>${m.name}</strong>
+            <td style="padding:10px; word-wrap:break-word;">
+              <strong>${m.name || 'Sans nom'}</strong>
               ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
             </td>
             <td style="padding:10px;">
-              <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:4px 8px; border-radius:6px; font-size:12px;">
-                ${m.role}
-              </span>
+              <div style="display:flex; flex-wrap:wrap; gap:2px;">${rolesHtml}</div>
             </td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
-            <td style="padding:10px;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
+            <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
+            <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
+            <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
             <td style="padding:10px; text-align:center;">
-              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">🏡 Oui</span>' : '<span style="color:#999;">Non</span>'}
+              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">Oui</span>' : '<span style="color:#999;">Non</span>'}
             </td>
-            <td style="padding:10px; display:flex; gap:6px;">
+            <td style="padding:10px; display:flex; gap:6px; justify-content:center;">
               <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
               <button class="btn btn--outline delete-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:red; border-color:red; cursor:pointer;" title="Supprimer">×</button>
             </td>
@@ -1076,15 +1200,34 @@ toggleTask(id) {
       });
     }
 
-    html += '</tbody></table></div>';
+    // 5. Ligne de totaux en fin de tableau
+    html += `
+          </tbody>
+          <tfoot>
+            <tr style="background:#fdfaf5; border-top: 2px solid var(--gold); font-weight:700; color:var(--forest); font-size:13px;">
+              <td style="padding:12px 10px;">Total : ${totalPeople} personne${totalPeople > 1 ? 's' : ''}</td>
+              <td style="padding:12px 10px; text-align:right; font-size:11px; color:var(--text-muted); font-weight:normal;">Logeant sur place :</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalThu}</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalFri}</td>
+              <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalSat}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div style="margin-top:16px; display:flex; justify-content:flex-start;">
+        <button class="btn btn--primary btn--sm" id="add-team-btn" style="background:var(--forest); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">+ Ajouter un membre</button>
+      </div>
+    `;
+
     container.innerHTML = html;
 
-    // Action : Ajouter un membre
+    // Réattachement des événements
     document.getElementById('add-team-btn')?.addEventListener('click', () => {
       this.openTeamModal(null, guests);
     });
 
-    // Action : Modifier (✏️)
     container.querySelectorAll('.edit-team-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const target = team.find(item => item.id == e.currentTarget.dataset.id);
@@ -1092,35 +1235,49 @@ toggleTask(id) {
       });
     });
 
-    // Action : Supprimer (×)
     container.querySelectorAll('.delete-team-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
           await this._deleteTeamMember(e.currentTarget.dataset.id);
-          Animations.showToast("Membre supprimé", "success");
-          this.renderTeam(guests);
+          if (typeof Animations !== 'undefined' && Animations.showToast) {
+            Animations.showToast("Membre supprimé", "success");
+          }
+          await this.renderTeam(guests);
         }
       });
     });
   },
-
-  // ════════════════════════════════════════════════════════════
-  // MODALE AJOUT / MODIFICATION ÉQUIPE PRÉPA
+  
+// ════════════════════════════════════════════════════════════
+  // MODALE AJOUT / MODIFICATION ÉQUIPE PRÉPA (AVEC MULTI-RÔLES)
   // ════════════════════════════════════════════════════════════
   openTeamModal(member, guests) {
     const existing = document.getElementById('admin-team-modal');
     if (existing) existing.remove();
 
-    // Générer les options du menu déroulant à partir de la liste des invités confirmés
     const guestOptions = guests
       .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
       .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''))
-      .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${formatPhone(g.phone) || 'Sans tel'})</option>`)
+      .map(g => `<option value="${g.id}" ${member?.guest_id === g.id ? 'selected' : ''}>${g.firstName || ''} ${g.lastName || ''} (${typeof formatPhone === 'function' ? formatPhone(g.phone) : g.phone || 'Sans tel'})</option>`)
       .join('');
+
+    // Rôles disponibles et rôles actuellement assignés
+    const availableRoles = ['Messe', 'Animation', 'Covoiturage', 'Décoration', 'Fleuriste', 'Sono', 'Photographe', 'Logistique', 'Traiteur', 'Coordination'];
+    const currentRoles = member?.role ? member.role.split(',').map(r => r.trim()) : ['Organisation'];
+
+    const rolesCheckboxesHtml = availableRoles.map(role => {
+      const isChecked = currentRoles.includes(role);
+      return `
+        <label style="display:inline-flex; align-items:center; gap:6px; background:#f4f8f3; border:1px solid #c8dcc4; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--forest); font-weight:500;">
+          <input type="checkbox" name="team-role-cb" value="${role}" ${isChecked ? 'checked' : ''} style="accent-color:var(--forest); width:14px; height:14px; margin:0;">
+          ${role}
+        </label>
+      `;
+    }).join('');
 
     const modalHtml = `
       <div id="admin-team-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:500px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
+        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:520px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
           
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gold-light); padding-bottom:12px; margin-bottom:16px;">
             <h3 style="margin:0; font-family:var(--font-display); color:var(--forest); font-size:22px;">
@@ -1133,7 +1290,6 @@ toggleTask(id) {
             
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
               <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">👤 Identité</legend>
-              
               <div style="margin-bottom:10px;">
                 <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Auto-remplir depuis un invité :</label>
                 <select id="team-guest-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; background:#fdfcfa;">
@@ -1141,7 +1297,6 @@ toggleTask(id) {
                   ${guestOptions}
                 </select>
               </div>
-
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <div>
                   <label style="font-size:12px; color:var(--text-muted);">Nom affiché *</label>
@@ -1155,20 +1310,13 @@ toggleTask(id) {
             </fieldset>
 
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
-              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">🏷️ Mission</legend>
-              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Rôle / Responsabilité *</label>
-              <input type="text" id="team-role" list="team-role-list" value="${member?.role || ''}" placeholder="Choisissez ou tapez un rôle..." required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
-              <datalist id="team-role-list">
-                <option value="Messe">
-                <option value="Animation">
-                <option value="Covoiturage">
-                <option value="Décoration">
-                <option value="Fleuriste">
-                <option value="Sono">
-                <option value="Photographe">
-                <option value="Logistique">
-                <option value="Traiteur">
-              </datalist>
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px; font-size:13px;">🏷️ Missions (3 maximum)</legend>
+              <p id="role-limit-msg" style="font-size:11px; color:#c2410c; margin:0 0 8px 0; display:none;">⚠️ Vous ne pouvez sélectionner que 3 rôles maximum.</p>
+              <div id="roles-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+                ${rolesCheckboxesHtml}
+              </div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:2px;">Autre rôle (optionnel) :</label>
+              <input type="text" id="team-role-custom" placeholder="Ex: Chauffeur mariés..." style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid #ccc; font-size:12px; box-sizing:border-box;" />
             </fieldset>
 
             <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0; background:#fff;">
@@ -1201,7 +1349,7 @@ toggleTask(id) {
               <div style="background:#f4f8f3; padding:10px; border-radius:6px; border:1px solid #c8dcc4;">
                 <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; font-weight:600; color:var(--forest);">
                   <input type="checkbox" id="team-onsite" ${member?.stays_on_site ? 'checked' : ''} style="accent-color:var(--forest); width:18px; height:18px;">
-                  🏡 Loge sur place au Domaine
+                  Loge sur place au Domaine
                 </label>
               </div>
             </fieldset>
@@ -1223,13 +1371,26 @@ toggleTask(id) {
     const cancelBtn = document.getElementById('team-cancel-btn');
     const form = document.getElementById('admin-team-form');
     const guestSelect = document.getElementById('team-guest-select');
+    const roleCheckboxes = modal.querySelectorAll('input[name="team-role-cb"]');
+    const limitMsg = document.getElementById('role-limit-msg');
 
     const closeModal = () => modal.remove();
     closeX.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // Auto-remplissage magique lors de la sélection d'un invité !
+    // 2. Limitation stricte à 3 cases à cocher maximum pour les rôles
+    roleCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const checkedCount = modal.querySelectorAll('input[name="team-role-cb"]:checked').length;
+        if (checkedCount > 3) {
+          cb.checked = false;
+          limitMsg.style.display = 'block';
+          setTimeout(() => { limitMsg.style.display = 'none'; }, 3000);
+        }
+      });
+    });
+
     guestSelect.addEventListener('change', (e) => {
       const gId = e.target.value;
       if (!gId) return;
@@ -1243,11 +1404,19 @@ toggleTask(id) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      // Récupérer et assembler les rôles (max 3)
+      const selectedRoles = Array.from(modal.querySelectorAll('input[name="team-role-cb"]:checked')).map(cb => cb.value);
+      const customRole = document.getElementById('team-role-custom').value.trim();
+      if (customRole && selectedRoles.length < 3) {
+        selectedRoles.push(customRole);
+      }
+      const finalRoleString = selectedRoles.length > 0 ? selectedRoles.slice(0, 3).join(', ') : 'Organisation';
+
       const payload = {
         guest_id: guestSelect.value || null,
         name: document.getElementById('team-name').value.trim(),
         phone: document.getElementById('team-phone').value.trim(),
-        role: document.getElementById('team-role').value.trim() || 'Organisation',
+        role: finalRoleString,
         arrival_thursday: document.getElementById('team-arr-thu').checked,
         time_thursday: document.getElementById('team-time-thu').value || null,
         arrival_friday: document.getElementById('team-arr-fri').checked,
@@ -1257,18 +1426,23 @@ toggleTask(id) {
         stays_on_site: document.getElementById('team-onsite').checked
       };
 
-      await this._saveTeamMember(payload, member?.id);
-      Animations.showToast(member ? "Membre mis à jour" : "Membre ajouté à l'équipe", "success");
-      closeModal();
-      this.renderTeam(guests);
+      try {
+        await this._saveTeamMember(payload, member?.id);
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast(member ? "Membre mis à jour" : "Membre ajouté à l'équipe", "success");
+        }
+        closeModal();
+        await this.renderTeam(guests);
+      } catch (err) {
+        console.error("Erreur sauvegarde:", err);
+        alert("Erreur lors de l'enregistrement ! Vérifiez les permissions SQL dans Supabase.");
+      }
     });
   },
-  
   
   // ════════════════════════════════════════════════
   // 3. Modale de modification complète et ergonomique (Oui/Non)
   // ════════════════════════════════════════════════
-
   openEditModal(guest) {
     const existingModal = document.getElementById('admin-edit-modal');
     if (existingModal) existingModal.remove();
@@ -1411,7 +1585,21 @@ toggleTask(id) {
     cancelBtn.addEventListener('click', closeModal);
     closeX.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+	
+	// Pré-cochage automatique des jours suivants (décochable manuellement)
+    document.getElementById('team-arr-thu')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('team-arr-fri').checked = true;
+        document.getElementById('team-arr-sat').checked = true;
+      }
+    });
 
+    document.getElementById('team-arr-fri')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('team-arr-sat').checked = true;
+      }
+    });
+	
     // Soumission du formulaire complet
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1456,103 +1644,922 @@ toggleTask(id) {
     });
   },
 
-  // ════════════════════════════════════════════════
-  // Covoiturage
- // ════════════════════════════════════════════════════════════
-async renderCarpools(stats) {
-  const container = document.getElementById('admin-carpools');
-  if (!container) return;
-  container.innerHTML = `
-    <div class="admin-grid">
-      <div class="card" style="border-left:4px solid var(--sage);">
-        <h4>🚗 Conducteurs</h4>
-        <p class="text-muted" style="margin-top:8px;">
-          ${stats.transport.drivers} voiture(s) —
-          <strong>${stats.transport.seatsAvailable} place(s)</strong> disponible(s).
-        </p>
-      </div>
-      <div class="card" style="border-left:4px solid var(--gold);">
-        <h4>🙋 Recherche de places</h4>
-        <p class="text-muted" style="margin-top:8px;">
-          ${stats.transport.needRide} personne(s) —
-          <strong>${stats.transport.seatsNeeded} place(s)</strong> recherchée(s).
-        </p>
-      </div>
-    </div>`;
-},
- 
-// ════════════════════════════════════════════════════════════
-// renderAccommodations — 3 premiers + Voir plus
-// ════════════════════════════════════════════════════════════
-async renderAccommodations() {
-  const container = document.getElementById('admin-accommodations');
-  if (!container) return;
-  container.innerHTML = '<p class="text-muted" style="padding:8px 0;">Chargement…</p>';
-  const accommodations = await Store.getAccommodations();
- 
-  const renderCard = (acc) => `
-    <div class="card" style="padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:0;">
-        <strong style="font-size:13px;">${acc.name}</strong>
-        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;">
-          📏 ${acc.distance || '—'} &nbsp;·&nbsp; 🛏️ ${acc.capacity || '—'}
-          ${acc.capacityNumber > 0 ? `&nbsp;·&nbsp; <strong>${acc.spotsLeft ?? acc.capacityNumber} place(s) restante(s)</strong>` : ''}
-        </p>
-      </div>
-      <div style="display:flex;gap:5px;flex-shrink:0;">
-        ${acc.bookingUrl ? `<a href="${acc.bookingUrl}" target="_blank" class="btn btn--outline btn--sm">🔗</a>` : ''}
-        <button class="btn btn--outline btn--sm delete-acc-btn" data-id="${acc.id}" style="color:red;border-color:red;">×</button>
-      </div>
-    </div>`;
- 
-  const LIMIT = 3;
-  const first = accommodations.slice(0, LIMIT);
-  const rest  = accommodations.slice(LIMIT);
- 
-  let html = `
-    <div style="margin-bottom:10px;">
-      <button class="btn btn--primary btn--sm" id="add-acc-btn">+ Ajouter</button>
-    </div>
-    ${first.map(renderCard).join('')}
-    ${rest.length > 0 ? `
-      <div id="acc-more" class="hidden">${rest.map(renderCard).join('')}</div>
-      <button id="acc-toggle-btn" class="btn btn--outline btn--sm" style="margin-top:4px;width:100%;">
-        Voir ${rest.length} hébergement${rest.length > 1 ? 's' : ''} de plus ▾
-      </button>` : ''}`;
- 
-  container.innerHTML = html;
- 
-  container.querySelector('#acc-toggle-btn')?.addEventListener('click', function() {
-    const more = document.getElementById('acc-more');
-    const isHidden = more.classList.toggle('hidden');
-    this.textContent = isHidden
-      ? `Voir ${rest.length} hébergement${rest.length > 1 ? 's' : ''} de plus ▾`
-      : 'Réduire ▴';
-  });
- 
-  container.querySelector('#add-acc-btn')?.addEventListener('click', async () => {
-    const name = prompt("Nom de l'hébergement :"); if (!name) return;
-    const lat  = prompt("Latitude (ex: 45.42) :");
-    const lng  = prompt("Longitude (ex: 4.59) :");
-    const capacity   = prompt("Capacité :") || '';
-    const bookingUrl = prompt("Lien de réservation (optionnel) :") || '';
-    await Store.saveAccommodation({
-      name, lat: parseFloat(lat)||45.411, lng: parseFloat(lng)||4.588,
-      capacity, bookingUrl, description:'', distance:'', icon:'gite'
+  // ════════════════════════════════════════════════════════════
+  // API SUPABASE : MOODBOARD
+  // ════════════════════════════════════════════════════════════
+async _loadMoodboard(category) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      // Modifié ici : order=position.asc,id.desc
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/moodboard_items?category=eq.${encodeURIComponent(category)}&order=position.asc,id.desc`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      );
+      return res.ok ? await res.json() : [];
+    } catch (e) {
+      console.error("Erreur chargement moodboard:", e);
+      return [];
+    }
+  },
+
+async _saveMoodboardItem(item) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(item)
     });
-    Animations.showToast("Hébergement ajouté", "success");
-  });
- 
-  container.querySelectorAll('.delete-acc-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      if (confirm("Supprimer cet hébergement ?")) {
-        await Store.deleteAccommodation(e.currentTarget.dataset.id);
-        Animations.showToast("Hébergement supprimé", "success");
+  },
+
+async _deleteMoodboardItem(id) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+  },
+  
+// ════════════════════════════════════════════════════════════
+  // RENDU DU MOODBOARD (STYLE PINTEREST + TRI GLISSER-DÉPOSER)
+  // ════════════════════════════════════════════════════════════
+  async renderMoodboard(activeCategory = 'Faire-parts') {
+    const container = document.getElementById('admin-moodboard');
+    if (!container) return;
+
+    const categories = [
+      'Faire-parts', 'Robe de mariée', 'Coiffure', 'Maquillage', 'Bouquet',
+      'Décoration église', 'Décoration réception', 'Plan de table', 'Tables'
+    ];
+
+    const items = await this._loadMoodboard(activeCategory);
+
+    // 1. Navigation
+    const subNavHtml = categories.map(cat => `
+      <button class="moodboard-nav-btn" data-cat="${cat}"
+              style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--gold); 
+                     background: ${cat === activeCategory ? 'var(--forest)' : '#fff'}; 
+                     color: ${cat === activeCategory ? '#fff' : 'var(--forest)'}; 
+                     font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+        ${cat}
+      </button>
+    `).join('');
+
+    // 2. Grille avec cartes DRAGGABLES pour le tri
+    let gridHtml = items.map((item, index) => {
+      const isLarge = item.size === 'large';
+      const cardStyle = isLarge 
+        ? "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.12); background: #fff; position: relative; border: 2px solid var(--gold-light); cursor: grab; transition: transform 0.15s, border-color 0.15s;"
+        : "break-inside: avoid; margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); background: #fff; position: relative; cursor: grab; transition: transform 0.15s, border-color 0.15s;";
+
+      return `
+        <div class="moodboard-card" draggable="true" data-id="${item.id}" data-index="${index}" data-size="${item.size || 'normal'}" style="${cardStyle}">
+          <img src="${item.image_url}" alt="Inspiration" 
+               style="width: 100%; height: auto; display: block; max-height: ${isLarge ? '600px' : '380px'}; object-fit: cover; pointer-events: none;">
+          
+          <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0.85;">
+            <button class="resize-moodboard-btn" data-id="${item.id}" data-size="${isLarge ? 'normal' : 'large'}"
+                    title="${isLarge ? 'Réduire' : 'Mettre en vedette (Grand format)'}"
+                    style="background: var(--sage, #84a98c); color: white; border: none; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              ${isLarge ? '🗜️' : '⭐'}
+            </button>
+            <button class="delete-moodboard-btn" data-id="${item.id}" title="Supprimer"
+                    style="background: var(--sage, #84a98c); color: white; border: none; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+              ×
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #eee;">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">${subNavHtml}</div>
+        <button id="add-moodboard-url-btn" class="btn btn--outline btn--sm" 
+                style="border-color: var(--sage, #84a98c); color: var(--forest); font-size: 12px; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; background: #fff; cursor: pointer;">
+          <span>➕ Coller le lien d'une image</span>
+        </button>
+      </div>
+
+      <div id="moodboard-grid-area" style="min-height: 200px; border: 2px dashed transparent; border-radius: 12px; transition: all 0.2s; padding: 4px;">
+        <div style="column-count: 3; column-gap: 16px; width: 100%;">
+          ${gridHtml || '<p class="text-muted" style="text-align:center; padding: 40px 0; font-style: italic;">Aucune image ici. Glissez-déposez une image depuis un autre onglet ou cliquez sur "Coller le lien" !</p>'}
+        </div>
+      </div>
+    `;
+
+    const styleBlock = document.createElement('style');
+    styleBlock.innerHTML = `
+      @media (max-width: 900px) { #moodboard-grid-area > div { column-count: 2 !important; } }
+      @media (max-width: 600px) { #moodboard-grid-area > div { column-count: 1 !important; } }
+      .moodboard-card:hover div { opacity: 1 !important; }
+      .moodboard-card:active { cursor: grabbing !important; }
+    `;
+    container.appendChild(styleBlock);
+
+    // 3. Navigation & Actions boutons
+    container.querySelectorAll('.moodboard-nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => this.renderMoodboard(e.currentTarget.dataset.cat));
+    });
+
+    container.querySelectorAll('.delete-moodboard-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm("Supprimer cette image ?")) {
+          await this._deleteMoodboardItem(e.currentTarget.dataset.id);
+          if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image supprimée", "success");
+          this.renderMoodboard(activeCategory);
+        }
+      });
+    });
+
+    container.querySelectorAll('.resize-moodboard-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.dataset.id;
+        const newSize = e.currentTarget.dataset.size;
+        const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+        await fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: newSize })
+        });
+        this.renderMoodboard(activeCategory);
+      });
+    });
+
+    document.getElementById('add-moodboard-url-btn').addEventListener('click', async () => {
+      const url = prompt("Collez l'URL (lien https://...) de l'image :");
+      if (url && url.startsWith('http')) {
+        await this._saveMoodboardItem({ category: activeCategory, image_url: url, size: 'normal', position: items.length });
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
+        this.renderMoodboard(activeCategory);
       }
     });
-  });
-},
 
+    // ════════════════════════════════════════════════════════════
+    // 4. GESTION DU TRI GLISSER-DÉPOSER (RÉORGANISER LES CARTES)
+    // ════════════════════════════════════════════════════════════
+    container.querySelectorAll('.moodboard-card').forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        // Identification unique d'une carte interne
+        e.dataTransfer.setData('text/internal-id', card.dataset.id);
+        card.style.opacity = '0.4';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        card.style.transform = 'scale(1.03)';
+        card.style.borderColor = 'var(--forest, #2D5A3D)';
+      });
+
+      card.addEventListener('dragleave', () => {
+        card.style.transform = 'none';
+        card.style.borderColor = card.dataset.size === 'large' ? 'var(--gold-light)' : 'transparent';
+      });
+
+      // DROP SUR UNE AUTRE CARTE = PERMUTATION / RÉORDONNEMENT
+      card.addEventListener('drop', async (e) => {
+        e.stopPropagation(); // ⚠️ CAPITAL : Empêche la grille de croire à un nouvel ajout d'image !
+        e.preventDefault();
+        
+        card.style.transform = 'none';
+        card.style.borderColor = card.dataset.size === 'large' ? 'var(--gold-light)' : 'transparent';
+
+        const draggedId = e.dataTransfer.getData('text/internal-id');
+        const targetId = card.dataset.id;
+
+        // Si on a bien glissé une carte interne sur une autre carte interne différente
+        if (draggedId && draggedId !== targetId) {
+          const draggedIndex = items.findIndex(i => i.id == draggedId);
+          const targetIndex = items.findIndex(i => i.id == targetId);
+          
+          // Réorganisation instantanée en mémoire
+          const [draggedItem] = items.splice(draggedIndex, 1);
+          items.splice(targetIndex, 0, draggedItem);
+
+          // Rendu visuel immédiat pour l'utilisateur
+          this.renderMoodboard(activeCategory);
+
+          // Sauvegarde silencieuse en arrière-plan des nouvelles positions dans Supabase
+          const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+          const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+          
+          await Promise.all(items.map((it, idx) => 
+            fetch(`${SUPABASE_URL}/rest/v1/moodboard_items?id=eq.${it.id}`, {
+              method: 'PATCH',
+              headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ position: idx })
+            })
+          ));
+        }
+      });
+    });
+
+    // ════════════════════════════════════════════════════════════
+    // 5. AJOUT D'IMAGES DEPUIS INTERNET (ANTI-DÉDOUBLEMENT)
+    // ════════════════════════════════════════════════════════════
+    const gridArea = document.getElementById('moodboard-grid-area');
+
+    gridArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      // Si c'est un déplacement de carte interne, on ne change pas le fond
+      if (!e.dataTransfer.types.includes('text/internal-id')) {
+        gridArea.style.borderColor = 'var(--sage, #84a98c)';
+        gridArea.style.background = '#f4f8f3';
+      }
+    });
+
+    gridArea.addEventListener('dragleave', () => {
+      gridArea.style.borderColor = 'transparent';
+      gridArea.style.background = 'transparent';
+    });
+
+    gridArea.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      gridArea.style.borderColor = 'transparent';
+      gridArea.style.background = 'transparent';
+
+      // ⚠️ SÉCURITÉ ANTI-DÉDOUBLEMENT : Si l'élément relâché est une carte interne, on s'arrête net !
+      if (e.dataTransfer.getData('text/internal-id')) return;
+
+      const htmlData = e.dataTransfer.getData('text/html');
+      const textData = e.dataTransfer.getData('text/plain');
+      let imageUrl = null;
+
+      if (htmlData) {
+        const match = htmlData.match(/src\s*=\s*["']([^"']+)["']/i);
+        if (match && match[1]) imageUrl = match[1];
+      }
+      if (!imageUrl && textData && (textData.startsWith('http://') || textData.startsWith('https://'))) {
+        imageUrl = textData;
+      }
+
+      if (imageUrl) {
+        await this._saveMoodboardItem({ category: activeCategory, image_url: imageUrl, size: 'normal', position: items.length });
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Image ajoutée !", "success");
+        this.renderMoodboard(activeCategory);
+      } else {
+        alert("Impossible de lire ce lien. Utilisez le bouton 'Coller le lien d'une image' juste au-dessus !");
+      }
+    });
+  },
+  
+  // ════════════════════════════════════════════════════════════
+  // API SUPABASE : MESSE
+  // ════════════════════════════════════════════════════════════
+  async _loadMassDb() {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_mass?id=eq.main&select=data`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) return rows[0].data;
+      }
+    } catch (e) { console.error("Erreur chargement messe:", e); }
+    return { roles: {}, schedule: {} };
+  },
+
+  async _saveMassDb(data) {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    await fetch(`${SUPABASE_URL}/rest/v1/wedding_mass`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ id: 'main', data })
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // RENDU DE L'ONGLET MESSE
+  // ════════════════════════════════════════════════════════════
+  async renderMass(guests, activeSubTab = 'roles') {
+    const container = document.getElementById('admin-messe');
+    if (!container) return;
+
+    const massData = await this._loadMassDb();
+    const rolesData = massData.roles || {};
+    const scheduleData = massData.schedule || {};
+
+    // 1. Boutons de sous-navigation
+    const subNavHtml = `
+      <div style="display:flex; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
+        <button class="mass-nav-btn ${activeSubTab === 'roles' ? 'active' : ''}" data-sub="roles"
+                style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'roles' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'roles' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
+          👥 1. Qui fait quoi ?
+        </button>
+        <button class="mass-nav-btn ${activeSubTab === 'schedule' ? 'active' : ''}" data-sub="schedule"
+                style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'schedule' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'schedule' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
+          📜 2. Déroulé de la messe
+        </button>
+      </div>
+    `;
+
+    // Filtre des invités confirmés pour l'autocomplétion
+    const confirmedGuests = guests
+      .filter(g => g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1)
+      .sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
+
+    // ════════════════════════════════════════════════════════════
+    // SOUS-ONGLET 1 : QUI FAIT QUOI ?
+    // ════════════════════════════════════════════════════════════
+    if (activeSubTab === 'roles') {
+      const predefinedRoles = [
+        { label: 'Prêtre célébrant', multi: false },
+        { label: 'Curé', multi: false },
+        { label: 'Sacristine', multi: false },
+        { label: 'Service de l\'autel', multi: true },
+        { label: 'Animation des chants', multi: true },
+        { label: 'Chorale', multi: true },
+        { label: 'Instruments', multi: true },
+        { label: 'Première lecture', multi: false },
+        { label: 'Deuxième lecture', multi: false },
+        { label: 'Prière universelle', multi: true },
+        { label: 'Accueil des invités', multi: true }
+      ];
+
+      let rowsHtml = predefinedRoles.map((roleObj, idx) => {
+        const role = roleObj.label;
+        const stored = rolesData[role];
+        
+        let rArray = Array.isArray(stored) ? stored : (stored ? [stored] : []);
+        if (!rArray || rArray.length === 0) {
+          rArray = [{ name: '', phone: '', email: '' }];
+        }
+
+        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+
+        const inputsHtml = rArray.map((item, subIdx) => `
+          <div class="role-entry-row" style="display:flex; gap:8px; margin-bottom:${subIdx < rArray.length - 1 ? '8px' : '0'}; align-items:center;">
+            <div style="position:relative; flex:1;">
+              <input type="text" class="mass-role-input autocomplete-name" data-role="${role}" data-field="name" value="${item.name || ''}" placeholder="Nom..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+              <div class="autocomplete-list" style="position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; border-radius:4px; max-height:150px; overflow-y:auto; z-index:1000; display:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="${item.phone || ''}" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="${item.email || ''}" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            ${subIdx > 0 ? `<button type="button" class="btn-remove-subrow" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 4px;" title="Supprimer cette ligne">×</button>` : `<div style="width:20px;"></div>`}
+          </div>
+        `).join('');
+
+        return `
+          <tr style="background:${bg}; border-bottom:1px solid #eee;" data-row-role="${role}">
+            <td style="padding:12px; font-weight:700; color:var(--forest); width:24%; vertical-align:top;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span>${role}</span>
+                ${roleObj.multi ? `<button type="button" class="btn-add-role-row" data-role="${role}" style="background:var(--sage); color:#fff; border:none; border-radius:4px; width:22px; height:22px; font-size:14px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Ajouter une personne">+</button>` : ''}
+              </div>
+            </td>
+            <td style="padding:10px; width:66%;" class="role-inputs-container">
+              ${inputsHtml}
+            </td>
+            <td style="padding:10px; width:10%; text-align:center; vertical-align:top;">
+              <button type="button" class="btn-clear-role" data-role="${role}" style="background:none; border:1px solid #ddd; border-radius:4px; padding:4px 8px; color:var(--text-muted); cursor:pointer; font-size:11px;" title="Effacer la ligne">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        ${subNavHtml}
+        <div class="table-responsive">
+          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:visible;">
+            <thead>
+              <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
+                <th style="padding:10px 12px;">Rôle / Mission</th>
+                <th style="padding:10px 10px;">Intervenant(s) (Nom, Téléphone, Mail)</th>
+                <th style="padding:10px 8px; text-align:center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+          <button id="save-mass-roles-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 24px; border-radius:6px; font-weight:600; cursor:pointer;">
+            Valider
+          </button>
+        </div>
+      `;
+
+      const attachAutocomplete = (input) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.trim().toLowerCase();
+          const listDiv = e.target.nextElementSibling;
+          listDiv.innerHTML = '';
+
+          if (val.length < 1) {
+            listDiv.style.display = 'none';
+            return;
+          }
+
+          const matches = confirmedGuests.filter(g => {
+            const fullName = `${g.firstName || ''} ${g.lastName || ''}`.toLowerCase();
+            return fullName.includes(val);
+          });
+
+          if (matches.length === 0) {
+            listDiv.style.display = 'none';
+            return;
+          }
+
+          matches.forEach(g => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = "padding:8px; font-size:12px; cursor:pointer; border-bottom:1px solid #eee; background:#fff; color:var(--forest);";
+            itemDiv.textContent = `${g.firstName || ''} ${g.lastName || ''} (${g.phone || 'Sans tel'})`;
+            
+            itemDiv.addEventListener('mouseover', () => itemDiv.style.background = '#f4f8f3');
+            itemDiv.addEventListener('mouseout', () => itemDiv.style.background = '#fff');
+            
+            itemDiv.addEventListener('click', () => {
+              const row = input.closest('.role-entry-row');
+              input.value = `${g.firstName || ''} ${g.lastName || ''}`.trim();
+              const phoneInput = row.querySelector('input[data-field="phone"]');
+              const emailInput = row.querySelector('input[data-field="email"]');
+              if (phoneInput) phoneInput.value = g.phone || '';
+              if (emailInput) emailInput.value = g.email || '';
+              listDiv.style.display = 'none';
+            });
+            listDiv.appendChild(itemDiv);
+          });
+          listDiv.style.display = 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!input.contains(e.target)) {
+            const listDiv = input.nextElementSibling;
+            if (listDiv) listDiv.style.display = 'none';
+          }
+        });
+      };
+
+      container.querySelectorAll('.autocomplete-name').forEach(attachAutocomplete);
+
+      container.querySelectorAll('.btn-add-role-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.dataset.role;
+          const tr = container.querySelector(`tr[data-row-role="${role}"]`);
+          const tdInputs = tr.querySelector('.role-inputs-container');
+          
+          const newRow = document.createElement('div');
+          newRow.className = "role-entry-row";
+          newRow.style.cssText = "display:flex; gap:8px; margin-top:8px; align-items:center;";
+          newRow.innerHTML = `
+            <div style="position:relative; flex:1;">
+              <input type="text" class="mass-role-input autocomplete-name" data-role="${role}" data-field="name" value="" placeholder="Nom..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+              <div class="autocomplete-list" style="position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; border-radius:4px; max-height:150px; overflow-y:auto; z-index:1000; display:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="phone" value="" placeholder="Téléphone..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <input type="text" class="mass-role-input" data-role="${role}" data-field="email" value="" placeholder="Mail..." style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <button type="button" class="btn-remove-subrow" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 4px;" title="Supprimer cette ligne">×</button>
+          `;
+          
+          tdInputs.appendChild(newRow);
+          attachAutocomplete(newRow.querySelector('.autocomplete-name'));
+          
+          newRow.querySelector('.btn-remove-subrow').addEventListener('click', () => {
+            newRow.remove();
+          });
+        });
+      });
+
+      container.querySelectorAll('.btn-remove-subrow').forEach(btn => {
+        btn.addEventListener('click', (e) => e.currentTarget.closest('.role-entry-row').remove());
+      });
+
+      container.querySelectorAll('.btn-clear-role').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.dataset.role;
+          const tr = container.querySelector(`tr[data-row-role="${role}"]`);
+          tr.querySelectorAll('input').forEach(inp => inp.value = '');
+          const subrows = tr.querySelectorAll('.role-entry-row');
+          subrows.forEach((row, idx) => { if (idx > 0) row.remove(); });
+        });
+      });
+
+      document.getElementById('save-mass-roles-btn').addEventListener('click', async () => {
+        const newRoles = {};
+        container.querySelectorAll('tr[data-row-role]').forEach(tr => {
+          const role = tr.dataset.rowRole;
+          const entries = [];
+          tr.querySelectorAll('.role-entry-row').forEach(row => {
+            const name = row.querySelector('input[data-field="name"]').value.trim();
+            const phone = row.querySelector('input[data-field="phone"]').value.trim();
+            const email = row.querySelector('input[data-field="email"]').value.trim();
+            if (name || phone || email) {
+              entries.push({ name, phone, email });
+            }
+          });
+          newRoles[role] = entries.length === 1 ? entries[0] : entries;
+        });
+        
+        massData.roles = newRoles;
+        await this._saveMassDb(massData);
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast("Équipe liturgique enregistrée", "success");
+        }
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SOUS-ONGLET 2 : DÉROULÉ DE LA MESSE (ERGO OPTIMISÉE)
+    // ════════════════════════════════════════════════════════════
+    if (activeSubTab === 'schedule') {
+      const massSteps = [
+        'Procession', 'Entrée des mariés', 'Gloria', 'Première lecture', 'Psaume', 
+        'Deuxième lecture', 'Alléluia', 'Evangile', 'Credo', 
+        'Appel des témoins', 'Dialogue initial', 'Bénédiction et échange des alliances', 
+        'Action de grâce', 'Prière universelle', 
+        'Quête', 'Offertoire', 'Sanctus', 'Notre-Père', 'Bénédiction nuptiale', 
+        'Agnus Dei', 'Communion', 'Consécration à Marie (facultatif)', 
+        'Bénédiction finale', 'Signature des registres', 'Sortie'
+      ];
+
+      // Générateur de cellules intelligentes : Bouton minimaliste +, Auto-resize, Bouton × et Liens cliquables
+      // linkLabelValue : nom personnalisé affiché à la place de "Ouvrir le lien" (n'empêche pas l'ouverture du lien)
+      const renderToggleField = (step, field, value, label, isTextarea = true, linkLabelValue = '') => {
+        const hasValue = value && value.trim() !== '';
+        const inputStyle = `width:100%; padding:6px 22px 6px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px; font-family:var(--font-body); box-sizing:border-box; overflow:hidden; ${isTextarea ? 'resize:none; min-height:34px;' : ''}`;
+        
+        // 1. Bouton + minimaliste (plus esthétique sans texte)
+        const btnStyle = `display: ${hasValue ? 'none' : 'inline-flex'}; align-items:center; justify-content:center; background:#f8f9fa; border:1px dashed #ced4da; color:#6c757d; width:28px; height:28px; border-radius:4px; font-size:15px; font-weight:bold; cursor:pointer; transition:all 0.2s;`;
+        const safeLinkLabel = (linkLabelValue || '').replace(/"/g, '&quot;');
+        
+        return `
+          <div class="field-toggle-wrap" style="position:relative;">
+            <button type="button" class="btn-reveal-field" style="${btnStyle}" title="Ajouter : ${label}">+</button>
+            <div class="input-wrapper" style="display: ${hasValue ? 'block' : 'none'}; position:relative;">
+              ${isTextarea 
+                ? `<textarea class="mass-sched-input auto-expand" data-step="${step}" data-field="${field}" rows="1" placeholder="${label}..." style="${inputStyle}">${value || ''}</textarea>`
+                : `<input type="text" class="mass-sched-input" data-step="${step}" data-field="${field}" value="${value || ''}" placeholder="${label}..." style="${inputStyle}">`
+              }
+              <!-- Nom personnalisé du lien (masqué, modifié uniquement via la popup crayon) -->
+              <input type="hidden" class="mass-sched-input mass-sched-link-label" data-step="${step}" data-field="${field}Label" value="${safeLinkLabel}">
+              <!-- Bouton × : uniquement visible tant qu'aucun lien n'est détecté -->
+              <button type="button" class="btn-close-field" style="position:absolute; top:4px; right:4px; background:none; border:none; color:#aaa; font-size:15px; cursor:pointer; padding:0 4px; line-height:1;" title="Vider et fermer">×</button>
+              <!-- Zone affichée UNIQUEMENT quand un lien est détecté : masque le champ texte, montre le lien + un seul bouton crayon -->
+              <div class="link-display-container" style="display:none; align-items:center; gap:6px; margin-top:2px;"></div>
+            </div>
+          </div>
+        `;
+      };
+
+      // Un « document de préparation » = un champ-lien de plus, identifié par un id unique (doc0, doc169...)
+      const renderPrepDocEntry = (entry, removable) => `
+        <div class="prep-doc-entry" data-doc-id="${entry.id}" style="display:flex; align-items:flex-start; gap:6px; margin-bottom:8px;">
+          <div style="flex:1;">
+            ${renderToggleField('__prep_docs__', entry.id, entry.text, 'Lien vers un document', true, entry.label)}
+          </div>
+          ${removable
+            ? `<button type="button" class="btn-remove-prepdoc" title="Supprimer ce document" style="background:none; border:none; color:#c0392b; font-size:16px; cursor:pointer; padding:4px; flex-shrink:0;">×</button>`
+            : `<div style="width:24px; flex-shrink:0;"></div>`}
+        </div>
+      `;
+
+      // b) Reconstruction de la liste des documents de préparation à partir des clés doc0, doc0Label, doc1...
+      const prepDocsRaw = scheduleData['__prep_docs__'] || {};
+      const prepDocsMap = {};
+      Object.keys(prepDocsRaw).forEach(key => {
+        const mLabel = key.match(/^(doc\d+)Label$/);
+        const mValue = key.match(/^(doc\d+)$/);
+        if (mLabel) {
+          const id = mLabel[1];
+          prepDocsMap[id] = prepDocsMap[id] || { text: '', label: '' };
+          prepDocsMap[id].label = prepDocsRaw[key] || '';
+        } else if (mValue) {
+          const id = mValue[1];
+          prepDocsMap[id] = prepDocsMap[id] || { text: '', label: '' };
+          prepDocsMap[id].text = prepDocsRaw[key] || '';
+        }
+      });
+      // Compatibilité avec l'ancien format à un seul champ ({ text: "..." })
+      if (prepDocsRaw.text && !prepDocsMap['doc0']) {
+        prepDocsMap['doc0'] = { text: prepDocsRaw.text, label: prepDocsRaw.textLabel || '' };
+      }
+      let prepDocsEntries = Object.keys(prepDocsMap).map(id => ({ id, ...prepDocsMap[id] }));
+      if (prepDocsEntries.length === 0) prepDocsEntries = [{ id: 'doc0', text: '', label: '' }];
+
+      const prepDocsListHtml = prepDocsEntries.map((entry, i) => renderPrepDocEntry(entry, i > 0)).join('');
+
+      // Ligne spéciale, non numérotée, pour les documents généraux de préparation (livret, feuille de chants...)
+      const prepDocsRowHtml = `
+        <tr style="background:#fdf8ec; border-bottom:2px solid var(--gold);">
+          <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
+            📄 Documents pour la préparation
+          </td>
+          <td colspan="4" style="padding:8px; vertical-align:top;">
+            <div id="prep-docs-list">${prepDocsListHtml}</div>
+            <button type="button" id="btn-add-prepdoc" style="margin-top:2px; background:var(--sage); color:#fff; border:none; border-radius:14px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer;">
+              + 
+            </button>
+          </td>
+        </tr>
+      `;
+
+      let scheduleRowsHtml = massSteps.map((step, idx) => {
+        const sData = scheduleData[step] || { text: '', music: '', sheet: '', responsible: '' };
+        // Zebra plus contrasté (blanc / vert sauge très clair) pour mieux distinguer chaque ligne
+        const bg = idx % 2 === 0 ? '#ffffff' : '#eef4ea';
+        const accent = idx % 2 === 0 ? 'var(--gold)' : 'var(--sage)';
+        return `
+          <tr class="mass-sched-row" style="background:${bg}; border-bottom:1px solid #e2e2e2; border-left:3px solid ${accent}; transition: background 0.15s;">
+            <td style="padding:12px 10px; font-weight:700; color:var(--forest); font-size:13px; width:22%; vertical-align:top;">
+              ${idx + 1}. ${step}
+            </td>
+            <td style="padding:8px; width:22%; vertical-align:top;">
+              ${renderToggleField(step, 'text', sData.text, 'Texte / Référence', true, sData.textLabel)}
+            </td>
+            <td style="padding:8px; width:22%; vertical-align:top;">
+              ${renderToggleField(step, 'music', sData.music, 'Musique / Chant', true, sData.musicLabel)}
+            </td>
+            <td style="padding:8px; width:17%; vertical-align:top;">
+              ${renderToggleField(step, 'sheet', sData.sheet, 'Partition (Lien)', true, sData.sheetLabel)}
+            </td>
+            <td style="padding:8px; width:17%; vertical-align:top;">
+              ${renderToggleField(step, 'responsible', sData.responsible, 'Nom(s)', false)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        ${subNavHtml}
+        <style>
+          /* c) Surbrillance au survol pour renforcer la distinction entre les lignes */
+          .mass-sched-row:hover { background: #e3edf0 !important; }
+        </style>
+        <div class="table-responsive">
+          <table style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden;">
+            <thead>
+              <tr style="background:#fdfaf5; border-bottom:2px solid var(--gold); text-align:left; font-size:12px; color:var(--text-muted); text-transform:uppercase;">
+                <th style="padding:10px 10px;">Étape de la messe</th>
+                <th style="padding:10px 8px;">Texte / Lecture</th>
+                <th style="padding:10px 8px;">Musique / Chants</th>
+                <th style="padding:10px 8px;">Partitions</th>
+                <th style="padding:10px 8px;">Qui s'en charge</th>
+              </tr>
+            </thead>
+            <tbody>${prepDocsRowHtml}${scheduleRowsHtml}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+          <button id="save-mass-sched-btn" class="btn btn--primary" style="background:var(--forest); color:#fff; border:none; padding:10px 24px; border-radius:6px; font-weight:600; cursor:pointer;">
+            Valider
+          </button>
+        </div>
+      `;
+
+      // 4. Fonction pour ajuster automatiquement la hauteur du textarea selon son contenu
+      const autoResize = (el) => {
+        if (!el || el.tagName !== 'TEXTAREA') return;
+        el.style.height = 'auto';
+        el.style.height = (el.scrollHeight + 2) + 'px';
+      };
+
+      // 3. Fonction pour détecter un lien : si présent, masque le champ texte brut et n'affiche
+      //    QUE le lien (avec son nom personnalisé le cas échéant) + un seul bouton crayon (modifier/supprimer)
+      const updateLinksPreview = (inputEl) => {
+        const wrapper = inputEl.closest('.input-wrapper');
+        if (!wrapper) return;
+        const linkDisplay = wrapper.querySelector('.link-display-container');
+        const closeBtn = wrapper.querySelector('.btn-close-field');
+        const labelInput = wrapper.querySelector('.mass-sched-link-label');
+        if (!linkDisplay) return;
+
+        const val = inputEl.value || '';
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const links = val.match(urlRegex);
+        const customName = labelInput ? labelInput.value.trim() : '';
+
+        if (links && links.length > 0) {
+          // On masque le champ de saisie ET le bouton × : seul le lien + le crayon restent visibles
+          inputEl.style.display = 'none';
+          if (closeBtn) closeBtn.style.display = 'none';
+          linkDisplay.innerHTML = `
+            <a href="${links[0]}" target="_blank" rel="noopener noreferrer" 
+               style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#fff; background:var(--forest); padding:3px 8px; border-radius:12px; text-decoration:none; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.15); max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              🔗 ${customName || 'Ouvrir le lien'}
+            </a>
+            <button type="button" class="btn-edit-link" title="Modifier ou supprimer" 
+                    style="background:#f8f9fa; border:1px solid #ced4da; color:#6c757d; width:22px; height:22px; border-radius:50%; font-size:11px; cursor:pointer; flex-shrink:0;">✎</button>
+          `;
+          linkDisplay.style.display = 'flex';
+        } else {
+          // Pas de lien : on ré-affiche le champ de saisie normal et le bouton ×
+          inputEl.style.display = '';
+          if (closeBtn) closeBtn.style.display = '';
+          linkDisplay.style.display = 'none';
+          linkDisplay.innerHTML = '';
+        }
+      };
+
+      // ── Popup unique de modification/suppression de lien (créée une seule fois, réutilisée partout) ──
+      if (!document.getElementById('link-edit-modal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+          <div id="link-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:#fff; border-radius:12px; padding:20px; width:100%; max-width:380px; box-shadow:0 8px 30px rgba(0,0,0,0.25); font-family:var(--font-body);">
+              <h4 style="margin:0 0 14px; color:var(--forest); font-size:15px;">🔗 Modifier le lien</h4>
+              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Nom affiché (n'empêche pas l'ouverture du lien)</label>
+              <input id="link-modal-name" type="text" placeholder="Ex : Chant d'entrée (PDF)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:13px; box-sizing:border-box; margin-bottom:12px;">
+              <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Lien / Contenu</label>
+              <textarea id="link-modal-value" rows="3" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:13px; box-sizing:border-box; margin-bottom:16px; resize:vertical; font-family:var(--font-body);"></textarea>
+              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                <button type="button" id="link-modal-delete" style="background:#fdecea; color:#c0392b; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">🗑️ Supprimer</button>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" id="link-modal-cancel" style="background:#f1f1f1; color:#555; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">Annuler</button>
+                  <button type="button" id="link-modal-save" style="background:var(--forest); color:#fff; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px;">Enregistrer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+
+        const modalEl = document.getElementById('link-edit-modal');
+        const closeModal = () => { modalEl.style.display = 'none'; modalEl._currentWrapper = null; };
+
+        document.getElementById('link-modal-cancel').addEventListener('click', closeModal);
+        modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+
+        document.getElementById('link-modal-save').addEventListener('click', () => {
+          const wrapper = modalEl._currentWrapper;
+          if (!wrapper) return closeModal();
+          const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrapper.querySelector('.mass-sched-link-label');
+          if (input) input.value = document.getElementById('link-modal-value').value;
+          if (labelInput) labelInput.value = document.getElementById('link-modal-name').value.trim();
+          if (input) updateLinksPreview(input);
+          closeModal();
+        });
+
+        document.getElementById('link-modal-delete').addEventListener('click', () => {
+          const wrapper = modalEl._currentWrapper;
+          if (!wrapper) return closeModal();
+          const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrapper.querySelector('.mass-sched-link-label');
+          const fieldWrap = wrapper.closest('.field-toggle-wrap');
+          const revealBtn = fieldWrap?.querySelector('.btn-reveal-field');
+          if (input) { input.value = ''; updateLinksPreview(input); }
+          if (labelInput) labelInput.value = '';
+          wrapper.style.display = 'none';
+          if (revealBtn) revealBtn.style.display = 'inline-flex';
+          closeModal();
+        });
+      }
+
+      const openLinkModal = (wrapper) => {
+        const modalEl = document.getElementById('link-edit-modal');
+        const input = wrapper.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+        const labelInput = wrapper.querySelector('.mass-sched-link-label');
+        if (!modalEl || !input) return;
+        modalEl._currentWrapper = wrapper;
+        document.getElementById('link-modal-name').value = labelInput ? labelInput.value : '';
+        document.getElementById('link-modal-value').value = input.value;
+        modalEl.style.display = 'flex';
+        document.getElementById('link-modal-name').focus();
+      };
+
+      // ── Délégation d'événements globale : fonctionne aussi pour les documents ajoutés dynamiquement ──
+      container.addEventListener('click', (e) => {
+        // Bouton "+" : révéler un champ
+        const revealBtn = e.target.closest('.btn-reveal-field');
+        if (revealBtn) {
+          const wrap = revealBtn.closest('.field-toggle-wrap');
+          revealBtn.style.display = 'none';
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          if (inputWrap) {
+            inputWrap.style.display = 'block';
+            const input = inputWrap.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+            if (input) { input.focus(); autoResize(input); updateLinksPreview(input); }
+          }
+          return;
+        }
+
+        // Bouton × : vider le champ et refermer la case (uniquement visible sans lien actif)
+        const closeBtn = e.target.closest('.btn-close-field');
+        if (closeBtn) {
+          const wrap = closeBtn.closest('.field-toggle-wrap');
+          const inputWrap = wrap.querySelector('.input-wrapper');
+          const input = wrap.querySelector('.mass-sched-input:not(.mass-sched-link-label)');
+          const labelInput = wrap.querySelector('.mass-sched-link-label');
+          const revealBtn2 = wrap.querySelector('.btn-reveal-field');
+          if (input) { input.value = ''; updateLinksPreview(input); }
+          if (labelInput) labelInput.value = '';
+          if (inputWrap) inputWrap.style.display = 'none';
+          if (revealBtn2) revealBtn2.style.display = 'inline-flex';
+          return;
+        }
+
+        // 1° Bouton crayon unique : ouvre la popup pour modifier le nom / le lien, ou le supprimer
+        const editBtn = e.target.closest('.btn-edit-link');
+        if (editBtn) {
+          const wrap = editBtn.closest('.input-wrapper');
+          if (wrap) openLinkModal(wrap);
+          return;
+        }
+
+        // Bouton × d'une entrée "document de préparation" : supprime la ligne entière
+        const removeDocBtn = e.target.closest('.btn-remove-prepdoc');
+        if (removeDocBtn) {
+          removeDocBtn.closest('.prep-doc-entry')?.remove();
+          return;
+        }
+
+        // 2° Bouton "+" sur la 1ère ligne
+        const addDocBtn = e.target.closest('#btn-add-prepdoc');
+        if (addDocBtn) {
+          const list = document.getElementById('prep-docs-list');
+          if (!list) return;
+          const newEntry = { id: `doc${Date.now()}`, text: '', label: '' };
+          const tmp = document.createElement('div');
+          tmp.innerHTML = renderPrepDocEntry(newEntry, true).trim();
+          const entryEl = tmp.firstElementChild;
+          list.appendChild(entryEl);
+          const revealBtn3 = entryEl.querySelector('.btn-reveal-field');
+          if (revealBtn3) revealBtn3.click();
+        }
+      });
+
+      container.addEventListener('input', (e) => {
+        if (e.target.matches && e.target.matches('.mass-sched-input:not(.mass-sched-link-label)')) {
+          autoResize(e.target);
+          updateLinksPreview(e.target);
+        }
+      });
+
+      // 'blur' ne remonte pas naturellement : on écoute en phase de capture pour la délégation
+      container.addEventListener('blur', (e) => {
+        if (e.target.matches && e.target.matches('.mass-sched-input:not(.mass-sched-link-label)')) {
+          const input = e.target;
+          setTimeout(() => {
+            if (input.value.trim() === '') {
+              const wrap = input.closest('.field-toggle-wrap');
+              const inputWrap = wrap?.querySelector('.input-wrapper');
+              const revealBtn = wrap?.querySelector('.btn-reveal-field');
+              if (inputWrap) inputWrap.style.display = 'none';
+              if (revealBtn) revealBtn.style.display = 'inline-flex';
+            }
+          }, 150);
+        }
+      }, true);
+
+      // Initialisation : ajustement de hauteur et affichage des liens déjà existants au chargement
+      container.querySelectorAll('.mass-sched-input:not(.mass-sched-link-label)').forEach(input => {
+        if (input.closest('.input-wrapper').style.display !== 'none') {
+          autoResize(input);
+          updateLinksPreview(input);
+        }
+      });
+
+      // Sauvegarde
+      document.getElementById('save-mass-sched-btn').addEventListener('click', async () => {
+        const newSched = {};
+        container.querySelectorAll('.mass-sched-input').forEach(input => {
+          const step = input.dataset.step;
+          const field = input.dataset.field;
+          if (!newSched[step]) newSched[step] = {};
+          newSched[step][field] = input.value.trim();
+        });
+        massData.schedule = newSched;
+        await this._saveMassDb(massData);
+        if (typeof Animations !== 'undefined' && Animations.showToast) {
+          Animations.showToast("Déroulé de la messe enregistré", "success");
+        }
+      });
+    }
+
+    // Changement de sous-onglet
+    container.querySelectorAll('.mass-nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => this.renderMass(guests, e.currentTarget.dataset.sub));
+    });
+  },
+ 
 // ════════════════════════════════════════════════════════════
   // GESTION DU PLAN DE TABLE COMPACT & RENOMMABLE (DRAG & DROP)
   // ════════════════════════════════════════════════════════════
@@ -1899,7 +2906,75 @@ async renderAccommodations() {
         }
       }
     };
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // renderContentPublication()
+  // ════════════════════════════════════════════════════════════
+  async renderContentPublication() {
+    const container = document.getElementById('admin-publication');
+    if (!container) return;
+    
+    const settings = await Store.getSettings('publication');
+    
+    container.innerHTML = `
+      <h3>Contrôle de publication</h3>
+      <p class="text-muted" style="margin-bottom: 20px;">
+        Activez ou désactivez l'affichage des informations pour les invités. 
+        Si désactivé, le message "Plus d'informations à venir" sera affiché.
+      </p>
+      <div class="publication-toggles" style="display:flex; flex-direction:column; gap:12px; max-width: 400px;">
+        ${['messe', 'animations', 'contacts', 'liste', 'covoiturage', 'hebergements'].map(key => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #e8e0d0;">
+            <span style="font-weight: 500; text-transform: capitalize;">${key === 'messe' ? 'Messe & Réception' : key}</span>
+            <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+              <input type="checkbox" data-pub-key="${key}" ${settings[key] ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+              <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;">
+                <span class="slider-knob" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: ${settings[key] ? 'translateX(20px)' : 'translateX(0)'};"></span>
+              </span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    // Style for toggles dynamically injected since it's a new feature
+    if (!document.getElementById('pub-toggles-style')) {
+      document.head.insertAdjacentHTML('beforeend', `
+        <style id="pub-toggles-style">
+          .publication-toggles input:checked + .slider { background-color: var(--sage, #9CAF88); }
+          .publication-toggles input:focus + .slider { box-shadow: 0 0 1px var(--sage, #9CAF88); }
+        </style>
+      `);
+    }
+
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', async (e) => {
+        const key = e.target.dataset.pubKey;
+        const isChecked = e.target.checked;
+        
+        // Animate knob visually immediately for UX
+        const knob = e.target.nextElementSibling.querySelector('.slider-knob');
+        if (isChecked) {
+          knob.style.transform = 'translateX(20px)';
+        } else {
+          knob.style.transform = 'translateX(0)';
+        }
+        
+        settings[key] = isChecked;
+        const success = await Store.updateSettings('publication', settings);
+        if (success) {
+          Animations.showToast(`Section ${key} mise à jour`, 'success');
+        } else {
+          Animations.showToast(`Erreur lors de la mise à jour`, 'error');
+          // Revert UI
+          e.target.checked = !isChecked;
+          knob.style.transform = !isChecked ? 'translateX(20px)' : 'translateX(0)';
+          settings[key] = !isChecked;
+        }
+      });
+    });
   }
-};  // ← fermeture de l'objet AdminDashboard
+}; // Fin de AdminDashboard
 
 export default AdminDashboard;
