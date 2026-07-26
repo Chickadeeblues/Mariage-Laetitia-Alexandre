@@ -2277,7 +2277,7 @@ async _deleteMoodboardItem(id) {
           <td colspan="4" style="padding:8px; vertical-align:top;">
             <div id="prep-docs-list">${prepDocsListHtml}</div>
             <button type="button" id="btn-add-prepdoc" style="margin-top:2px; background:var(--sage); color:#fff; border:none; border-radius:14px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer;">
-              + Ajouter un document
+              + 
             </button>
           </td>
         </tr>
