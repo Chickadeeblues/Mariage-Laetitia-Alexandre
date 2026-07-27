@@ -181,8 +181,6 @@ renderStep1() {
       <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}" required>
       <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}" required>
       <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="${tr('Téléphone portable *', 'Teléfono móvil *')}" required>
-      <div style="height:1px;background:#f5f2eb;margin:1rem 0;"></div>
-
       <div class="attendance-options">
         <button type="button" class="choice-btn ${att === true    ? 'selected' : ''}" data-val="true">  <span>🎉</span> <strong>${tr('Je viens avec joie !', '¡Asistiré con gusto!')}</strong></button>
         <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>${tr('Je viens peut-être', 'Tal vez asista')}</strong></button>
@@ -212,7 +210,7 @@ renderStep1() {
         </div>` : ''}
 
       <div class="form-actions">
-        <button type="button" class="btn btn--primary next-btn" style="width:100%;">${tr('Suivant →', 'Siguiente →')}</button>
+        <button type="button" class="btn btn--primary next-btn" style="width:100%;">${tr('Suivant', 'Siguiente')}</button>
       </div>
     </div>`;
 },
@@ -231,7 +229,7 @@ renderStep1() {
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
@@ -282,7 +280,7 @@ renderStep1() {
     companions.forEach((c, i) => html += renderBlock(tr(`Pour ${c.name||'Accompagnant '+(i+1)}`, `Para ${c.name||'Acompañante '+(i+1)}`), String(i), c.diet, c.allergyDetails));
     html += `<div class="form-actions">
       <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-      <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+      <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
     </div></div>`;
     return html;
   },
@@ -365,7 +363,7 @@ renderStep1() {
 
         <div class="form-actions">
           <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
