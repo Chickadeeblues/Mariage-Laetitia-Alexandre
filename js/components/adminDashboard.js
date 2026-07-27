@@ -1163,11 +1163,10 @@ async renderGuestsList(guests) {
         <table class="admin-table" style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th rowspan="2" style="padding:10px; width:26%; vertical-align:bottom;">Nom &amp; Téléphone</th>
-              <th rowspan="2" style="padding:10px; width:20%; vertical-align:bottom;">Rôle(s)</th>
+              <th rowspan="2" style="padding:10px; width:32%; vertical-align:bottom;">Nom &amp; Téléphone</th>
+              <th rowspan="2" style="padding:10px; width:25%; vertical-align:bottom;">Rôle(s)</th>
               <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
-              <th rowspan="2" style="padding:10px; width:11%; text-align:center; vertical-align:bottom;">Loge sur place</th>
-              <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom; text-align:center;">Actions</th>
+              <th rowspan="2" style="padding:10px; width:50px; vertical-align:bottom; text-align:center;">Actions</th>
             </tr>
             <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
               <th style="padding:6px 4px; width:12%; text-align:center;">Jeudi</th>
@@ -1179,24 +1178,55 @@ async renderGuestsList(guests) {
     `;
 
     if (!team || team.length === 0) {
-      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
+      html += `<tr><td colspan="6" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
     } else {
-      team.forEach((m, idx) => {
-        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+      const sortedTeam = [...team].sort((a, b) => {
+        const roleA = a.role ? a.role.split(',')[0].trim() : 'Z';
+        const roleB = b.role ? b.role.split(',')[0].trim() : 'Z';
+        const roleCmp = roleA.localeCompare(roleB);
+        if (roleCmp !== 0) return roleCmp;
+        
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      sortedTeam.forEach((m, idx) => {
+        const bg = idx % 2 === 0 ? '#FFFFFF' : '#F0F4F1';
         const formattedPhone = typeof formatPhone === 'function' ? formatPhone(m.phone) : (m.phone || '');
         
         // 2. Gestion de l'affichage multi-rôles (max 3)
         const rolesArray = m.role ? m.role.split(',').map(r => r.trim()).slice(0, 3) : ['Organisation'];
-        const rolesHtml = rolesArray.map(r => `
-          <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">
-            ${r}
-          </span>`).join('');
+        const rolesHtml = rolesArray.map(r => {
+          let rBg = '#f3f4f6', rColor = '#374151', rBorder = '#d1d5db';
+          if (r === 'Messe') { rBg = '#FAF5FF'; rColor = '#7E22CE'; rBorder = '#E9D5FF'; }
+          else if (r === 'Animation') { rBg = '#FFF7ED'; rColor = '#C2410C'; rBorder = '#FFEDD5'; }
+          else if (r === 'Covoiturage') { rBg = '#EFF6FF'; rColor = '#1D4ED8'; rBorder = '#BFDBFE'; }
+          else if (r === 'Décoration' || r === 'Fleuriste') { rBg = '#FDF2F8'; rColor = '#BE185D'; rBorder = '#FBCFE8'; }
+          else if (r === 'Logistique' || r === 'Organisation') { rBg = '#F0FDF4'; rColor = '#15803D'; rBorder = '#BBF7D0'; }
+          else if (r === 'Traiteur') { rBg = '#FEF2F2'; rColor = '#B91C1C'; rBorder = '#FECACA'; }
+          else if (r === 'Coordination') { rBg = '#FDF9EE'; rColor = '#8C7326'; rBorder = '#E8D5A3'; }
+          
+          return `<span class="badge" style="background:${rBg}; color:${rColor}; border:1px solid ${rBorder}; font-weight:600; padding:2px 6px; border-radius:12px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">${r}</span>`;
+        }).join('');
 
         html += `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px; word-wrap:break-word;">
-              <strong>${m.name || 'Sans nom'}</strong>
-              ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+            <td style="padding:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>${m.name || 'Sans nom'}</strong>
+                ${formattedPhone ? `
+                  <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <span style="cursor:pointer; filter: grayscale(100%) opacity(0.4); transition: opacity 0.2s;" 
+                          onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4"
+                          onclick="const p = document.getElementById('phone-team-${m.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                          title="Afficher/Masquer le numéro">📞</span>
+                    <div id="phone-team-${m.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px;">
+                      ${formattedPhone}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
             </td>
             <td style="padding:10px;">
               <div style="display:flex; flex-wrap:wrap; gap:2px;">${rolesHtml}</div>
@@ -1204,9 +1234,6 @@ async renderGuestsList(guests) {
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_thursday, m.time_thursday)}</td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
-            <td style="padding:10px; text-align:center;">
-              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">Oui</span>' : '<span style="color:#999;">Non</span>'}
-            </td>
             <td style="padding:10px; text-align:center;">
               <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
             </td>
@@ -1225,7 +1252,7 @@ async renderGuestsList(guests) {
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalThu}</td>
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalFri}</td>
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalSat}</td>
-              <td colspan="2"></td>
+              <td colspan="1"></td>
             </tr>
           </tfoot>
         </table>
