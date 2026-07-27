@@ -74,7 +74,7 @@ const _listeners = {};
 
 async function supabase(method, table, { filter = '', body = null } = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${table}${filter ? '?' + filter : ''}`;
-  const opts = { method, headers: { ...HEADERS } };
+  const opts = { method, headers: { ...HEADERS }, cache: 'no-store'};
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
   if (!res.ok) {
@@ -185,6 +185,33 @@ const Store = {
       console.log('[Store] Initialisation Supabase terminée.');
     } catch (e) {
       console.error('[Store] Erreur init :', e);
+    }
+  },
+
+  // ── Paramètres globaux (Publication) ────────────────
+
+  async getSettings(key) {
+    try {
+      const rows = await supabase('GET', 'wedding_settings', { filter: `select=value&key=eq.${key}` });
+      if (rows && rows.length > 0) {
+        return rows[0].value;
+      }
+    } catch (e) {
+      console.warn('[Store] Impossible de charger les paramètres, fallback par défaut.', e);
+    }
+    // Valeurs par défaut si échec
+    return { messe: true, animations: true, contacts: true, liste: true, covoiturage: true, hebergements: true };
+  },
+
+  async updateSettings(key, value) {
+    try {
+      // Puisque la ligne est insérée par défaut, un PATCH suffit
+      await supabase('PATCH', 'wedding_settings', { filter: `key=eq.${key}`, body: { value } });
+      this._emit('settings-changed');
+      return true;
+    } catch (e) {
+      console.error('[Store] Erreur updateSettings :', e);
+      return false;
     }
   },
 
@@ -357,6 +384,17 @@ const Store = {
     return auth !== null && auth.authenticated === true;
   },
 
+  // Discours et animations ──────────────────────────────────────
+  
+  async getAnimations() {
+    const { data, error } = await supabase.from('animations').select('*');
+    if (error) {
+      console.error("Erreur lors de la récupération des animations:", error);
+      return [];
+    }
+    return data || [];
+  },
+  
   // ── Statistiques ──────────────────────────────────────
 
   async getStats() {
@@ -416,5 +454,36 @@ const Store = {
     catch (e) { console.error(e); }
   }
 };
+
+function renderProgram(anims, revealed) {
+  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
+  return slots.map(slot => `
+    <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
+      <h3>${slot}</h3>
+      <div class="${revealed ? '' : 'blur-effect'}">
+        ${anims.filter(a => a.timing === slot).map(a => `
+          <p><strong>${a.name}</strong> - ${a.type}</p>
+        `).join('') || '<p style="color:#ccc;">Aucune animation pour le moment</p>'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderParticipationForm() {
+  return `
+    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
+      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max).</em></p>
+      <input type="text" id="anim-type" placeholder="Type d'animation (ex: Discours)" class="form-control" required style="width:100%; margin-bottom:10px;">
+      <select id="anim-timing" class="form-control" style="width:100%; margin-bottom:10px;">
+        <option>Vin d'honneur</option>
+        <option>Pendant le repas</option>
+        <option>Premier intermède</option>
+        <option>Deuxième intermède</option>
+      </select>
+      <button type="submit" class="btn btn--primary">Envoyer</button>
+    </form>
+  `;
+}
+
 
 export default Store;

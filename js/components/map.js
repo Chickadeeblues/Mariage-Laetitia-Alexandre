@@ -29,6 +29,27 @@ const MapComponent = {
     this._elements.mapContainer      = document.getElementById('map-container');
     this._elements.accommodationsList = document.getElementById('accommodations-list');
     if (!this._elements.mapContainer) return;
+    
+    // Check publication
+    let isPublished = true;
+    try {
+      const StoreModule = await import('../store.js');
+      isPublished = await StoreModule.default.getSettings('publication').then(s => s['hebergements']);
+    } catch (e) {}
+
+    if (!isPublished) {
+      this._elements.mapContainer.style.display = 'none';
+      if (this._elements.accommodationsList) {
+        this._elements.accommodationsList.innerHTML = `
+          <div style="text-align: center; padding: 2rem 1rem;">
+             <span style="font-size:3rem;display:block;margin-bottom:16px;">⏳</span>
+             <h3 style="color:#2D5A3D; font-family: var(--font-display);">${window.I18n.t('publication.comingSoon')}</h3>
+          </div>
+        `;
+      }
+      return;
+    }
+
     this._initMap();
     await this._loadAccommodations();
     Store.on('accommodations-changed', () => this._loadAccommodations());

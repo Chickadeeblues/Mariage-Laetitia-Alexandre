@@ -44,6 +44,10 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 
 ---
 
+### Séparation de l'Interface de Traduction (i18n) et de la Collecte des Données
+
+Le système de traduction est conçu pour découpler strictement l'interface utilisateur (front-end) de la collecte et du stockage des données (back-end), confirmant ainsi que le recueil n'est pas altéré par la langue. La traduction est pilotée par le composant `i18n.js`, qui parcourt le DOM pour cibler les éléments HTML dotés de l'attribut `data-i18n` afin de modifier dynamiquement leur contenu (`innerHTML`) ou leur attribut `placeholder` selon la langue active[cite: 5]. Cette mutation est exclusivement visuelle et n'impacte que l'affichage. En arrière-plan, la logique métier des formulaires (comme le composant RSVP) reste intacte : elle transmet à la base de données Supabase des clés et des valeurs techniques universelles (telles que des booléens `true`/`false` ou des identifiants stricts comme `"train"`). Par conséquent, les données soumises par un utilisateur, qu'il navigue en version française ou espagnole, sont standardisées et centralisées de manière uniforme, garantissant un affichage cohérent et agnostique dans le tableau de bord administrateur.
+
 ## 3. Navigation & Routes SPA
 
 ### Barre de navigation
@@ -201,13 +205,58 @@ Trois blocs :
 
 ---
 
-## 9. Espace administration
+## 9. Espace administration (`adminDashboard.js`)
 
-- Mot de passe hashé SHA-256 côté client
-- Session en `localStorage`
-- Dashboard : stats (total / confirmés / peut-être / déclinés / en attente), régimes, liste invités (avec brunch + transport), covoiturage, hébergements
+Accès protégé par mot de passe hashé en SHA-256 (session stockée dans `localStorage`). L'espace se compose d'une zone supérieure de gestion rapide et de 6 onglets thématiques.
 
----
+### 9.1 Zone de gestion & Checklist (`renderManagementZone`)
+- **Bannière d'en-tête** : Affiche le compte à rebours jusqu'au 8 mai 2027 et la prochaine tâche en attente.
+- **Barre de progression** : Calcul en temps réel du pourcentage de tâches accomplies (`done / total`).
+- **Checklist rétractable** : 
+  - Regroupement par mois/échéances avec filtrage dynamique par catégorie (`CAT_COLORS`).
+  - Actions rapides : cocher/décocher (mise à jour asynchrone sans rechargement), modifier le libellé, supprimer, ajouter une tâche.
+
+### 9.2 Statistiques & Synthèse des régimes (`renderStatsAndDiets`)
+- **Grille de 4 cartes Stats** (bordure vert sauge) : Confirmés, Présents au Brunch (calcul exact incluant les accompagnants), Peut-être, Déclinés.
+- **Grille de 4 cartes Régimes** (fond transparent, bordure neutre) : Végétariens, Végans, Sans alcool, Allergies déclarées (avec infobulle listant les détails au survol).
+
+### 9.3 Onglet : Invités (`renderGuestsList`)
+- Tableau complet listant les invités et leurs accompagnants (hiérarchie visuelle distincte avec puce `+`).
+- Badges visuels pour la présence, le brunch, les régimes et le covoiturage.
+- **Modale d'édition complète (`openEditModal`)** : Permet à l'administrateur de modifier l'intégralité de la fiche d'un invité (identité, présence, brunch, régimes individuels, transport et hébergement).
+
+### 9.4 Onglet : Équipe prépa (`renderTeam`)
+- **Structure du tableau** : Collé directement sous la barre d'onglets (`margin-top: 0`). Bouton `+ Ajouter un membre` positionné sous le tableau, aligné à gauche.
+- **Multi-rôles** : Sélection via pastilles en modale avec blocage strict à **3 rôles maximum**. Affichage sous forme de badges vert sauge/sapin.
+- **Colonnes Jours (Jeudi / Vendredi / Samedi)** :
+  - Largeur strictement identique (`12%`) et texte centré.
+  - Affichage uniquement de l'heure d'arrivée formatée à la française (ex: `14h30`), sans coche de validation.
+- **Logement sur place** : Affichage par badge texte `"Oui"` ou `"Non"` (aucun émoji).
+- **Pied de tableau (`<tfoot>`) avec calculs cumulés** :
+  - Total général de personnes (sous Nom & Téléphone).
+  - Nombre de personnes logeant sur place par jour (additionne uniquement si `stays_on_site = true`).
+- **Comportement Modale** : Cochage automatique de l'arrivée du vendredi et samedi si le jeudi est sélectionné (décochable manuellement).
+
+### 9.5 Onglet : Moodboard (`renderMoodboard`)
+- **Navigation par sous-onglets** : 8 tableaux d'inspirations (`Faire-parts`, `Robe de mariée`, `Coiffures`, `Bouquet`, `Décoration église`, `Décoration réception`, `Plan de table`, `Tables`).
+- **Affichage Masonry (style Pinterest)** :
+  - Grille fluide en colonnes (`column-count: 3` sur desktop, `2` sur tablette, `1` sur mobile).
+  - Gestion de formats variables via le bouton ⭐/🗜️ (`size: 'normal'` vs `'large'`). Le format vedette prend plus de place avec un liseré doré.
+- **Ajout d'images** :
+  - Glisser-déposer direct d'une image depuis un autre onglet du navigateur (extraction automatique de l'attribut `src` ou du lien HTTP).
+  - Bouton discret en en-tête `➕ Coller le lien d'une image`.
+- **Réorganisation (Tri par Drag & Drop)** :
+  - Les cartes sont déplaçables (`draggable="true"`). Glisser une carte sur une autre inverse leurs positions et met à jour la colonne `position` dans Supabase en arrière-plan.
+- **Suppression** : Bouton discret `×` sur fond vert sauge apparaissant au survol de la carte.
+
+### 9.6 Onglet : Plan de table (`renderSeatingPlan`)
+- **Grille compacte de 10 tables** (2 rangées de 5 sur desktop) + zone d'attente des invités non placés (`unassigned-pool`).
+- **Placement par Glisser-Déposer** : Déplacement interactif des étiquettes invités vers les tables (capacité bloquée à **8 places maximum par table**).
+- **Personnalisation** : Renommage libre des tables (bouton ✏️) et bouton de réinitialisation générale (remet les invités en zone d'attente sans effacer les noms des tables).
+
+### 9.7 Onglets : Covoiturage & Hébergements
+- **Covoiturage** : Synthèse rapide comparant le nombre de conducteurs/places offertes face aux demandeurs/places recherchées.
+- **Hébergements** : Gestion CRUD des lieux d'hébergement avec affichage rétractable (3 premiers affichés par défaut + bouton `Voir X de plus`).
 
 ## 10. Persistance localStorage
 
@@ -215,6 +264,8 @@ Trois blocs :
 |---|---|
 | `wedding_current_guest_id` | UUID invité connecté |
 | `wedding_admin_auth` | `{authenticated: true, timestamp}` |
+| 'wedding_admin_active_tab'	Dernier onglet admin visité (guests, team, moodboard...)
+wedding_seating_plan	Secours local du plan de table si Supabase hors ligne
 
 ---
 
@@ -281,7 +332,7 @@ Marqueur carte spécial : 🚆 Gare TER Le Péage-de-Roussillon (`45.3767, 4.797
 2. **Menu mobile** : utiliser fond `background: #FAF8F5` plein (sans `backdrop-filter`) sur mobile — le flou translucide rend les liens illisibles sur fond de contenu
 3. **Dropdown mobile** : basculer sur toggle au tap (pas hover), fond opaque, `z-index: 1010`, fermeture au clic extérieur
 4. **Nav hamburger** : après clic sur un item du dropdown, fermer à la fois le sous-menu ET le menu hamburger
-
+5. **Onglets Admin** : Structure HTML stricte exigeant la classe .admin-tab et l'attribut data-tab="nom" reliés au panneau #tab-panel-nom pour que le clonage anti-doublon d'écouteurs d'événements dans initTabs() fonctionne.
 ---
 
 ## 13. Points de vigilance pour refactoring
