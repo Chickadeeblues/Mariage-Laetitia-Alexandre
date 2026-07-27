@@ -101,6 +101,7 @@ function toApp(g) {
     transport:         g.transport         || {},
     accommodationId:   g.accommodation_id,
     accommodationName: g.accommodation_name,
+    tag:               g.tag,
     createdAt:         g.created_at,
     updatedAt:         g.updated_at
   };
@@ -120,6 +121,7 @@ function toDb(data) {
   if (data.transport         !== undefined) obj.transport          = data.transport;
   if (data.accommodationId   !== undefined) obj.accommodation_id   = data.accommodationId;
   if (data.accommodationName !== undefined) obj.accommodation_name = data.accommodationName;
+  if (data.tag               !== undefined) obj.tag                = data.tag;
   obj.updated_at = new Date().toISOString();
   return obj;
 }

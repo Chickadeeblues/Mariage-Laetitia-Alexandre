@@ -849,11 +849,11 @@ async renderGuestsList(guests) {
 
     // 1. DÉFINITION DE L'ORDRE DE PRIORITÉ DES TAGS
     const tagPriority = {
-      'Mariée': 1,
-      'Marié': 2,
-      'Prêtre': 3,
-      'Famille': 4,
-      'Amis': 5
+      'Famille Mariée': 1,
+      'Famille Marié': 2,
+      'Ami(e) Mariée': 3,
+      'Ami(e) Marié': 4,
+      'Prêtre': 5
     };
 
     // 2. TRI DES INVITÉS (Tag puis Nom de famille)
@@ -892,17 +892,17 @@ async renderGuestsList(guests) {
 
     // 3. GÉNÉRATEUR DE BADGES COLORÉS SELON LE TAG
     const buildTagBadge = (tag, id = null) => {
-      if (!tag) return id ? `<span id="tag-display-${id}" style="display:none;"></span>` : '';
+      if (!tag) return id ? `<span id="tag-display-${id}" class="badge-tag" data-id="${id}" style="display:none; cursor:pointer;" title="Modifier le groupe"></span>` : '';
       
       let bg = '#f3f4f6', color = '#374151', border = '#d1d5db';
-      if (tag === 'Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
-      else if (tag === 'Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      if (tag === 'Famille Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
+      else if (tag === 'Famille Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      else if (tag === 'Ami(e) Mariée') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
+      else if (tag === 'Ami(e) Marié') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
       else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
-      else if (tag === 'Famille') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
-      else if (tag === 'Amis') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
       
       const idAttr = id ? `id="tag-display-${id}"` : '';
-      return `<span ${idAttr} class="badge" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block;">${tag}</span>`;
+      return `<span ${idAttr} class="badge badge-tag" data-id="${id || ''}" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block; cursor:pointer;" title="Modifier le groupe">${tag}</span>`;
     };
 
     let html = `
@@ -923,11 +923,11 @@ async renderGuestsList(guests) {
           <tbody>
     `;
 
-    const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille', 'Amis'];
+    const tagOptions = ['Famille Mariée', 'Famille Marié', 'Ami(e) Mariée', 'Ami(e) Marié', 'Prêtre'];
 
     // On boucle désormais sur le tableau trié
     sortedGuests.forEach((g, idx) => {
-      const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+      const bg = idx % 2 === 0 ? '#FFFFFF' : '#FDFBF7';
       const currentTag = g.tag || ''; 
       
       let transportText = '—';
@@ -961,7 +961,7 @@ async renderGuestsList(guests) {
             <div style="display:flex; align-items:center; gap:6px;">
               ${buildTagBadge(currentTag, g.id)}
               <div style="position:relative;">
-                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:#999; font-size:14px; padding:0;" title="Définir le groupe">➕</button>
+                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:var(--forest); font-size:14px; padding:0; ${currentTag ? 'display:none;' : ''}" title="Définir le groupe">➕</button>
                 <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
                   <option value="">Sélectionner...</option>
                   ${tagOptions.map(t => `<option value="${t}" ${currentTag === t ? 'selected' : ''}>${t}</option>`).join('')}
@@ -988,8 +988,8 @@ async renderGuestsList(guests) {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:10px; position:relative; padding-left: 15px;">
-                <span style="position:absolute; left:-4px; top:12px; border-left: 2px solid #ccc; border-bottom: 2px solid #ccc; width:12px; height:12px; display:inline-block; border-bottom-left-radius: 4px;"></span>
+              <td style="padding:10px; position:relative; padding-left: 20px;">
+                <span style="color:var(--gold); font-weight:bold; font-size:16px; margin-right:4px;">+</span>
                 <strong>${comp.name}</strong>
               </td>
               <td style="padding:10px;">
@@ -1015,12 +1015,13 @@ async renderGuestsList(guests) {
 
     // --- Événements ---
     
-    // Bascule de l'affichage du Select
-    container.querySelectorAll('.btn-tag-toggle').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // Bascule de l'affichage du Select via bouton + ou le badge
+    container.querySelectorAll('.btn-tag-toggle, .badge-tag').forEach(el => {
+      el.addEventListener('click', (e) => {
         const id = e.currentTarget.dataset.id;
+        if (!id) return;
         const select = container.querySelector(`.tag-select[data-id="${id}"]`);
-        select.style.display = select.style.display === 'none' ? 'block' : 'none';
+        if (select) select.style.display = select.style.display === 'none' ? 'block' : 'none';
       });
     });
 
@@ -1031,7 +1032,7 @@ async renderGuestsList(guests) {
         const newTag = e.currentTarget.value;
         
         // ⚠️ Enregistrer en Base de données :
-        // await Store.updateGuest(id, { tag: newTag });
+        await Store.updateGuest(id, { tag: newTag });
 
         // Mise à jour de l'état local et re-rendu complet pour réappliquer le tri et colorer l'accompagnant :
         const guestIndex = guests.findIndex(g => g.id == id);
@@ -1053,11 +1054,33 @@ async renderGuestsList(guests) {
           const parentGuest = guests.find(g => g.id == parentId);
           if (parentGuest && parentGuest.companions) {
             parentGuest.companions.splice(compIndex, 1);
-            // ⚠️ Enregistrer les modifications dans Supabase/Store
-            // await Store.updateGuest(parentId, { companions: parentGuest.companions });
-            // this.renderDashboard(); 
+            await Store.updateGuest(parentId, { companions: parentGuest.companions });
             if(typeof Animations !== 'undefined') Animations.showToast("Accompagnant supprimé", "success");
+            this.renderDashboard(); 
           }
+        }
+      });
+    });
+
+    // --- Édition d'un invité (Principal et ses accompagnants) ---
+    container.querySelectorAll('.edit-guest-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const guest = guests.find(g => g.id === id);
+        if (guest) {
+          this.openEditModal(guest);
+        }
+      });
+    });
+
+    // --- Suppression d'un groupe (Invité principal + accompagnants) ---
+    container.querySelectorAll('.delete-guest-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (confirm("Supprimer définitivement cet invité et ses accompagnants ?")) {
+          await Store.deleteGuest(id);
+          if(typeof Animations !== 'undefined') Animations.showToast("Invité supprimé", "success");
+          this.renderDashboard();
         }
       });
     });
