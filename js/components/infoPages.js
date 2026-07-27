@@ -3,92 +3,159 @@
  * Un seul fichier pour les 4 sous-pages d'information.
  */
 
-// Libellés des équipements pour affichage (les valeurs stockées restent des codes courts)
+// 3) Liste des types d'animation, inspirée de ce qui se fait couramment dans les mariages
+const ANIMATION_TYPES = [
+  'Discours',
+  'Chant',
+  'Danse / Chorégraphie',
+  'Jeu pour les mariés',
+  'Jeu pour les invités',
+  'Sketch / Mise en scène',
+  'Diaporama souvenirs',
+  'Quiz sur les mariés',
+  'Flashmob',
+  'Vidéo / Montage',
+  'Autre'
+];
+
+// 6) Matériel : liste élargie à ce qui est raisonnable de prévoir pour un mariage
 const EQUIPMENT_LABELS = {
   videoprojecteur: 'Vidéo-projecteur',
-  micro: 'Micro'
+  ecran: 'Écran de projection',
+  micro: 'Micro',
+  sono: 'Enceinte / Sono',
+  branchement: 'Branchement musique (Bluetooth / Jack / clé USB)',
+  espace: 'Espace dégagé (danse, jeu)',
+  chaises: 'Chaises pour les invités'
 };
 function equipLabel(code) {
   return EQUIPMENT_LABELS[code] || code;
 }
 
-// Affiche le programme de la soirée. Tant que `revealed` est faux, seul le prénom
-// apparaît (pour garder la surprise) ; le type, la description et le matériel sont masqués.
+// 1) Les deux zones de la soirée
+const TIMING_SLOTS = [
+  { value: "Vin d'honneur", title: "Pendant le vin d'honneur", desc: 'Discours des familles et des témoins des mariés' },
+  { value: 'Pendant le repas', title: 'Pendant le repas', desc: 'Ouvert à tous les invités !' }
+];
+
+// Affiche les deux zones du programme. Tant que `revealed` est faux, seul le prénom
+// apparaît (pour garder la surprise) ; le type et le matériel sont masqués.
 function renderProgram(anims, revealed) {
-  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
-  return slots.map(slot => {
-    const slotAnims = anims.filter(a => a.timing === slot);
+  return TIMING_SLOTS.map(slot => {
+    const slotAnims = anims.filter(a => a.timing === slot.value);
     return `
-      <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
-        <h3>${slot}</h3>
-        ${slotAnims.length === 0
-          ? '<p style="color:#ccc;">Aucune animation pour le moment</p>'
-          : slotAnims.map(a => {
-              const equipList = [...(a.equipment || []).map(equipLabel), a.equipmentOther].filter(Boolean);
-              return `
-                <div class="anim-entry" style="padding:8px 0; border-bottom:1px solid #f0ebe0;">
-                  <p style="margin:0;">
-                    🎉 <strong>${a.firstName}</strong>
-                    ${revealed ? ` — ${a.type}` : ' <span style="color:#9b8660;">prépare une surprise...</span>'}
-                  </p>
-                  ${revealed && a.details ? `<p style="margin:4px 0 0; font-size:13px; color:#666;">${a.details}</p>` : ''}
-                  ${revealed && equipList.length ? `<p style="margin:4px 0 0; font-size:12px; color:#9b8660;">🎛️ Matériel : ${equipList.join(', ')}</p>` : ''}
-                </div>
-              `;
-            }).join('')
-        }
+      <div class="anim-zone" data-timing="${slot.value}" style="margin-bottom:20px; padding:18px; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+        <h3 style="margin:0 0 4px; color:#2D5A3D;">${slot.title}</h3>
+        <p style="margin:0 0 14px; font-size:13px; color:#9b8660; font-style:italic;">${slot.desc}</p>
+        <div style="margin-bottom:14px;">
+          ${slotAnims.length === 0
+            ? '<p style="color:#ccc; margin:0;">Aucune proposition pour le moment</p>'
+            : slotAnims.map(a => {
+                const equipList = [...(a.equipment || []).map(equipLabel), a.equipmentOther].filter(Boolean);
+                return `
+                  <div class="anim-entry" style="padding:8px 0; border-bottom:1px solid #f0ebe0;">
+                    <p style="margin:0;">
+                      🎉 <strong>${a.firstName}</strong>
+                      ${revealed ? ` — ${a.type}` : ' <span style="color:#9b8660;">prépare une surprise...</span>'}
+                    </p>
+                    ${revealed && equipList.length ? `<p style="margin:4px 0 0; font-size:12px; color:#9b8660;">🎛️ Matériel : ${equipList.join(', ')}</p>` : ''}
+                  </div>
+                `;
+              }).join('')
+          }
+        </div>
+        <button type="button" class="btn btn-participate-zone" data-timing="${slot.value}">Je veux participer</button>
       </div>
     `;
   }).join('');
 }
 
+// 7) Liste des propositions du guest connecté, avec édition / suppression
+function renderMyAnimations(myAnims) {
+  if (!myAnims || myAnims.length === 0) return '';
+  return `
+    <div class="my-animations" style="margin-bottom:20px; padding:16px; background:#f4f8f3; border-radius:8px; border:1px dashed #a9c6a0;">
+      <h4 style="margin:0 0 10px; color:#2D5A3D; font-size:14px;">📋 Mes propositions</h4>
+      ${myAnims.map(a => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #e2ecdf;">
+          <div>
+            <strong style="font-size:13px;">${a.type}</strong>
+            <span style="font-size:12px; color:#666;"> — ${a.timing}</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-shrink:0;">
+            <button type="button" class="btn-edit-anim" data-id="${a.id}" title="Modifier" style="background:none; border:1px solid #ced4da; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:12px;">✎</button>
+            <button type="button" class="btn-delete-anim" data-id="${a.id}" title="Supprimer" style="background:none; border:1px solid #f5c6cb; color:#c0392b; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:12px;">🗑️</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 // Formulaire de proposition d'animation. Le prénom est récupéré automatiquement
 // via Store.getCurrentGuest() ; si aucun invité n'est identifié, on le demande manuellement.
-function renderParticipationForm(currentGuest) {
+// `editingEntry` (facultatif) : pré-remplit le formulaire pour une modification.
+function renderParticipationForm(currentGuest, defaultTiming, editingEntry = null) {
   const firstNameBlock = currentGuest
     ? `<p style="margin-bottom:12px; font-size:14px;">Inscription au nom de <strong>${currentGuest.firstName}</strong> ✅</p>`
     : `
       <p style="margin-bottom:8px; font-size:13px; color:#c0392b;">
         Nous n'avons pas retrouvé votre fiche invité. Merci d'indiquer votre prénom :
       </p>
-      <input type="text" id="anim-firstname-manual" placeholder="Votre prénom" class="form-control" required style="width:100%; margin-bottom:12px;">
+      <input type="text" id="anim-firstname-manual" placeholder="Votre prénom" class="form-control" required style="width:100%; margin-bottom:12px;" value="${editingEntry?.firstName || ''}">
     `;
 
+  const timing = editingEntry?.timing || defaultTiming || TIMING_SLOTS[0].value;
+  const selectedType = editingEntry?.type || '';
+  const selectedEquipment = editingEntry?.equipment || [];
+  const equipmentOtherVal = editingEntry?.equipmentOther || '';
+
   return `
-    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
-      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max). Votre prénom sera visible dans le programme, mais le détail restera une surprise jusqu'au jour J 🤫</em></p>
+    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px; border:2px solid #e7dcc4;">
+      ${editingEntry ? `<input type="hidden" id="anim-edit-id" value="${editingEntry.id}">` : ''}
+
+      <!-- 2) Message mis en avant : 5 min max + bienveillance -->
+      <div style="background:#fff3cd; border:1px solid #ffe28a; border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+        <p style="margin:0; font-size:13px; color:#6b5b1e; line-height:1.6;">
+          ⏱️ <strong>5 minutes maximum</strong> — et on compte sur vous pour des mots et des moments
+          <strong>positifs et bienveillants</strong> ! 💛
+        </p>
+      </div>
+
       ${firstNameBlock}
 
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Type d'animation</label>
-      <select id="anim-type" class="form-control" required style="width:100%; margin-bottom:12px;">
-        <option value="">-- Choisir --</option>
-        <option value="Discours">Discours</option>
-        <option value="Chant">Chant</option>
-        <option value="Danse">Danse</option>
-        <option value="Jeu">Jeu</option>
-        <option value="Vidéo">Vidéo</option>
-        <option value="Autre">Autre</option>
-      </select>
-
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Moment souhaité</label>
-      <select id="anim-timing" class="form-control" required style="width:100%; margin-bottom:12px;">
-        <option>Vin d'honneur</option>
-        <option>Pendant le repas</option>
-        <option>Premier intermède</option>
-        <option>Deuxième intermède</option>
-      </select>
-
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Précisez votre idée (facultatif)</label>
-      <textarea id="anim-details" class="form-control" rows="3" style="width:100%; margin-bottom:12px; box-sizing:border-box;" placeholder="Ex : une chanson personnalisée avec un couplet par ami..."></textarea>
-
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Matériel dont vous pourriez avoir besoin</label>
-      <div style="margin-bottom:6px;">
-        <label style="font-size:13px; margin-right:16px;"><input type="checkbox" class="anim-equipment" value="videoprojecteur"> Vidéo-projecteur</label>
-        <label style="font-size:13px;"><input type="checkbox" class="anim-equipment" value="micro"> Micro</label>
+      <!-- 4) Moment souhaité : Vin d'honneur ou Repas uniquement -->
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Moment souhaité</label>
+      <div style="margin-bottom:16px; display:flex; gap:20px;">
+        ${TIMING_SLOTS.map(slot => `
+          <label style="font-size:13px;">
+            <input type="radio" name="anim-timing" value="${slot.value}" ${timing === slot.value ? 'checked' : ''}> ${slot.title}
+          </label>
+        `).join('')}
       </div>
-      <input type="text" id="anim-equipment-other" placeholder="Autre besoin (précisez)" class="form-control" style="width:100%; margin-bottom:16px;">
 
-      <button type="submit" class="btn btn--primary">Envoyer ma proposition</button>
+      <!-- 3) Type d'animation, liste élargie -->
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Type d'animation</label>
+      <select id="anim-type" class="form-control" required style="width:100%; margin-bottom:16px;">
+        <option value="">-- Choisir --</option>
+        ${ANIMATION_TYPES.map(t => `<option value="${t}" ${selectedType === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+
+      <!-- 6) Matériel, liste élargie -->
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Matériel dont vous pourriez avoir besoin</label>
+      <div style="margin-bottom:8px; display:flex; flex-wrap:wrap; gap:8px 16px;">
+        ${Object.entries(EQUIPMENT_LABELS).map(([code, label]) => `
+          <label style="font-size:13px;">
+            <input type="checkbox" class="anim-equipment" value="${code}" ${selectedEquipment.includes(code) ? 'checked' : ''}> ${label}
+          </label>
+        `).join('')}
+      </div>
+      <input type="text" id="anim-equipment-other" placeholder="Autre besoin (précisez)" class="form-control" style="width:100%; margin-bottom:16px;" value="${equipmentOtherVal}">
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" class="btn btn--primary">${editingEntry ? 'Enregistrer les modifications' : 'Envoyer ma proposition'}</button>
+        <button type="button" id="btn-cancel-form" class="btn" style="background:#eee; color:#555;">Annuler</button>
+      </div>
     </form>
   `;
 }
@@ -156,18 +223,15 @@ const INFO_PAGES = {
   render() {
     return `
       <div class="container" id="animations-container">
-        <div class="section-header animate-on-scroll">
+        <div class="section-header animate-on-scroll" style="position:relative;">
           <h2>${window.I18n.t('anim.title')}</h2>
           <div class="ornament"></div>
-        </div>
-        
-        <div id="animations-view-switcher" style="text-align:center; margin-bottom:20px;">
-          <button id="btn-toggle-view" class="btn">${window.I18n.t('anim.btn.participate')}</button>
-          <button id="btn-reveal" class="btn" style="margin-left:10px;">${window.I18n.t('anim.btn.reveal')}</button>
+          <button id="btn-reveal" class="btn" style="position:absolute; top:0; right:0; display:none;">${window.I18n.t('anim.btn.reveal')}</button>
         </div>
 
+        <div id="my-animations-content"></div>
         <div id="program-content"></div>
-        <div id="form-content" style="display:none;"></div>
+        <div id="form-content" style="display:none; margin-top:20px;"></div>
       </div>`;
   }
 },
@@ -276,10 +340,9 @@ const InfoPages = {
       if (route === '#/infos/animations') {
         const progEl = document.getElementById('program-content');
         const formEl = document.getElementById('form-content');
-        const btnToggle = document.getElementById('btn-toggle-view');
+        const myAnimsEl = document.getElementById('my-animations-content');
         const btnReveal = document.getElementById('btn-reveal');
 
-        let isFormVisible = false;
         let isRevealed = false;
 
         const StoreModule = await import('../store.js');
@@ -295,59 +358,95 @@ const InfoPages = {
           const anims = await StoreRef.getAnimations();
           if (progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
         };
-        await loadProgram();
 
-        // Toggle Formulaire
-        btnToggle?.addEventListener('click', () => {
-          isFormVisible = !isFormVisible;
-          progEl.style.display = isFormVisible ? 'none' : 'block';
-          formEl.style.display = isFormVisible ? 'block' : 'none';
-          btnToggle.textContent = isFormVisible ? window.I18n.t('anim.btn.program') : window.I18n.t('anim.btn.participate');
+        const loadMyAnimations = async () => {
+          if (!currentGuest || !myAnimsEl) { if (myAnimsEl) myAnimsEl.innerHTML = ''; return; }
+          const mine = await StoreRef.getAnimationsByGuestId(currentGuest.id);
+          myAnimsEl.innerHTML = renderMyAnimations(mine);
+        };
 
-          if (isFormVisible) {
-            formEl.innerHTML = renderParticipationForm(currentGuest);
-            document.getElementById('animation-form')?.addEventListener('submit', async (ev) => {
-              ev.preventDefault();
-              const form = ev.target;
+        await Promise.all([loadProgram(), loadMyAnimations()]);
 
-              const firstName = currentGuest?.firstName || form.querySelector('#anim-firstname-manual')?.value.trim();
-              if (!firstName) {
-                alert("Merci d'indiquer votre prénom.");
-                return;
+        // 7) Ouvre le formulaire (création ou modification selon `editingEntry`)
+        const openForm = (defaultTiming, editingEntry = null) => {
+          formEl.innerHTML = renderParticipationForm(currentGuest, defaultTiming, editingEntry);
+          formEl.style.display = 'block';
+          formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          document.getElementById('btn-cancel-form')?.addEventListener('click', () => {
+            formEl.style.display = 'none';
+            formEl.innerHTML = '';
+          });
+
+          document.getElementById('animation-form')?.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const form = ev.target;
+
+            const firstName = currentGuest?.firstName || form.querySelector('#anim-firstname-manual')?.value.trim();
+            if (!firstName) {
+              alert("Merci d'indiquer votre prénom.");
+              return;
+            }
+
+            const timing = form.querySelector('input[name="anim-timing"]:checked')?.value;
+            const type = form.querySelector('#anim-type').value;
+            if (!timing || !type) {
+              alert("Merci de choisir un moment et un type d'animation.");
+              return;
+            }
+
+            const equipment = Array.from(form.querySelectorAll('.anim-equipment:checked')).map(cb => cb.value);
+            const equipmentOther = form.querySelector('#anim-equipment-other').value.trim();
+            const editId = form.querySelector('#anim-edit-id')?.value;
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalLabel = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Envoi...';
+
+            try {
+              const payload = { guestId: currentGuest?.id || null, firstName, type, timing, equipment, equipmentOther };
+              if (editId) {
+                await StoreRef.updateAnimation(editId, payload);
+              } else {
+                await StoreRef.saveAnimation(payload);
               }
 
-              const equipment = Array.from(form.querySelectorAll('.anim-equipment:checked')).map(cb => cb.value);
+              alert(editId ? 'Votre proposition a été mise à jour.' : window.I18n.t('anim.submit'));
 
-              const submitBtn = form.querySelector('button[type="submit"]');
-              submitBtn.disabled = true;
-              submitBtn.textContent = 'Envoi...';
+              formEl.style.display = 'none';
+              formEl.innerHTML = '';
+              await Promise.all([loadProgram(), loadMyAnimations()]);
+            } catch (err) {
+              console.error('[InfoPages] Erreur envoi animation :', err);
+              alert('Une erreur est survenue, merci de réessayer.');
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalLabel;
+            }
+          });
+        };
 
-              try {
-                await StoreRef.saveAnimation({
-                  guestId: currentGuest?.id || null,
-                  firstName,
-                  type: form.querySelector('#anim-type').value,
-                  timing: form.querySelector('#anim-timing').value,
-                  details: form.querySelector('#anim-details').value.trim(),
-                  equipment,
-                  equipmentOther: form.querySelector('#anim-equipment-other').value.trim()
-                });
+        // 1) Un bouton "Je veux participer" par zone (délégation, car injectés dynamiquement)
+        progEl?.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btn-participate-zone');
+          if (btn) openForm(btn.dataset.timing);
+        });
 
-                alert(window.I18n.t('anim.submit'));
-
-                // Retour au programme, rafraîchi avec la nouvelle inscription
-                isFormVisible = false;
-                progEl.style.display = 'block';
-                formEl.style.display = 'none';
-                btnToggle.textContent = window.I18n.t('anim.btn.participate');
-                await loadProgram();
-              } catch (err) {
-                console.error('[InfoPages] Erreur envoi animation :', err);
-                alert("Une erreur est survenue, merci de réessayer.");
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Envoyer ma proposition';
-              }
-            });
+        // 7) Modifier / supprimer une proposition existante
+        myAnimsEl?.addEventListener('click', async (e) => {
+          const editBtn = e.target.closest('.btn-edit-anim');
+          if (editBtn) {
+            const mine = await StoreRef.getAnimationsByGuestId(currentGuest.id);
+            const entry = mine.find(a => String(a.id) === editBtn.dataset.id);
+            if (entry) openForm(entry.timing, entry);
+            return;
+          }
+          const delBtn = e.target.closest('.btn-delete-anim');
+          if (delBtn) {
+            if (confirm('Supprimer cette proposition ?')) {
+              await StoreRef.deleteAnimation(delBtn.dataset.id);
+              await Promise.all([loadProgram(), loadMyAnimations()]);
+            }
           }
         });
 

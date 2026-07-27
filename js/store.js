@@ -425,12 +425,29 @@ const Store = {
     }
   },
 
+  async getAnimationsByGuestId(guestId) {
+    try {
+      const rows = await supabase('GET', 'animations', { filter: `select=*&guest_id=eq.${guestId}&order=created_at.asc` });
+      return rows.map(animToApp);
+    } catch (e) {
+      console.error('[Store] Erreur getAnimationsByGuestId :', e);
+      return [];
+    }
+  },
+
   async saveAnimation(data) {
     const body = { ...animToDb(data), created_at: new Date().toISOString() };
     const rows = await supabase('POST', 'animations', { body });
     const saved = animToApp(rows[0]);
     this._emit('animations-changed');
     return saved;
+  },
+
+  async updateAnimation(id, data) {
+    const rows = await supabase('PATCH', 'animations', { filter: `id=eq.${id}`, body: animToDb(data) });
+    const updated = animToApp(rows[0]);
+    this._emit('animations-changed');
+    return updated;
   },
 
   async deleteAnimation(id) {
