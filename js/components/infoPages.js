@@ -2,6 +2,97 @@
  * infoPages.js — Pages Messe & Réception / Animations / Contacts / Liste
  * Un seul fichier pour les 4 sous-pages d'information.
  */
+
+// Libellés des équipements pour affichage (les valeurs stockées restent des codes courts)
+const EQUIPMENT_LABELS = {
+  videoprojecteur: 'Vidéo-projecteur',
+  micro: 'Micro'
+};
+function equipLabel(code) {
+  return EQUIPMENT_LABELS[code] || code;
+}
+
+// Affiche le programme de la soirée. Tant que `revealed` est faux, seul le prénom
+// apparaît (pour garder la surprise) ; le type, la description et le matériel sont masqués.
+function renderProgram(anims, revealed) {
+  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
+  return slots.map(slot => {
+    const slotAnims = anims.filter(a => a.timing === slot);
+    return `
+      <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
+        <h3>${slot}</h3>
+        ${slotAnims.length === 0
+          ? '<p style="color:#ccc;">Aucune animation pour le moment</p>'
+          : slotAnims.map(a => {
+              const equipList = [...(a.equipment || []).map(equipLabel), a.equipmentOther].filter(Boolean);
+              return `
+                <div class="anim-entry" style="padding:8px 0; border-bottom:1px solid #f0ebe0;">
+                  <p style="margin:0;">
+                    🎉 <strong>${a.firstName}</strong>
+                    ${revealed ? ` — ${a.type}` : ' <span style="color:#9b8660;">prépare une surprise...</span>'}
+                  </p>
+                  ${revealed && a.details ? `<p style="margin:4px 0 0; font-size:13px; color:#666;">${a.details}</p>` : ''}
+                  ${revealed && equipList.length ? `<p style="margin:4px 0 0; font-size:12px; color:#9b8660;">🎛️ Matériel : ${equipList.join(', ')}</p>` : ''}
+                </div>
+              `;
+            }).join('')
+        }
+      </div>
+    `;
+  }).join('');
+}
+
+// Formulaire de proposition d'animation. Le prénom est récupéré automatiquement
+// via Store.getCurrentGuest() ; si aucun invité n'est identifié, on le demande manuellement.
+function renderParticipationForm(currentGuest) {
+  const firstNameBlock = currentGuest
+    ? `<p style="margin-bottom:12px; font-size:14px;">Inscription au nom de <strong>${currentGuest.firstName}</strong> ✅</p>`
+    : `
+      <p style="margin-bottom:8px; font-size:13px; color:#c0392b;">
+        Nous n'avons pas retrouvé votre fiche invité. Merci d'indiquer votre prénom :
+      </p>
+      <input type="text" id="anim-firstname-manual" placeholder="Votre prénom" class="form-control" required style="width:100%; margin-bottom:12px;">
+    `;
+
+  return `
+    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
+      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max). Votre prénom sera visible dans le programme, mais le détail restera une surprise jusqu'au jour J 🤫</em></p>
+      ${firstNameBlock}
+
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Type d'animation</label>
+      <select id="anim-type" class="form-control" required style="width:100%; margin-bottom:12px;">
+        <option value="">-- Choisir --</option>
+        <option value="Discours">Discours</option>
+        <option value="Chant">Chant</option>
+        <option value="Danse">Danse</option>
+        <option value="Jeu">Jeu</option>
+        <option value="Vidéo">Vidéo</option>
+        <option value="Autre">Autre</option>
+      </select>
+
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Moment souhaité</label>
+      <select id="anim-timing" class="form-control" required style="width:100%; margin-bottom:12px;">
+        <option>Vin d'honneur</option>
+        <option>Pendant le repas</option>
+        <option>Premier intermède</option>
+        <option>Deuxième intermède</option>
+      </select>
+
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Précisez votre idée (facultatif)</label>
+      <textarea id="anim-details" class="form-control" rows="3" style="width:100%; margin-bottom:12px; box-sizing:border-box;" placeholder="Ex : une chanson personnalisée avec un couplet par ami..."></textarea>
+
+      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Matériel dont vous pourriez avoir besoin</label>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:13px; margin-right:16px;"><input type="checkbox" class="anim-equipment" value="videoprojecteur"> Vidéo-projecteur</label>
+        <label style="font-size:13px;"><input type="checkbox" class="anim-equipment" value="micro"> Micro</label>
+      </div>
+      <input type="text" id="anim-equipment-other" placeholder="Autre besoin (précisez)" class="form-control" style="width:100%; margin-bottom:16px;">
+
+      <button type="submit" class="btn btn--primary">Envoyer ma proposition</button>
+    </form>
+  `;
+}
+
 const INFO_PAGES = {
   messe: {
     pageId: 'page-infos-messe',
@@ -187,15 +278,24 @@ const InfoPages = {
         const formEl = document.getElementById('form-content');
         const btnToggle = document.getElementById('btn-toggle-view');
         const btnReveal = document.getElementById('btn-reveal');
-        
+
         let isFormVisible = false;
         let isRevealed = false;
 
-        // Charger et afficher les données
-        import('../store.js').then(async (m) => {
-           const anims = await m.default.getAnimations();
-           if(progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
-        });
+        const StoreModule = await import('../store.js');
+        const StoreRef = StoreModule.default;
+
+        // Le bouton "Révéler" reste réservé aux mariés (accès admin), sinon la surprise
+        // pourrait être cassée par n'importe quel invité qui cliquerait dessus.
+        if (btnReveal) btnReveal.style.display = StoreRef.isAdmin() ? 'inline-block' : 'none';
+
+        const currentGuest = await StoreRef.getCurrentGuest();
+
+        const loadProgram = async () => {
+          const anims = await StoreRef.getAnimations();
+          if (progEl) progEl.innerHTML = renderProgram(anims, isRevealed);
+        };
+        await loadProgram();
 
         // Toggle Formulaire
         btnToggle?.addEventListener('click', () => {
@@ -203,22 +303,59 @@ const InfoPages = {
           progEl.style.display = isFormVisible ? 'none' : 'block';
           formEl.style.display = isFormVisible ? 'block' : 'none';
           btnToggle.textContent = isFormVisible ? window.I18n.t('anim.btn.program') : window.I18n.t('anim.btn.participate');
-          
-          if(isFormVisible) {
-            formEl.innerHTML = renderParticipationForm();
-            // Important : attacher l'écouteur de soumission ici aussi
-            document.getElementById('animation-form')?.addEventListener('submit', (ev) => {
-               ev.preventDefault();
-               alert(window.I18n.t('anim.submit')); // Ajoutez votre logique d'envoi ici
+
+          if (isFormVisible) {
+            formEl.innerHTML = renderParticipationForm(currentGuest);
+            document.getElementById('animation-form')?.addEventListener('submit', async (ev) => {
+              ev.preventDefault();
+              const form = ev.target;
+
+              const firstName = currentGuest?.firstName || form.querySelector('#anim-firstname-manual')?.value.trim();
+              if (!firstName) {
+                alert("Merci d'indiquer votre prénom.");
+                return;
+              }
+
+              const equipment = Array.from(form.querySelectorAll('.anim-equipment:checked')).map(cb => cb.value);
+
+              const submitBtn = form.querySelector('button[type="submit"]');
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Envoi...';
+
+              try {
+                await StoreRef.saveAnimation({
+                  guestId: currentGuest?.id || null,
+                  firstName,
+                  type: form.querySelector('#anim-type').value,
+                  timing: form.querySelector('#anim-timing').value,
+                  details: form.querySelector('#anim-details').value.trim(),
+                  equipment,
+                  equipmentOther: form.querySelector('#anim-equipment-other').value.trim()
+                });
+
+                alert(window.I18n.t('anim.submit'));
+
+                // Retour au programme, rafraîchi avec la nouvelle inscription
+                isFormVisible = false;
+                progEl.style.display = 'block';
+                formEl.style.display = 'none';
+                btnToggle.textContent = window.I18n.t('anim.btn.participate');
+                await loadProgram();
+              } catch (err) {
+                console.error('[InfoPages] Erreur envoi animation :', err);
+                alert("Une erreur est survenue, merci de réessayer.");
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Envoyer ma proposition';
+              }
             });
           }
         });
 
-        // Révéler
-        btnReveal?.addEventListener('click', () => {
+        // Révéler (mariés uniquement)
+        btnReveal?.addEventListener('click', async () => {
           isRevealed = !isRevealed;
-          progEl.classList.toggle('revealed', isRevealed);
           btnReveal.textContent = isRevealed ? window.I18n.t('anim.btn.hide') : window.I18n.t('anim.btn.reveal');
+          await loadProgram();
         });
       }
     };
@@ -255,6 +392,9 @@ if (!document.getElementById('info-pages-styles')) {
     .tl-body { flex:1; }
     .tl-body h4 { margin:0 0 4px;font-size:15px;color:#2D5A3D; }
     .tl-body p  { margin:0;font-size:13px;color:#666;line-height:1.6; }
+    /* Formulaire animations */
+    #animation-form .form-control { padding:8px 10px; border:1px solid #e0d9c8; border-radius:6px; font-size:13px; font-family:var(--font-body); }
+    #animation-form input[type="checkbox"] { margin-right:4px; }
   `;
   document.head.appendChild(s);
 }
