@@ -849,11 +849,13 @@ async renderGuestsList(guests) {
 
     // 1. DÉFINITION DE L'ORDRE DE PRIORITÉ DES TAGS
     const tagPriority = {
-      'Famille Mariée': 1,
-      'Famille Marié': 2,
-      'Ami(e) Mariée': 3,
-      'Ami(e) Marié': 4,
-      'Prêtre': 5
+      'Mariée': 1,
+      'Marié': 2,
+      'Prêtre': 3,
+      'Famille Mariée': 4,
+      'Famille Marié': 5,
+      'Ami(e) Mariée': 6,
+      'Ami(e) Marié': 7
     };
 
     // 2. TRI DES INVITÉS (Tag puis Nom de famille)
@@ -872,10 +874,10 @@ async renderGuestsList(guests) {
     });
 
     const badgeFor = (attending) => {
-      if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓ Oui</span>';
-      if (attending === false || attending === 'false' || attending === 'non') return '<span class="badge badge--declined">✗ Non</span>';
-      if (attending === 'maybe') return '<span class="badge badge--pending">? Peut-être</span>';
-      return '<span class="badge badge--pending">En attente</span>';
+      if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓</span>';
+      if (attending === false || attending === 'false' || attending === 'non') return '<span class="badge badge--declined">✗</span>';
+      if (attending === 'maybe') return '<span class="badge badge--pending">?</span>';
+      return '<span class="badge badge--pending">?</span>';
     };
 
     const getDietBadges = (person) => {
@@ -895,11 +897,11 @@ async renderGuestsList(guests) {
       if (!tag) return id ? `<span id="tag-display-${id}" class="badge-tag" data-id="${id}" style="display:none; cursor:pointer;" title="Modifier le groupe"></span>` : '';
       
       let bg = '#f3f4f6', color = '#374151', border = '#d1d5db';
-      if (tag === 'Famille Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
-      else if (tag === 'Famille Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      if (tag === 'Mariée' || tag === 'Famille Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
+      else if (tag === 'Marié' || tag === 'Famille Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
       else if (tag === 'Ami(e) Mariée') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
       else if (tag === 'Ami(e) Marié') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
-      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
       
       const idAttr = id ? `id="tag-display-${id}"` : '';
       return `<span ${idAttr} class="badge badge-tag" data-id="${id || ''}" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block; cursor:pointer;" title="Modifier le groupe">${tag}</span>`;
@@ -923,11 +925,11 @@ async renderGuestsList(guests) {
           <tbody>
     `;
 
-    const tagOptions = ['Famille Mariée', 'Famille Marié', 'Ami(e) Mariée', 'Ami(e) Marié', 'Prêtre'];
+    const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille Mariée', 'Famille Marié', 'Ami(e) Mariée', 'Ami(e) Marié'];
 
     // On boucle désormais sur le tableau trié
     sortedGuests.forEach((g, idx) => {
-      const bg = idx % 2 === 0 ? '#FFFFFF' : '#FDFBF7';
+      const bg = idx % 2 === 0 ? '#FFFFFF' : '#F0F4F1';
       const currentTag = g.tag || ''; 
       
       let transportText = '—';
@@ -935,11 +937,11 @@ async renderGuestsList(guests) {
         const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
         transportText = modes[g.transport.mode] || g.transport.mode;
       }
-      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose</span>`;
-      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande</span>`;
+      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose covoiturage</span>`;
+      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande covoiturage</span>`;
 
       const isBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
-      const brunchText = isBrunch ? '☕ Oui' : '🙏 Non';
+      const brunchText = isBrunch ? 'Oui' : 'Non';
       const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
@@ -961,7 +963,7 @@ async renderGuestsList(guests) {
             <div style="display:flex; align-items:center; gap:6px;">
               ${buildTagBadge(currentTag, g.id)}
               <div style="position:relative;">
-                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:var(--forest); font-size:14px; padding:0; ${currentTag ? 'display:none;' : ''}" title="Définir le groupe">➕</button>
+                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:var(--forest); opacity:0.8; font-size:14px; padding:0; ${currentTag ? 'display:none;' : ''}" title="Définir le groupe">➕</button>
                 <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
                   <option value="">Sélectionner...</option>
                   ${tagOptions.map(t => `<option value="${t}" ${currentTag === t ? 'selected' : ''}>${t}</option>`).join('')}
@@ -989,7 +991,7 @@ async renderGuestsList(guests) {
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
               <td style="padding:10px; position:relative; padding-left: 20px;">
-                <span style="color:var(--gold); font-weight:bold; font-size:16px; margin-right:4px;">+</span>
+                <div style="position:absolute; left:-10px; top:-12px; width:24px; height:24px; border-radius:50%; background:var(--gold); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; z-index:1; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
                 <strong>${comp.name}</strong>
               </td>
               <td style="padding:10px;">
