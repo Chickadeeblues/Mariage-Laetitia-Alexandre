@@ -914,12 +914,12 @@ async renderGuestsList(guests) {
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
               <th style="padding:10px;">Nom & Contact</th>
               <th style="padding:10px;">Groupe</th>
-              <th style="padding:10px;">Présence</th>
-              <th style="padding:10px;">Brunch</th>
-              <th style="padding:10px;">Régime</th>
+              <th style="padding:10px; text-align:center;">Présence</th>
+              <th style="padding:10px; text-align:center;">Brunch</th>
+              <th style="padding:10px; text-align:center;">Régime</th>
               <th style="padding:10px;">Transport</th>
               <th style="padding:10px;">Hébergement</th>
-              <th style="padding:10px; width: 80px;">Actions</th>
+              <th style="padding:10px; width: 50px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -947,16 +947,21 @@ async renderGuestsList(guests) {
 
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
-          <td style="padding:10px;">
-            <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
-            ${formattedPhone ? `
-              <span style="cursor:pointer; margin-left:6px; filter: grayscale(20%); transition: transform 0.2s;" 
-                    onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
-                    title="Afficher/Masquer le numéro">📞</span>
-              <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px; padding-left:4px; border-left: 2px solid var(--sage);">
-                ${formattedPhone}
-              </div>
-            ` : ''}
+          <td style="padding:10px 10px 10px 40px; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
+              ${formattedPhone ? `
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                  <span style="cursor:pointer; filter: grayscale(100%) opacity(0.4); transition: opacity 0.2s;" 
+                        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4"
+                        onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                        title="Afficher/Masquer le numéro">📞</span>
+                  <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px;">
+                    ${formattedPhone}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
           </td>
           
           <td style="padding:10px;">
@@ -972,14 +977,13 @@ async renderGuestsList(guests) {
             </div>
           </td>
 
-          <td style="padding:10px;">${badgeFor(g.attending)}</td>
-          <td style="padding:10px;">${brunchText}</td>
-          <td style="padding:10px;">${getDietBadges(g)}</td>
+          <td style="padding:10px; text-align:center;">${badgeFor(g.attending)}</td>
+          <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
+          <td style="padding:10px; text-align:center;">${getDietBadges(g)}</td>
           <td style="padding:10px;">${transportText}</td>
           <td style="padding:10px;"><strong>${accommodation}</strong></td>
-          <td style="padding:10px; display:flex; gap:6px;">
+          <td style="padding:10px; text-align:center;">
             <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
-            <button class="btn btn--outline delete-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer">×</button>
           </td>
         </tr>
       `;
@@ -990,21 +994,20 @@ async renderGuestsList(guests) {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:10px; position:relative; padding-left: 20px;">
-                <div style="position:absolute; left:-10px; top:-12px; width:24px; height:24px; border-radius:50%; background:var(--gold); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; z-index:1; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
+              <td style="padding:10px 10px 10px 40px; position:relative;">
+                <div style="position:absolute; left:6px; top:-12px; width:24px; height:24px; border-radius:50%; background:var(--gold); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; z-index:1; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
                 <strong>${comp.name}</strong>
               </td>
               <td style="padding:10px;">
                 ${currentTag ? buildTagBadge(currentTag) : '<span class="text-muted">—</span>'}
               </td>
-              <td style="padding:10px;">${badgeFor(g.attending)}</td>
-              <td style="padding:10px;">${brunchText}</td>
-              <td style="padding:10px;">${getDietBadges(comp)}</td>
+              <td style="padding:10px; text-align:center;">${badgeFor(g.attending)}</td>
+              <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
+              <td style="padding:10px; text-align:center;">${getDietBadges(comp)}</td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px; display:flex; gap:6px;">
+              <td style="padding:10px;"><strong>${accommodation}</strong></td>
+              <td style="padding:10px; text-align:center;">
                 <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
-                <button class="btn btn--outline delete-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer l'accompagnant">×</button>
               </td>
             </tr>
           `;
@@ -1071,18 +1074,6 @@ async renderGuestsList(guests) {
         const guest = guests.find(g => g.id === id);
         if (guest) {
           this.openEditModal(guest);
-        }
-      });
-    });
-
-    // --- Suppression d'un groupe (Invité principal + accompagnants) ---
-    container.querySelectorAll('.delete-guest-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm("Supprimer définitivement cet invité et ses accompagnants ?")) {
-          await Store.deleteGuest(id);
-          if(typeof Animations !== 'undefined') Animations.showToast("Invité supprimé", "success");
-          this.renderDashboard();
         }
       });
     });
@@ -1216,9 +1207,8 @@ async renderGuestsList(guests) {
             <td style="padding:10px; text-align:center;">
               ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">Oui</span>' : '<span style="color:#999;">Non</span>'}
             </td>
-            <td style="padding:10px; display:flex; gap:6px; justify-content:center;">
+            <td style="padding:10px; text-align:center;">
               <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
-              <button class="btn btn--outline delete-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:red; border-color:red; cursor:pointer;" title="Supprimer">×</button>
             </td>
           </tr>
         `;
@@ -1257,18 +1247,6 @@ async renderGuestsList(guests) {
       btn.addEventListener('click', (e) => {
         const target = team.find(item => item.id == e.currentTarget.dataset.id);
         if (target) this.openTeamModal(target, guests);
-      });
-    });
-
-    container.querySelectorAll('.delete-team-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
-          await this._deleteTeamMember(e.currentTarget.dataset.id);
-          if (typeof Animations !== 'undefined' && Animations.showToast) {
-            Animations.showToast("Membre supprimé", "success");
-          }
-          await this.renderTeam(guests);
-        }
       });
     });
   },
@@ -1379,9 +1357,12 @@ async renderGuestsList(guests) {
               </div>
             </fieldset>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-              <button type="button" id="team-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
-              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer</button>
+            <div style="display:flex; justify-content:${member ? 'space-between' : 'flex-end'}; align-items:center; margin-top:8px;">
+              ${member ? `<button type="button" id="delete-team-btn" class="btn btn--outline" style="padding:10px 18px; color:red; border-color:red; font-weight:600;">Supprimer le membre</button>` : ''}
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="team-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+                <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer</button>
+              </div>
             </div>
           </form>
 
@@ -1415,6 +1396,18 @@ async renderGuestsList(guests) {
         }
       });
     });
+
+    const deleteBtn = document.getElementById('delete-team-btn');
+    if (deleteBtn && member) {
+      deleteBtn.addEventListener('click', async () => {
+        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
+          await this._deleteTeamMember(member.id);
+          if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Membre supprimé", "success");
+          closeModal();
+          await this.renderTeam(guests);
+        }
+      });
+    }
 
     guestSelect.addEventListener('change', (e) => {
       const gId = e.target.value;
@@ -1589,9 +1582,12 @@ async renderGuestsList(guests) {
               </div>
             </fieldset>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-              <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
-              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <button type="button" id="delete-guest-btn-modal" class="btn btn--outline" style="padding:10px 18px; color:red; border-color:red; font-weight:600;">Supprimer l'invité</button>
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+                <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
+              </div>
             </div>
           </form>
 
@@ -1610,6 +1606,15 @@ async renderGuestsList(guests) {
     cancelBtn.addEventListener('click', closeModal);
     closeX.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById('delete-guest-btn-modal').addEventListener('click', async () => {
+      if (confirm("Supprimer définitivement cet invité et ses accompagnants ?")) {
+        await Store.deleteGuest(guest.id);
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Invité supprimé", "success");
+        closeModal();
+        this.renderDashboard();
+      }
+    });
 	
 	// Pré-cochage automatique des jours suivants (décochable manuellement)
     document.getElementById('team-arr-thu')?.addEventListener('change', (e) => {
