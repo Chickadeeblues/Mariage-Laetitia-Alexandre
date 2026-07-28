@@ -207,39 +207,76 @@ const Carpool = {
           </div>
         </div>
 
-        <!-- Panneau de filtres ergonomiques -->
-        <div class="carpool-filters-grid">
-          <div class="form-group">
-            <label for="carpool-city-filter">Ville de départ</label>
-            <input 
-              type="text" 
-              id="carpool-city-filter" 
-              class="form-control"
-              placeholder="Ex: Lyon, Saint-Étienne..." 
-              value="${this._cityFilter}"
-            />
+        this._elements.container.innerHTML = `
+      <!-- En-tête simplifié de covoiturage -->
+      <div class="carpool-header">
+        <div class="carpool-stats">
+          <div class="carpool-stat">
+            <span class="carpool-stat-number">${totalSeatsAvailable}</span>
+            <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
           </div>
-
-          <div class="form-group">
-            <label for="carpool-day-filter">Jour de départ</label>
-            <select id="carpool-day-filter" class="form-control">
-              <option value="">Tous les jours</option>
-              ${this._getUniqueDaysOptions(allDrivers, allPassengers)}
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="carpool-seats-filter">Places (min)</label>
-            <input 
-              type="number" 
-              id="carpool-seats-filter" 
-              class="form-control"
-              min="1"
-              placeholder="1" 
-              value="${this._seatsFilter || ''}"
-            />
+          <div class="carpool-stat-divider"></div>
+          <div class="carpool-stat">
+            <span class="carpool-stat-number">${totalSeatsNeeded}</span>
+            <span class="carpool-stat-label">place${totalSeatsNeeded > 1 ? 's' : ''} demandée${totalSeatsNeeded > 1 ? 's' : ''}</span>
           </div>
         </div>
+
+        <!-- NOUVEAU CONTENEUR : Boutons à gauche, Formulaire à droite -->
+        <div class="carpool-action-container" style="display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap;">
+          
+          <!-- A. Partie Gauche : Boutons de sélection -->
+          <div class="carpool-left-panel" style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 1rem;">
+            <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request">
+              Demander un covoiturage
+            </button>
+            <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer">
+              Proposer un covoiturage
+            </button>
+          </div>
+
+          <!-- A. Partie Droite : Formulaire (masqué par défaut) -->
+          <div id="carpool-right-panel" class="carpool-right-panel" style="flex: 2; min-width: 300px; display: none; background: var(--white); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(156, 175, 136, 0.2); box-shadow: var(--shadow-sm);">
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label>Ville de départ</label>
+              <input type="text" id="carpool-city" class="form-control" placeholder="Ex: Lyon, Saint-Étienne..." />
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+              <!-- B. Jour de départ avec dates spécifiques -->
+              <div class="form-group" style="flex: 1; min-width: 150px;">
+                <label>Jour de départ</label>
+                <select id="carpool-day" class="form-control">
+                  <option value="" selected>Sélectionner</option>
+                  <option value="2027-05-06">Jeudi 6 mai 2027</option>
+                  <option value="2027-05-07">Vendredi 7 mai 2027</option>
+                  <option value="2027-05-08">Samedi 8 mai 2027</option>
+                </select>
+              </div>
+
+              <!-- C. Heure de départ -->
+              <div class="form-group" style="flex: 1; min-width: 100px;">
+                <label>Heure de départ</label>
+                <input type="time" id="carpool-time" class="form-control" />
+              </div>
+
+              <!-- D. Places (Min) retiré -->
+              <div class="form-group" style="flex: 1; min-width: 100px;">
+                <label>Places</label>
+                <input type="number" id="carpool-seats" class="form-control" min="1" placeholder="1" />
+              </div>
+            </div>
+
+            <!-- Bouton de validation dynamique -->
+            <div style="text-align: right; margin-top: 1.5rem;">
+              <button id="btn-validate-carpool" class="btn btn-primary" style="background-color: var(--forest); color: white;">
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Contenu principal -->
@@ -364,6 +401,46 @@ const Carpool = {
    * Attache les écouteurs d'événements.
    */
   _attachListeners() {
+	
+		let selectedMode = null; // 'request' ou 'offer'
+
+const btnRequest = document.getElementById('btn-mode-request');
+const btnOffer = document.getElementById('btn-mode-offer');
+const rightPanel = document.getElementById('carpool-right-panel');
+const btnValidate = document.getElementById('btn-validate-carpool');
+
+const toggleMode = (mode) => {
+  selectedMode = mode;
+  
+  // Gestion visuelle des boutons
+  btnRequest.classList.toggle('is-active', mode === 'request');
+  btnOffer.classList.toggle('is-active', mode === 'offer');
+  
+  // Affichage du panneau de droite
+  rightPanel.style.display = 'block';
+  
+  // Adaptation du texte du bouton de validation
+  btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
+};
+
+if (btnRequest) btnRequest.addEventListener('click', () => toggleMode('request'));
+if (btnOffer) btnOffer.addEventListener('click', () => toggleMode('offer'));
+
+if (btnValidate) {
+  btnValidate.addEventListener('click', () => {
+    // Logique d'enregistrement (appel au Store pour Supabase)
+    const payload = {
+      type: selectedMode,
+      city: document.getElementById('carpool-city').value,
+      departureDay: document.getElementById('carpool-day').value,
+      departureTime: document.getElementById('carpool-time').value,
+      seats: parseInt(document.getElementById('carpool-seats').value, 10) || 1
+    };
+    console.log("Données à enregistrer :", payload);
+    // await Store.saveCarpool(payload);
+  });
+}
+	  
     // 1. Filtre Ville
     const cityInput = document.getElementById('carpool-city-filter');
     if (cityInput) {
@@ -597,6 +674,27 @@ const Carpool = {
         text-transform: uppercase;
         font-weight: 500;
       }
+	  
+	  .btn-carpool-mode {
+  padding: 1rem;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--sage);
+  background-color: var(--cream); /* Blanc cassé par défaut */
+  color: var(--forest);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+/* État sélectionné : Vert sauge clair */
+.btn-carpool-mode.is-active {
+  background-color: #D3DCD0; /* Variante claire du Vert Sauge pour rester lisible */
+  border-color: var(--forest);
+  font-weight: 600;
+}
 
       /* Révélation de contact */
       .carpool-card-footer {
