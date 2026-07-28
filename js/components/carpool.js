@@ -175,9 +175,21 @@ const Carpool = {
     const totalSeatsNeeded = allPassengers.reduce((sum, p) => sum + p.seatsNeeded, 0);
 
     this._elements.container.innerHTML = `
-      <!-- En-tête simplifié de covoiturage -->
-      <div class="carpool-header">
-        <div class="carpool-stats">
+      <!-- En-tête : Boutons à gauche, Tableau récapitulatif à droite -->
+      <div class="carpool-top-layout" style="display: flex; justify-content: space-between; align-items: stretch; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;">
+        
+        <!-- Partie Gauche : Boutons de sélection -->
+        <div class="carpool-left-panel" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-width: 250px;">
+          <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request">
+            Demander un covoiturage
+          </button>
+          <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer">
+            Proposer un covoiturage
+          </button>
+        </div>
+
+        <!-- Partie Droite : Tableau récapitulatif (largeur réduite) -->
+        <div class="carpool-stats" style="flex: 1; min-width: 250px; margin-bottom: 0;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -189,61 +201,59 @@ const Carpool = {
           </div>
         </div>
 
-        <!-- NOUVEAU CONTENEUR : Boutons à gauche, Formulaire à droite -->
-        <div class="carpool-action-container" style="display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap;">
-          
-          <!-- A. Partie Gauche : Boutons de sélection -->
-          <div class="carpool-left-panel" style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 1rem;">
-            <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request">
-              Demander un covoiturage
-            </button>
-            <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer">
-              Proposer un covoiturage
-            </button>
-          </div>
+      </div>
 
-          <!-- A. Partie Droite : Formulaire (masqué par défaut) -->
-          <div id="carpool-right-panel" class="carpool-right-panel" style="flex: 2; min-width: 300px; display: none; background: var(--white); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(156, 175, 136, 0.2); box-shadow: var(--shadow-sm);">
-            
-            <div class="form-group" style="margin-bottom: 1rem;">
-              <label>Ville de départ</label>
-              <input type="text" id="carpool-city" class="form-control" placeholder="Ex: Lyon, Saint-Étienne..." />
-            </div>
-
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-              <!-- B. Jour de départ avec dates spécifiques -->
-              <div class="form-group" style="flex: 1; min-width: 150px;">
-                <label>Jour de départ</label>
-                <select id="carpool-day" class="form-control">
-                  <option value="" selected>Sélectionner</option>
-                  <option value="2027-05-06">Jeudi 6 mai 2027</option>
-                  <option value="2027-05-07">Vendredi 7 mai 2027</option>
-                  <option value="2027-05-08">Samedi 8 mai 2027</option>
-                </select>
-              </div>
-
-              <!-- C. Heure de départ -->
-              <div class="form-group" style="flex: 1; min-width: 100px;">
-                <label>Heure de départ</label>
-                <input type="time" id="carpool-time" class="form-control" />
-              </div>
-
-              <!-- D. Places -->
-              <div class="form-group" style="flex: 1; min-width: 100px;">
-                <label>Places</label>
-                <input type="number" id="carpool-seats" class="form-control" min="1" placeholder="1" />
-              </div>
-            </div>
-
-            <!-- Bouton de validation dynamique -->
-            <div style="text-align: right; margin-top: 1.5rem;">
-              <button id="btn-validate-carpool" class="btn btn-primary" style="background-color: var(--forest); color: white;">
-                Valider
-              </button>
-            </div>
+      <!-- Formulaire global : Toute la largeur de la page -->
+      <div id="carpool-right-panel" class="carpool-right-panel" style="display: none; background: var(--white); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(156, 175, 136, 0.2); box-shadow: var(--shadow-sm); margin-bottom: 2.5rem;">
+        
+        <!-- Ville de départ ou Case à cocher Gare -->
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label>Ville de départ</label>
+          <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="carpool-city" class="form-control" placeholder="Ex: Lyon..." style="flex: 2; min-width: 200px;" />
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; color: var(--forest); flex: 1; min-width: 220px;">
+              <input type="checkbox" id="carpool-station-checkbox" /> Gare TER Péage-de-Roussillon
+            </label>
           </div>
         </div>
 
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          
+          <!-- Jour de départ (centré) -->
+          <div class="form-group" style="flex: 1; min-width: 180px;">
+            <label>Jour de départ</label>
+            <select id="carpool-day" class="form-control" style="text-align: center; text-align-last: center;">
+              <option value="" selected disabled>Jour de départ</option>
+              <option value="2027-05-06">Jeudi 6 mai 2027</option>
+              <option value="2027-05-07">Vendredi 7 mai 2027</option>
+              <option value="2027-05-08">Samedi 8 mai 2027</option>
+            </select>
+          </div>
+
+          <!-- Heure de départ (horloge / centré) -->
+          <div class="form-group" style="flex: 1; min-width: 180px;">
+            <label>Heure de départ</label>
+            <input type="time" id="carpool-time" class="form-control" style="text-align: center;" />
+          </div>
+
+          <!-- Places (Centré avec boutons - et +) -->
+          <div class="form-group" style="flex: 1; min-width: 180px;">
+            <label>Places</label>
+            <div class="carpool-stepper" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <button type="button" id="btn-seats-minus" class="btn-stepper">-</button>
+              <input type="number" id="carpool-seats" class="form-control" min="1" value="1" style="text-align: center; width: 70px;" />
+              <button type="button" id="btn-seats-plus" class="btn-stepper">+</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bouton de validation dynamique -->
+        <div style="text-align: right; margin-top: 1.5rem;">
+          <button id="btn-validate-carpool" class="btn btn-primary" style="background-color: var(--forest); color: white;">
+            Valider
+          </button>
+        </div>
       </div>
 
       <!-- Contenu principal -->
@@ -374,15 +384,19 @@ const Carpool = {
     const btnOffer = document.getElementById('btn-mode-offer');
     const rightPanel = document.getElementById('carpool-right-panel');
     const btnValidate = document.getElementById('btn-validate-carpool');
+    
+    // Éléments spécifiques du formulaire
+    const stationCheckbox = document.getElementById('carpool-station-checkbox');
+    const cityInput = document.getElementById('carpool-city');
+    const seatsInput = document.getElementById('carpool-seats');
+    const btnMinus = document.getElementById('btn-seats-minus');
+    const btnPlus = document.getElementById('btn-seats-plus');
 
     const toggleMode = (mode) => {
       selectedMode = mode;
-      
       if (btnRequest) btnRequest.classList.toggle('is-active', mode === 'request');
       if (btnOffer) btnOffer.classList.toggle('is-active', mode === 'offer');
-      
       if (rightPanel) rightPanel.style.display = 'block';
-      
       if (btnValidate) {
         btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
       }
@@ -391,20 +405,47 @@ const Carpool = {
     if (btnRequest) btnRequest.addEventListener('click', () => toggleMode('request'));
     if (btnOffer) btnOffer.addEventListener('click', () => toggleMode('offer'));
 
+    // Gestion de la case à cocher Gare TER
+    if (stationCheckbox && cityInput) {
+      stationCheckbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          cityInput.value = 'Gare TER Péage-de-Roussillon';
+          cityInput.disabled = true;
+        } else {
+          cityInput.value = '';
+          cityInput.disabled = false;
+        }
+      });
+    }
+
+    // Gestion du sélecteur de places (- / +)
+    if (btnMinus && seatsInput) {
+      btnMinus.addEventListener('click', () => {
+        let val = parseInt(seatsInput.value, 10) || 1;
+        if (val > 1) seatsInput.value = val - 1;
+      });
+    }
+    if (btnPlus && seatsInput) {
+      btnPlus.addEventListener('click', () => {
+        let val = parseInt(seatsInput.value, 10) || 1;
+        seatsInput.value = val + 1;
+      });
+    }
+
     if (btnValidate) {
       btnValidate.addEventListener('click', () => {
         const payload = {
           type: selectedMode,
-          city: document.getElementById('carpool-city').value,
+          city: stationCheckbox && stationCheckbox.checked ? 'Gare TER Péage-de-Roussillon' : cityInput.value,
           departureDay: document.getElementById('carpool-day').value,
           departureTime: document.getElementById('carpool-time').value,
-          seats: parseInt(document.getElementById('carpool-seats').value, 10) || 1
+          seats: parseInt(seatsInput.value, 10) || 1
         };
         console.log("Données à enregistrer :", payload);
         // await Store.saveCarpool(payload);
       });
     }
-
+	
     // 4. Dépliage du contact
     const container = this._elements.container;
     container.querySelectorAll('.btn-reveal-contact').forEach((btn) => {
@@ -651,6 +692,26 @@ const Carpool = {
       @keyframes fadeInReveal {
         from { opacity: 0; transform: translateY(3px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+	  
+	  /* Boutons du Stepper de places (- et +) */
+      .btn-stepper {
+        width: 38px;
+        height: 38px;
+        background: var(--cream);
+        border: 1px solid var(--sage);
+        border-radius: var(--radius-sm);
+        color: var(--forest);
+        font-weight: bold;
+        font-size: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
+      }
+      .btn-stepper:hover {
+        background: #D3DCD0;
       }
 
       @media (max-width: 768px) {
