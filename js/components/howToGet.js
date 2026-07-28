@@ -100,8 +100,6 @@ const HowToGet = {
         
         .htg-link-map { display: inline-block; font-size: 13px; color: var(--gold, #C9A84C); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; align-self: flex-start; transition: color 0.2s; }
         .htg-link-map:hover { color: var(--forest, #2D5A3D); }
-        
-        .htg-map-iframe { width: 100%; height: 250px; border: 0; border-radius: 8px; margin-top: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
       </style>`;
 
     this._elements.contentArea = document.getElementById('htg-dynamic-content');
@@ -128,24 +126,18 @@ const HowToGet = {
 
     const churchContent = isCar 
       ? `<p class="htg-text">
-           Le centre du village est constitué d'une ruelle médiévale <strong>qu'il faut parcourir depuis les parkings</strong>. Prévoyez un peu de marge pour vous garer et rejoindre l'église à pied.
+           Le centre du village est constitué de ruelles médiévales <strong>inaccessibles aux véhicules</strong>. Prévoyez un peu de marge pour vous garer et rejoindre l'église à pied.
          </p>
          <h4 class="htg-subtitle">Parkings à disposition</h4>
          <ul class="htg-list">
            <li><strong>Place du Pressoir</strong> (à environ 5 min à pied)</li>
            <li><strong>Parking de la Mairie</strong> (à environ 5 min à pied)</li>
            <li><strong>Parking du Bourg</strong> (à environ 7 min à pied)</li>
-           <li><strong>Parking route de Pélussin</strong> (à environ 12 min à pied, en montée)</li>
+           <li><strong>Parking des Faugés</strong> (à environ 12 min à pied, en montée)</li>
          </ul>
          <div class="htg-pmr-box">
-           <strong>♿ Accessibilité :</strong> Un dépose-minute est possible devant la salle des fêtes (rue de Renaud de Forez), permettant d'être déposé à proximité immédiate de l'église (attention, le stationnement prolongé n'y est pas garanti).
-         </div>
-         
-         <!-- Carte Google Maps de l'Église -->
-         <iframe class="htg-map-iframe" 
-                 src="https://www.google.com/maps/d/embed?mid=1Hbe0d-zarLgDBcC_qk_ZIpwGlTzT-0k&hl=fr&ehbc=2E312F" width="640" height="480"
-                 allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-         </iframe>`
+           <strong>♿ Accessibilité :</strong> Un dépose-minute est possible devant le parking de la salle des fêtes (Rue de Renaud de Forez), permettant d'être déposé à proximité immédiate de l'église (attention, le stationnement prolongé n'y est pas garanti).
+         </div>`
       : `<p class="htg-text">
            La gare la plus proche est la <strong>Gare TER Le Péage-de-Roussillon</strong> (ligne Lyon ↔ Valence, à environ 40 min de Lyon Part-Dieu).
          </p>
@@ -159,13 +151,7 @@ const HowToGet = {
          </p>
          <div class="htg-highlight-box">
            <strong>Stationnement :</strong> Un parking gratuit est disponible sur place. Une fois arrivés à Doizieux, suivez les ballons pour trouver l'entrée du domaine !
-         </div>
-         
-         <!-- Carte Google Maps de l'itinéraire Église -> Domaine -->
-         <iframe class="htg-map-iframe" 
-                 src="https://maps.google.com/maps?saddr=Église+Notre-Dame-de-Pitié,Malleval,42520&daddr=38+Les+Scies,Doizieux,42740&output=embed" 
-                 allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-         </iframe>`
+         </div>`
       : `<p class="htg-text">
            Le domaine de la Scie du May est situé en pleine nature dans le parc naturel du Pilat.
          </p>
@@ -183,7 +169,7 @@ const HowToGet = {
         <div class="htg-block-body">
           ${churchContent}
         </div>
-        ${isCar ? '' : `<a href="https://maps.google.com/?q=Église+Notre-Dame-de-Pitié,Malleval,42520" target="_blank" rel="noopener" class="htg-link-map">Ouvrir dans Google Maps</a>`}
+        <a href="https://maps.google.com/?q=Église+Notre-Dame-de-Pitié,Malleval,42520" target="_blank" rel="noopener" class="htg-link-map">Ouvrir dans Google Maps</a>
       </div>
 
       <div class="htg-block">
