@@ -125,24 +125,6 @@ const Carpool = {
   },
 
   /**
-   * Récupère la liste des dates uniques pour le filtre "Jour de départ".
-   */
-  _getUniqueDaysOptions(allDrivers, allPassengers) {
-    const days = new Set();
-    allDrivers.forEach(d => { if (d.departureDay) days.add(d.departureDay); });
-    allPassengers.forEach(p => { if (p.departureDay) days.add(p.departureDay); });
-
-    return Array.from(days)
-      .sort()
-      .map(day => `
-        <option value="${day}" ${this._dayFilter === day ? 'selected' : ''}>
-          Le ${this._formatDate(day)}
-        </option>
-      `)
-      .join('');
-  },
-
-  /**
    * Applique l'ensemble des filtres cumulatifs (Ville, Jour, Places).
    */
   _applyFilters(list, isDriver) {
@@ -207,21 +189,6 @@ const Carpool = {
           </div>
         </div>
 
-        this._elements.container.innerHTML = `
-      <!-- En-tête simplifié de covoiturage -->
-      <div class="carpool-header">
-        <div class="carpool-stats">
-          <div class="carpool-stat">
-            <span class="carpool-stat-number">${totalSeatsAvailable}</span>
-            <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
-          </div>
-          <div class="carpool-stat-divider"></div>
-          <div class="carpool-stat">
-            <span class="carpool-stat-number">${totalSeatsNeeded}</span>
-            <span class="carpool-stat-label">place${totalSeatsNeeded > 1 ? 's' : ''} demandée${totalSeatsNeeded > 1 ? 's' : ''}</span>
-          </div>
-        </div>
-
         <!-- NOUVEAU CONTENEUR : Boutons à gauche, Formulaire à droite -->
         <div class="carpool-action-container" style="display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap;">
           
@@ -261,7 +228,7 @@ const Carpool = {
                 <input type="time" id="carpool-time" class="form-control" />
               </div>
 
-              <!-- D. Places (Min) retiré -->
+              <!-- D. Places -->
               <div class="form-group" style="flex: 1; min-width: 100px;">
                 <label>Places</label>
                 <input type="number" id="carpool-seats" class="form-control" min="1" placeholder="1" />
@@ -401,79 +368,40 @@ const Carpool = {
    * Attache les écouteurs d'événements.
    */
   _attachListeners() {
-	
-		let selectedMode = null; // 'request' ou 'offer'
+    let selectedMode = null; // 'request' ou 'offer'
 
-const btnRequest = document.getElementById('btn-mode-request');
-const btnOffer = document.getElementById('btn-mode-offer');
-const rightPanel = document.getElementById('carpool-right-panel');
-const btnValidate = document.getElementById('btn-validate-carpool');
+    const btnRequest = document.getElementById('btn-mode-request');
+    const btnOffer = document.getElementById('btn-mode-offer');
+    const rightPanel = document.getElementById('carpool-right-panel');
+    const btnValidate = document.getElementById('btn-validate-carpool');
 
-const toggleMode = (mode) => {
-  selectedMode = mode;
-  
-  // Gestion visuelle des boutons
-  btnRequest.classList.toggle('is-active', mode === 'request');
-  btnOffer.classList.toggle('is-active', mode === 'offer');
-  
-  // Affichage du panneau de droite
-  rightPanel.style.display = 'block';
-  
-  // Adaptation du texte du bouton de validation
-  btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
-};
-
-if (btnRequest) btnRequest.addEventListener('click', () => toggleMode('request'));
-if (btnOffer) btnOffer.addEventListener('click', () => toggleMode('offer'));
-
-if (btnValidate) {
-  btnValidate.addEventListener('click', () => {
-    // Logique d'enregistrement (appel au Store pour Supabase)
-    const payload = {
-      type: selectedMode,
-      city: document.getElementById('carpool-city').value,
-      departureDay: document.getElementById('carpool-day').value,
-      departureTime: document.getElementById('carpool-time').value,
-      seats: parseInt(document.getElementById('carpool-seats').value, 10) || 1
+    const toggleMode = (mode) => {
+      selectedMode = mode;
+      
+      if (btnRequest) btnRequest.classList.toggle('is-active', mode === 'request');
+      if (btnOffer) btnOffer.classList.toggle('is-active', mode === 'offer');
+      
+      if (rightPanel) rightPanel.style.display = 'block';
+      
+      if (btnValidate) {
+        btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
+      }
     };
-    console.log("Données à enregistrer :", payload);
-    // await Store.saveCarpool(payload);
-  });
-}
-	  
-    // 1. Filtre Ville
-    const cityInput = document.getElementById('carpool-city-filter');
-    if (cityInput) {
-      cityInput.addEventListener('input', (e) => {
-        this._cityFilter = e.target.value;
-        this._render();
-        const input = document.getElementById('carpool-city-filter');
-        if (input) {
-          input.focus();
-          input.selectionStart = input.selectionEnd = input.value.length;
-        }
-      });
-    }
 
-    // 2. Filtre Jour
-    const daySelect = document.getElementById('carpool-day-filter');
-    if (daySelect) {
-      daySelect.addEventListener('change', (e) => {
-        this._dayFilter = e.target.value;
-        this._render();
-      });
-    }
+    if (btnRequest) btnRequest.addEventListener('click', () => toggleMode('request'));
+    if (btnOffer) btnOffer.addEventListener('click', () => toggleMode('offer'));
 
-    // 3. Filtre Places
-    const seatsInput = document.getElementById('carpool-seats-filter');
-    if (seatsInput) {
-      seatsInput.addEventListener('input', (e) => {
-        this._seatsFilter = parseInt(e.target.value, 10) || 0;
-        this._render();
-        const input = document.getElementById('carpool-seats-filter');
-        if (input) {
-          input.focus();
-        }
+    if (btnValidate) {
+      btnValidate.addEventListener('click', () => {
+        const payload = {
+          type: selectedMode,
+          city: document.getElementById('carpool-city').value,
+          departureDay: document.getElementById('carpool-day').value,
+          departureTime: document.getElementById('carpool-time').value,
+          seats: parseInt(document.getElementById('carpool-seats').value, 10) || 1
+        };
+        console.log("Données à enregistrer :", payload);
+        // await Store.saveCarpool(payload);
       });
     }
 
@@ -544,33 +472,6 @@ if (btnValidate) {
         width: 1px;
         height: 40px;
         background: rgba(156, 175, 136, 0.3);
-      }
-
-      /* Grille de filtres ergonomique */
-      .carpool-filters-grid {
-        display: grid;
-        grid-template-columns: 2fr 1.5fr 1fr;
-        gap: 1.25rem;
-        max-width: 800px;
-        margin: 0 auto 2.5rem auto;
-        padding: 1.25rem;
-        background: var(--white);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(156, 175, 136, 0.2);
-      }
-      .carpool-filters-grid .form-group {
-        margin-bottom: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-      .carpool-filters-grid label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--forest);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
       }
 
       /* Colonnes de cartes */
@@ -674,27 +575,26 @@ if (btnValidate) {
         text-transform: uppercase;
         font-weight: 500;
       }
-	  
-	  .btn-carpool-mode {
-  padding: 1rem;
-  font-family: var(--font-body);
-  font-size: 1.1rem;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--sage);
-  background-color: var(--cream); /* Blanc cassé par défaut */
-  color: var(--forest);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-}
+      
+      .btn-carpool-mode {
+        padding: 1rem;
+        font-family: var(--font-body);
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--sage);
+        background-color: var(--cream);
+        color: var(--forest);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+      }
 
-/* État sélectionné : Vert sauge clair */
-.btn-carpool-mode.is-active {
-  background-color: #D3DCD0; /* Variante claire du Vert Sauge pour rester lisible */
-  border-color: var(--forest);
-  font-weight: 600;
-}
+      .btn-carpool-mode.is-active {
+        background-color: #D3DCD0;
+        border-color: var(--forest);
+        font-weight: 600;
+      }
 
       /* Révélation de contact */
       .carpool-card-footer {
@@ -756,10 +656,6 @@ if (btnValidate) {
       @media (max-width: 768px) {
         .carpool-columns {
           grid-template-columns: 1fr;
-        }
-        .carpool-filters-grid {
-          grid-template-columns: 1fr;
-          gap: 1rem;
         }
         .carpool-stats {
           gap: 1.5rem;
