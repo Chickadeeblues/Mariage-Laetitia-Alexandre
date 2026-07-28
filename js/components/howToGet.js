@@ -9,9 +9,7 @@ const HowToGet = {
     this._elements.page = document.getElementById('page-comment-venir');
     if (!this._elements.page) return;
     
-    // On génère la structure de base (titre + boutons) une seule fois
     this._renderShell();
-    // On met à jour uniquement le contenu en dessous
     this._updateContent();
     
     window.addEventListener('route-changed', (e) => {
@@ -51,7 +49,6 @@ const HowToGet = {
 
     this._elements.page.innerHTML = `
       <div class="container">
-        <!-- Le header est rendu sans être écrasé au changement d'onglet -->
         <div class="section-header animate-on-scroll">
           <h2>${window.I18n?.t('htg.title') || 'Comment venir ?'}</h2>
           <div class="ornament"></div>
@@ -63,21 +60,22 @@ const HowToGet = {
           <a href="#/covoiturage" class="btn-transport btn-carpool" data-internal="true">Covoiturage</a>
         </div>
 
-        <!-- Conteneur dynamique pour les blocs -->
         <div id="htg-dynamic-content" class="htg-content-grid"></div>
       </div>
 
       <style>
         .htg-transport-selector { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 3rem; }
         
-        /* Boutons de transport (Couleurs demandées) */
+        /* Boutons de transport */
         .btn-transport { padding: 10px 24px; font-family: var(--font-body, 'Outfit', sans-serif); font-size: 15px; font-weight: 500; border: 1px solid var(--forest, #2D5A3D); background: var(--cream, #FAF8F5); color: var(--forest, #2D5A3D); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; }
-        .btn-transport.active { background: var(--forest, #2D5A3D); color: var(--white, #FFFFFF); }
+        
+        /* Onglet sélectionné : Vert sauge clair */
+        .btn-transport.active { background: #dce3d5; color: var(--forest, #2D5A3D); border-color: var(--sage, #9CAF88); }
         .btn-transport:hover:not(.active) { background: #f0ebe0; }
         
-        /* Bouton Covoiturage */
-        .btn-transport.btn-carpool { background: var(--gold, #C9A84C); color: var(--white, #FFFFFF); border-color: var(--gold, #C9A84C); }
-        .btn-transport.btn-carpool:hover { background: #b5953b; }
+        /* Bouton Covoiturage : Blanc cassé */
+        .btn-transport.btn-carpool { background: var(--cream, #FAF8F5); color: var(--gold, #C9A84C); border-color: var(--gold, #C9A84C); }
+        .btn-transport.btn-carpool:hover { background: #f0ebe0; }
 
         .htg-content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; }
         
@@ -130,7 +128,7 @@ const HowToGet = {
 
     const churchContent = isCar 
       ? `<p class="htg-text">
-           Le centre du village est constitué de ruelles médiévales <strong>inaccessibles aux véhicules</strong>. Prévoyez un peu de marge pour vous garer et rejoindre l'église à pied.
+           Le centre du village est constitué d'une ruelle médiévale <strong>qu'il faut parcourir depuis les parkings</strong>. Prévoyez un peu de marge pour vous garer et rejoindre l'église à pied.
          </p>
          <h4 class="htg-subtitle">Parkings à disposition</h4>
          <ul class="htg-list">
@@ -140,13 +138,12 @@ const HowToGet = {
            <li><strong>Parking route de Pélussin</strong> (à environ 12 min à pied, en montée)</li>
          </ul>
          <div class="htg-pmr-box">
-           <strong>♿ Accessibilité :</strong> Un dépose-minute est possible devant le parking de la salle des fêtes (Rue de Renaud de Forez), permettant d'être déposé à proximité immédiate de l'église (attention, le stationnement prolongé n'y est pas garanti).
+           <strong>♿ Accessibilité :</strong> Un dépose-minute est possible devant la salle des fêtes (rue de Renaud de Forez), permettant d'être déposé à proximité immédiate de l'église (attention, le stationnement prolongé n'y est pas garanti).
          </div>
          
-         <!-- Carte Google Maps -->
-         <!-- Note: Remplacer le lien src ci-dessous par l'URL d'intégration de votre propre "Google My Maps" pour avoir plusieurs points colorés -->
+         <!-- Carte Google Maps de l'Église -->
          <iframe class="htg-map-iframe" 
-                 src="https://maps.google.com/maps?q=Église+Notre-Dame-de-Pitié,Malleval,42520&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+                 src="https://www.google.com/maps/d/embed?mid=1Hbe0d-zarLgDBcC_qk_ZIpwGlTzT-0k&hl=fr&ehbc=2E312F" width="640" height="480"
                  allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
          </iframe>`
       : `<p class="htg-text">
@@ -154,7 +151,7 @@ const HowToGet = {
          </p>
          <p class="htg-text">
            Depuis la gare, l'église se trouve à une quinzaine de minutes en voiture. N'hésitez pas à consulter la page covoiturage pour trouver un trajet depuis la gare.
-         </p>`; // Lien vers la carte retiré comme demandé
+         </p>`;
 
     const receptionContent = isCar
       ? `<p class="htg-text">
@@ -162,7 +159,13 @@ const HowToGet = {
          </p>
          <div class="htg-highlight-box">
            <strong>Stationnement :</strong> Un parking gratuit est disponible sur place. Une fois arrivés à Doizieux, suivez les ballons pour trouver l'entrée du domaine !
-         </div>`
+         </div>
+         
+         <!-- Carte Google Maps de l'itinéraire Église -> Domaine -->
+         <iframe class="htg-map-iframe" 
+                 src="https://maps.google.com/maps?saddr=Église+Notre-Dame-de-Pitié,Malleval,42520&daddr=38+Les+Scies,Doizieux,42740&output=embed" 
+                 allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+         </iframe>`
       : `<p class="htg-text">
            Le domaine de la Scie du May est situé en pleine nature dans le parc naturel du Pilat.
          </p>
