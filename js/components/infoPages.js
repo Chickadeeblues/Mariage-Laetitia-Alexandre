@@ -38,53 +38,55 @@ const TIMING_SLOTS = [
   { value: 'Pendant le repas', title: 'Pendant le repas', desc: 'Ouvert à tous les invités !' }
 ];
 
-// Affiche les deux zones du programme. Tant que `revealed` est faux, seul le prénom
-// apparaît (pour garder la surprise) ; le type et le matériel sont masqués.
+// Affiche les deux zones du programme, côte à côte sur grand écran (empilées sur petit écran, cf. CSS).
+// Tant que `revealed` est faux, seul le prénom apparaît (pour garder la surprise) ; le type et le matériel sont masqués.
 function renderProgram(anims, revealed) {
-  return TIMING_SLOTS.map(slot => {
+  const zonesHtml = TIMING_SLOTS.map(slot => {
     const slotAnims = anims.filter(a => a.timing === slot.value);
     return `
-      <div class="anim-zone" data-timing="${slot.value}" style="margin-bottom:20px; padding:18px; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-        <h3 style="margin:0 0 4px; color:#2D5A3D;">${slot.title}</h3>
-        <p style="margin:0 0 14px; font-size:13px; color:#9b8660; font-style:italic;">${slot.desc}</p>
-        <div style="margin-bottom:14px;">
+      <div class="anim-zone-card" data-timing="${slot.value}">
+        <h3>${slot.title}</h3>
+        <p class="zone-desc">${slot.desc}</p>
+        <div class="anim-zone-list">
           ${slotAnims.length === 0
-            ? '<p style="color:#ccc; margin:0;">Aucune proposition pour le moment</p>'
+            ? '<p class="anim-empty">Aucune proposition pour le moment</p>'
             : slotAnims.map(a => {
                 const equipList = [...(a.equipment || []).map(equipLabel), a.equipmentOther].filter(Boolean);
                 return `
-                  <div class="anim-entry" style="padding:8px 0; border-bottom:1px solid #f0ebe0;">
-                    <p style="margin:0;">
+                  <div class="anim-entry">
+                    <p class="anim-entry-name">
                       🎉 <strong>${a.firstName}</strong>
-                      ${revealed ? ` — ${a.type}` : ' <span style="color:#9b8660;">prépare une surprise...</span>'}
+                      ${revealed ? ` — ${a.type}` : ' <span class="anim-surprise-tag">prépare une surprise...</span>'}
                     </p>
-                    ${revealed && equipList.length ? `<p style="margin:4px 0 0; font-size:12px; color:#9b8660;">🎛️ Matériel : ${equipList.join(', ')}</p>` : ''}
+                    ${revealed && equipList.length ? `<p class="anim-entry-equip">🎛️ Matériel : ${equipList.join(', ')}</p>` : ''}
                   </div>
                 `;
               }).join('')
           }
         </div>
-        <button type="button" class="btn btn-participate-zone" data-timing="${slot.value}">Je veux participer</button>
+        <button type="button" class="btn-participate-zone" data-timing="${slot.value}">✋ Je veux participer</button>
       </div>
     `;
   }).join('');
+
+  return `<div class="anim-zones">${zonesHtml}</div>`;
 }
 
 // 7) Liste des propositions du guest connecté, avec édition / suppression
 function renderMyAnimations(myAnims) {
   if (!myAnims || myAnims.length === 0) return '';
   return `
-    <div class="my-animations" style="margin-bottom:20px; padding:16px; background:#f4f8f3; border-radius:8px; border:1px dashed #a9c6a0;">
-      <h4 style="margin:0 0 10px; color:#2D5A3D; font-size:14px;">📋 Mes propositions</h4>
+    <div class="my-animations">
+      <h4>📋 Mes propositions</h4>
       ${myAnims.map(a => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #e2ecdf;">
+        <div class="my-anim-row">
           <div>
-            <strong style="font-size:13px;">${a.type}</strong>
-            <span style="font-size:12px; color:#666;"> — ${a.timing}</span>
+            <strong class="my-anim-type">${a.type}</strong>
+            <span class="my-anim-timing"> — ${a.timing}</span>
           </div>
-          <div style="display:flex; gap:6px; flex-shrink:0;">
-            <button type="button" class="btn-edit-anim" data-id="${a.id}" title="Modifier" style="background:none; border:1px solid #ced4da; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:12px;">✎</button>
-            <button type="button" class="btn-delete-anim" data-id="${a.id}" title="Supprimer" style="background:none; border:1px solid #f5c6cb; color:#c0392b; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:12px;">🗑️</button>
+          <div class="my-anim-actions">
+            <button type="button" class="btn-edit-anim" data-id="${a.id}" title="Modifier">✎ Modifier</button>
+            <button type="button" class="btn-delete-anim" data-id="${a.id}" title="Supprimer">🗑️ Supprimer</button>
           </div>
         </div>
       `).join('')}
@@ -444,8 +446,13 @@ const InfoPages = {
           const delBtn = e.target.closest('.btn-delete-anim');
           if (delBtn) {
             if (confirm('Supprimer cette proposition ?')) {
-              await StoreRef.deleteAnimation(delBtn.dataset.id);
-              await Promise.all([loadProgram(), loadMyAnimations()]);
+              try {
+                await StoreRef.deleteAnimation(delBtn.dataset.id);
+                await Promise.all([loadProgram(), loadMyAnimations()]);
+              } catch (err) {
+                console.error('[InfoPages] Erreur suppression animation :', err);
+                alert('La suppression a échoué : ' + err.message);
+              }
             }
           }
         });
@@ -492,8 +499,50 @@ if (!document.getElementById('info-pages-styles')) {
     .tl-body h4 { margin:0 0 4px;font-size:15px;color:#2D5A3D; }
     .tl-body p  { margin:0;font-size:13px;color:#666;line-height:1.6; }
     /* Formulaire animations */
-    #animation-form .form-control { padding:8px 10px; border:1px solid #e0d9c8; border-radius:6px; font-size:13px; font-family:var(--font-body); }
+    #animation-form .form-control { padding:8px 10px; border:1px solid #e0d9c8; border-radius:6px; font-size:14px; font-family:var(--font-body); }
     #animation-form input[type="checkbox"] { margin-right:4px; }
+
+    /* 2) Zones "Vin d'honneur" / "Repas" : côte à côte sur grand écran, empilées sur petit écran */
+    .anim-zones { display:flex; gap:20px; align-items:stretch; margin-bottom:20px; }
+    .anim-zone-card {
+      flex:1; min-width:0; display:flex; flex-direction:column;
+      background:#fff; border-radius:10px; padding:22px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.06);
+    }
+    .anim-zone-card h3 { margin:0 0 6px; font-size:19px; color:#2D5A3D; }
+    .anim-zone-card .zone-desc { margin:0 0 16px; font-size:14px; color:#9b8660; font-style:italic; }
+    .anim-zone-list { flex:1; margin-bottom:18px; }
+    .anim-empty { margin:0; font-size:14px; color:#ccc; }
+    .anim-entry { padding:9px 0; border-bottom:1px solid #f0ebe0; }
+    .anim-entry-name { margin:0; font-size:15px; color:#333; line-height:1.5; }
+    .anim-entry-equip { margin:4px 0 0; font-size:13px; color:#9b8660; }
+    .anim-surprise-tag { color:#9b8660; font-style:italic; }
+    @media (max-width:768px) {
+      .anim-zones { flex-direction:column; }
+    }
+
+    /* 3) Bouton "Je veux participer" nettement plus visible */
+    .btn-participate-zone {
+      margin-top:auto; align-self:flex-start;
+      background:#2D5A3D; color:#fff; font-weight:600; font-size:14px;
+      padding:11px 24px; border:none; border-radius:24px; cursor:pointer;
+      box-shadow:0 3px 10px rgba(45,90,61,0.3);
+      transition:background 0.2s ease, transform 0.15s ease;
+    }
+    .btn-participate-zone:hover { background:#234a32; transform:translateY(-1px); }
+
+    /* Mes propositions */
+    .my-animations { margin-bottom:20px; padding:16px 18px; background:#f4f8f3; border-radius:8px; border:1px dashed #a9c6a0; }
+    .my-animations h4 { margin:0 0 10px; color:#2D5A3D; font-size:15px; }
+    .my-anim-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 0; border-bottom:1px solid #e2ecdf; }
+    .my-anim-type { font-size:14px; color:#333; }
+    .my-anim-timing { font-size:13px; color:#666; }
+    .my-anim-actions { display:flex; gap:8px; flex-shrink:0; }
+    .btn-edit-anim, .btn-delete-anim {
+      background:#fff; border-radius:5px; padding:6px 12px; cursor:pointer; font-size:13px; font-weight:600;
+    }
+    .btn-edit-anim { border:1px solid #ced4da; color:#555; }
+    .btn-delete-anim { border:1px solid #f5c6cb; color:#c0392b; }
   `;
   document.head.appendChild(s);
 }

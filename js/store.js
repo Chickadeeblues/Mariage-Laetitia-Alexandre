@@ -445,13 +445,19 @@ const Store = {
 
   async updateAnimation(id, data) {
     const rows = await supabase('PATCH', 'animations', { filter: `id=eq.${id}`, body: animToDb(data) });
+    if (!rows || rows.length === 0) {
+      throw new Error("La modification n'a pas été appliquée (0 ligne modifiée — vérifiez la policy RLS 'update' sur la table animations).");
+    }
     const updated = animToApp(rows[0]);
     this._emit('animations-changed');
     return updated;
   },
 
   async deleteAnimation(id) {
-    await supabase('DELETE', 'animations', { filter: `id=eq.${id}` });
+    const rows = await supabase('DELETE', 'animations', { filter: `id=eq.${id}` });
+    if (!rows || rows.length === 0) {
+      throw new Error("La suppression n'a pas été appliquée (0 ligne supprimée — vérifiez la policy RLS 'delete' sur la table animations).");
+    }
     this._emit('animations-changed');
   },
   
