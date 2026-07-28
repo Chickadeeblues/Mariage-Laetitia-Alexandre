@@ -488,7 +488,7 @@ const Store = {
 
     confirmed.forEach(g => {
       countDiets(g.diet, `${g.firstName} ${g.lastName}`, g.allergyDetails);
-      (g.companions || []).forEach(c => countDiets(c.diet, c.name || 'Accompagnant', c.allergyDetails));
+      (g.companions || []).forEach(c => countDiets(c.diet, `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Accompagnant', c.allergyDetails));
     });
 
     const offers   = carpools.filter(c => c.type === 'offer');
