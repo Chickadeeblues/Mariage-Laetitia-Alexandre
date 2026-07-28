@@ -246,13 +246,6 @@ const Carpool = {
         </div>
 
         </div>
-
-        <!-- Bouton de validation dynamique -->
-        <div style="text-align: right; margin-top: 1.5rem;">
-          <button id="btn-validate-carpool" class="btn btn-primary" style="background-color: var(--forest); color: white;">
-            Valider
-          </button>
-        </div>
       </div>
 
       <!-- Contenu principal -->
