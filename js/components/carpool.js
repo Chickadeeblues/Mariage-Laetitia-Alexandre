@@ -376,6 +376,9 @@ const Carpool = {
   /**
    * Attache les écouteurs d'événements.
    */
+/**
+   * Attache les écouteurs d'événements.
+   */
   _attachListeners() {
     let selectedMode = null; // 'request' ou 'offer'
 
@@ -384,12 +387,14 @@ const Carpool = {
     const rightPanel = document.getElementById('carpool-right-panel');
     const btnValidate = document.getElementById('btn-validate-carpool');
     
-    // Éléments spécifiques du formulaire
+    // Déclaration UNIQUE de tous les éléments du formulaire
     const stationCheckbox = document.getElementById('carpool-station-checkbox');
     const cityInput = document.getElementById('carpool-city');
     const seatsInput = document.getElementById('carpool-seats');
     const btnMinus = document.getElementById('btn-seats-minus');
     const btnPlus = document.getElementById('btn-seats-plus');
+    const timeInput = document.getElementById('carpool-time');
+    const daySelect = document.getElementById('carpool-day');
 
     const toggleMode = (mode) => {
       selectedMode = mode;
@@ -404,7 +409,7 @@ const Carpool = {
     if (btnRequest) btnRequest.addEventListener('click', () => toggleMode('request'));
     if (btnOffer) btnOffer.addEventListener('click', () => toggleMode('offer'));
 
-    // Gestion de la case à cocher Gare TER
+    // 1. Gestion de la case à cocher Gare TER
     if (stationCheckbox && cityInput) {
       stationCheckbox.addEventListener('change', (e) => {
         if (e.target.checked) {
@@ -417,46 +422,39 @@ const Carpool = {
       });
     }
 
-    // Gestion du sélecteur de places (- / +)
+    // 2. Gestion du sélecteur de places (- / +) et du placeholder
     if (btnMinus && seatsInput) {
       btnMinus.addEventListener('click', () => {
         let val = parseInt(seatsInput.value, 10) || 1;
-        if (val > 1) seatsInput.value = val - 1;
+        if (val > 1) {
+          seatsInput.value = val - 1;
+          seatsInput.placeholder = '';
+        }
       });
     }
     if (btnPlus && seatsInput) {
       btnPlus.addEventListener('click', () => {
-        let val = parseInt(seatsInput.value, 10) || 1;
+        let val = parseInt(seatsInput.value, 10) || 0;
         seatsInput.value = val + 1;
+        seatsInput.placeholder = '';
+      });
+    }
+    if (seatsInput) {
+      seatsInput.addEventListener('input', () => {
+        if (seatsInput.value) seatsInput.placeholder = '';
       });
     }
 
-    if (btnValidate) {
-      btnValidate.addEventListener('click', () => {
-        const payload = {
-          type: selectedMode,
-          city: stationCheckbox && stationCheckbox.checked ? 'Gare TER Péage-de-Roussillon' : cityInput.value,
-          departureDay: document.getElementById('carpool-day').value,
-          departureTime: document.getElementById('carpool-time').value,
-          seats: parseInt(seatsInput.value, 10) || 1
-        };
-        console.log("Données à enregistrer :", payload);
-        // await Store.saveCarpool(payload);
-      });
-    }
-	
-	const timeInput = document.getElementById('carpool-time');
-    const daySelect = document.getElementById('carpool-day');
-    const seatsInput = document.getElementById('carpool-seats');
-
-    // Transformation intelligente du champ Heure en type 'time' au clic pour afficher le cadran natif
+    // 3. Transformation intelligente du champ Heure en horloge native
     if (timeInput) {
       timeInput.addEventListener('focus', () => {
         timeInput.type = 'time';
         if (typeof timeInput.showPicker === 'function') {
           try {
-            timeInput.showPicker(); // Ouvre automatiquement le sélecteur d'heure/cadran du navigateur
-          } repoussé (e) {}
+            timeInput.showPicker(); // Ouvre l'horloge native
+          } catch (e) {
+            // Silence en cas d'erreur de support navigateur
+          }
         }
       });
       timeInput.addEventListener('blur', () => {
@@ -467,39 +465,46 @@ const Carpool = {
       });
     }
 
-    // Gestion de la couleur du select pour imiter un placeholder actif/inactif
+    // 4. Gestion de la couleur du sélecteur "Jour" pour imiter un placeholder
     if (daySelect) {
       daySelect.addEventListener('change', () => {
         if (daySelect.value) {
           daySelect.style.color = 'var(--text-dark)';
         }
       });
-      // Style initial grisé pour l'option par défaut
-      daySelect.style.color = 'var(--text-muted)';
+      daySelect.style.color = 'var(--text-muted)'; // Gris par défaut
     }
 
-    // Gestion du champ places avec effacement/gestion du placeholder
-    if (seatsInput) {
-      seatsInput.addEventListener('input', () => {
-        if (seatsInput.value) {
-          seatsInput.placeholder = '';
-        }
+    // 5. Validation et enregistrement (Logique Supabase)
+    if (btnValidate) {
+      btnValidate.addEventListener('click', () => {
+        const payload = {
+          type: selectedMode,
+          city: stationCheckbox && stationCheckbox.checked ? 'Gare TER Péage-de-Roussillon' : (cityInput ? cityInput.value : ''),
+          departureDay: daySelect ? daySelect.value : '',
+          departureTime: timeInput ? timeInput.value : '',
+          seats: seatsInput ? (parseInt(seatsInput.value, 10) || 1) : 1
+        };
+        console.log("Données à enregistrer :", payload);
+        // await Store.saveCarpool(payload);
       });
     }
-	
-    // 4. Dépliage du contact
+
+    // 6. Dépliage du contact (Cartes existantes)
     const container = this._elements.container;
-    container.querySelectorAll('.btn-reveal-contact').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const wrapper = btn.closest('.carpool-card-contact-wrapper');
-        const contactSpan = wrapper.querySelector('.revealed-contact');
-        btn.style.display = 'none';
-        contactSpan.style.display = 'inline-block';
+    if (container) {
+      container.querySelectorAll('.btn-reveal-contact').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const wrapper = btn.closest('.carpool-card-contact-wrapper');
+          const contactSpan = wrapper.querySelector('.revealed-contact');
+          btn.style.display = 'none';
+          contactSpan.style.display = 'inline-block';
+        });
       });
-    });
+    }
 
-    // 5. Redirection RSVP
+    // 7. Redirection RSVP (Appel à l'action en bas)
     const ctaBtn = document.getElementById('carpool-cta-btn');
     if (ctaBtn) {
       ctaBtn.addEventListener('click', () => {
@@ -507,7 +512,7 @@ const Carpool = {
       });
     }
   },
-
+  
   // ─── FEUILLES DE STYLES CSS ─────────────────────────────
 
   /**
