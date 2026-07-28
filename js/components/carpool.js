@@ -219,10 +219,9 @@ const Carpool = {
 
         <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
           
-          <!-- Jour de départ (centré) -->
+          <!-- Jour de départ (Indicateur intégré) -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
-            <label>Jour de départ</label>
-            <select id="carpool-day" class="form-control" style="text-align: center; text-align-last: center;">
+            <select id="carpool-day" class="form-control carpool-placeholder-select" style="text-align: center; text-align-last: center;">
               <option value="" selected disabled>Jour de départ</option>
               <option value="2027-05-06">Jeudi 6 mai 2027</option>
               <option value="2027-05-07">Vendredi 7 mai 2027</option>
@@ -230,21 +229,21 @@ const Carpool = {
             </select>
           </div>
 
-          <!-- Heure de départ (horloge / centré) -->
+          <!-- Heure de départ (Indicateur intégré + Déclencheur d'horloge) -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
-            <label>Heure de départ</label>
-            <input type="time" id="carpool-time" class="form-control" style="text-align: center;" />
+            <input type="text" id="carpool-time" class="form-control" placeholder="Heure de départ" style="text-align: center;" />
           </div>
 
-          <!-- Places (Centré avec boutons - et +) -->
+          <!-- Places (Indicateur intégré dans le champ nombre avec boutons - et +) -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
-            <label>Places</label>
             <div class="carpool-stepper" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
               <button type="button" id="btn-seats-minus" class="btn-stepper">-</button>
-              <input type="number" id="carpool-seats" class="form-control" min="1" value="1" style="text-align: center; width: 70px;" />
+              <input type="number" id="carpool-seats" class="form-control" min="1" placeholder="1 place" style="text-align: center; width: 90px;" />
               <button type="button" id="btn-seats-plus" class="btn-stepper">+</button>
             </div>
           </div>
+
+        </div>
 
         </div>
 
@@ -443,6 +442,48 @@ const Carpool = {
         };
         console.log("Données à enregistrer :", payload);
         // await Store.saveCarpool(payload);
+      });
+    }
+	
+	const timeInput = document.getElementById('carpool-time');
+    const daySelect = document.getElementById('carpool-day');
+    const seatsInput = document.getElementById('carpool-seats');
+
+    // Transformation intelligente du champ Heure en type 'time' au clic pour afficher le cadran natif
+    if (timeInput) {
+      timeInput.addEventListener('focus', () => {
+        timeInput.type = 'time';
+        if (typeof timeInput.showPicker === 'function') {
+          try {
+            timeInput.showPicker(); // Ouvre automatiquement le sélecteur d'heure/cadran du navigateur
+          } repoussé (e) {}
+        }
+      });
+      timeInput.addEventListener('blur', () => {
+        if (!timeInput.value) {
+          timeInput.type = 'text';
+          timeInput.placeholder = 'Heure de départ';
+        }
+      });
+    }
+
+    // Gestion de la couleur du select pour imiter un placeholder actif/inactif
+    if (daySelect) {
+      daySelect.addEventListener('change', () => {
+        if (daySelect.value) {
+          daySelect.style.color = 'var(--text-dark)';
+        }
+      });
+      // Style initial grisé pour l'option par défaut
+      daySelect.style.color = 'var(--text-muted)';
+    }
+
+    // Gestion du champ places avec effacement/gestion du placeholder
+    if (seatsInput) {
+      seatsInput.addEventListener('input', () => {
+        if (seatsInput.value) {
+          seatsInput.placeholder = '';
+        }
       });
     }
 	
