@@ -627,22 +627,279 @@ renderStep6() {
       </div>`;
   },
 
-  attachEvents() {
+ attachEvents() {
+    this.container.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', () => this.handleNext()));
+    this.container.querySelectorAll('.prev-btn').forEach(btn => btn.addEventListener('click', () => this.handlePrev()));
+
+    // AJOUT : [data-dessert] dans la liste des boutons écoutés
+    this.container.querySelectorAll('[data-val], [data-brunch], [data-acc], [data-dessert]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const d = e.currentTarget.dataset;
+        if (d.val) this.guestData.attending = d.val === 'true' ? true : d.val === 'false' ? false : 'maybe';
+        if (d.brunch) this.guestData.brunch = d.brunch === 'true';
+        if (d.acc) this.guestData.accommodationStatus = d.acc;
+        
+        // AJOUT : Enregistrement du choix Oui/Non pour le dessert
+        if (d.dessert) {
+          this.guestData.dessert = this.guestData.dessert || {};
+          this.guestData.dessert.participate = d.dessert === 'true';
+        }
+        
+        this.saveCurrentStepData();
+        this.render();
+      });
+    });
+
+    const compSelect = this.container.querySelector('#guest-companions-count');
+    if (compSelect) {
+      compSelect.addEventListener('change', (e) => {
+        const count = parseInt(e.target.value, 10);
+        while (this.guestData.companions.length < count) this.guestData.companions.push({ name: '', diet: [], allergyDetails: '' });
+        if (this.guestData.companions.length > count) this.guestData.companions = this.guestData.companions.slice(0, count);
+        this.render();
+      });
+    }
+
+    this.container.querySelectorAll('.diet-cb').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const subOpts = this.container.querySelector(`#allergy-details-${cb.dataset.person}`);
+        if (cb.value === 'allergy' && subOpts) subOpts.classList.toggle('hidden', !cb.checked);
+      });
+    });
+
+    this.container.querySelectorAll('.allergy-other-trigger').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const input = this.container.querySelector(`.allergy-other-input[data-person="${cb.dataset.person}"]`);
+        if (input) input.classList.toggle('hidden', !cb.checked);
+      });
+    });
+
+    this.container.querySelectorAll('[data-mode], [data-role], [data-need]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const d = e.currentTarget.dataset;
+        if (d.mode) { this.guestData.transport.mode = d.mode; this.guestData.transport.carpoolRole = 'none'; }
+        if (d.role || d.need) this.guestData.transport.carpoolRole = d.role || d.need;
+        this.saveCurrentStepData();
+        this.render();
+      });
+    });
+
+    const arriveBeforeCb = this.container.querySelector('#t-arrive-before');
+    if (arriveBeforeCb) {
+      arriveBeforeCb.addEventListener('change', (e) => {
+        const fields = this.container.querySelector('#arrive-before-fields');
+        if (fields) fields.classList.toggle('hidden', !e.target.checked);
+      });
+    }
+
+    this.container.querySelectorAll('.p-need-cb').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        if (e.target.value === 'church') {
+          const churchOpts = this.container.querySelector('#church-options');
+          if (churchOpts) churchOpts.classList.toggle('hidden', !e.target.checked);
+        }
+        if (e.target.value === 'night') {
+          const nightOpts = this.container.querySelector('#night-fields');
+          if (nightOpts) nightOpts.classList.toggle('hidden', !e.target.checked);
+        }
+      });
+    });
+
+    this.container.querySelectorAll('input[name="churchArrival"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const timeInput = this.container.querySelector('#t-church-time');
+        const farOpts = this.container.querySelector('#church-far-options');
+        if (timeInput) timeInput.classList.toggle('hidden', e.target.value !== 'ter');
+        if (farOpts) farOpts.classList.toggle('hidden', e.target.value !== 'far');
+      });
+    });
   },
 
-saveCurrentStepData() {
+  saveCurrentStepData() {
+    if (this.currentStep === 1) {
+      this.guestData.firstName = (document.getElementById('guest-firstname')?.value || '').trim();
+      this.guestData.lastName  = (document.getElementById('guest-lastname')?.value || '').trim();
+      this.guestData.phone     = (document.getElementById('guest-phone')?.value || '').trim();
+      this.container.querySelectorAll('.companion-name').forEach(input => {
+        if (this.guestData.companions[input.dataset.index]) this.guestData.companions[input.dataset.index].name = input.value.trim();
+      });
+    }
+    if (this.currentStep === 3) {
+      const processDiet = (personKey) => {
+        const dietCbs = Array.from(this.container.querySelectorAll(`.diet-cb[data-person="${personKey}"]:checked`)).map(cb => cb.value);
+        let allergyStr = '';
+        if (dietCbs.includes('allergy')) {
+          Array.from(this.container.querySelectorAll(`.allergy-sub-cb[data-person="${personKey}"]:checked`)).forEach(cb => {
+            if (cb.value === 'Autre') {
+              const otherInput = this.container.querySelector(`.allergy-other-input[data-person="${personKey}"]`)?.value.trim();
+              if (otherInput) allergyStr += ` [Autre: ${otherInput}]`;
+            } else allergyStr += ` [${cb.value}]`;
+          });
+        }
+        return { diet: dietCbs, details: allergyStr.trim() };
+      };
+      const mainData = processDiet('main');
+      this.guestData.diet = mainData.diet;
+      this.guestData.allergyDetails = mainData.details;
+      this.guestData.companions.forEach((c, idx) => {
+        const compData = processDiet(String(idx));
+        c.diet = compData.diet;
+        c.allergyDetails = compData.details;
+      });
+    }
+    
+    // AJOUT : Sauvegarde des champs du Buffet Gourmand (Étape 4)
+    if (this.currentStep === 4) {
+      if (this.guestData.dessert && this.guestData.dessert.participate === true) {
+        const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
+        this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
+        
+        this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
+        this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
+        this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
+      }
+    }
+
+    // AJOUT : Le transport passe à l'étape 5 au lieu de 4
+    if (this.currentStep === 5) {
+      const t = this.guestData.transport;
+      t.arrivalBeforeDDay = document.getElementById('t-arrive-before')?.checked || false;
+      if (t.arrivalBeforeDDay) {
+        t.arrivalFrom = (document.getElementById('t-arr-from')?.value || '').trim();
+        t.arrivalTo   = (document.getElementById('t-arr-to')?.value || '').trim();
+        t.arrivalDate = document.getElementById('t-arr-date')?.value || '';
+      }
+
+      if (t.mode === 'car' && t.carpoolRole === 'offer') {
+        t.city           = (document.getElementById('t-driver-city')?.value || '').trim();
+        t.seatsAvailable = parseInt(document.getElementById('t-driver-seats')?.value || '1', 10);
+        t.departureDay   = document.getElementById('t-driver-day')?.value || '';
+        t.departureTime  = document.getElementById('t-driver-time')?.value || '';
+      } else if (t.carpoolRole === 'need') {
+        t.passengerNeeds = Array.from(this.container.querySelectorAll('.p-need-cb:checked')).map(cb => cb.value);
+        t.churchArrival  = this.container.querySelector('input[name="churchArrival"]:checked')?.value || '';
+        t.seatsNeeded    = parseInt(document.getElementById('t-pass-seats')?.value || '1', 10);
+        
+        if (t.churchArrival === 'ter') {
+          t.churchTime = document.getElementById('t-church-time')?.value || '';
+        } else if (t.churchArrival === 'far') {
+          t.city = (document.getElementById('t-pass-city')?.value || '').trim();
+          t.departureDay = document.getElementById('t-pass-day')?.value || '';
+        }
+
+        if (t.passengerNeeds.includes('night')) {
+          t.nightName     = (document.getElementById('night-name')?.value || '').trim();
+          t.nightAddress  = (document.getElementById('night-address')?.value || '').trim();
+          t.nightCity     = (document.getElementById('night-city')?.value || '').trim();
+          t.nightZip      = (document.getElementById('night-zip')?.value || '').trim();
+          t.nightDistance = (document.getElementById('night-distance')?.value || '').trim();
+        }
+      }
+    }
   },
 
-validateStep() {
+  validateStep() {
+    if (this.currentStep === 1) {
+      if (!this.guestData.firstName || !this.guestData.lastName || !this.guestData.phone) { Animations.showToast("Veuillez remplir Prénom, Nom et Téléphone", "error"); return false; }
+      if (this.guestData.attending === null) { Animations.showToast("Veuillez indiquer votre présence", "error"); return false; }
+      if (this.guestData.attending === true && !this.guestData.companions.every(c => c.name.trim())) { Animations.showToast("Veuillez renseigner les noms", "error"); return false; }
+    }
+    if (this.currentStep === 2 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
+      Animations.showToast("Veuillez indiquer pour le brunch", "error"); return false;
+    }
+    
+    // AJOUT : Vérification du dessert si l'utilisateur dit "Je sais ce que je vais apporter"
+    if (this.currentStep === 4 && this.guestData.dessert?.participate === true && this.guestData.dessert?.isSurprise === false) {
+      if (!this.guestData.dessert.type || !this.guestData.dessert.portions) { 
+        Animations.showToast("Veuillez préciser le type de dessert et le nombre de parts", "error"); return false; 
+      }
+    }
+
+    // Le transport passe à l'étape 5
+    if (this.currentStep === 5 && this.guestData.transport.carpoolRole === 'need') {
+      const t = this.guestData.transport;
+      const n = t.passengerNeeds || [];
+      if (n.includes('church') && t.churchArrival === 'far' && !t.city) { Animations.showToast("Précisez la ville de départ", "error"); return false; }
+      if (n.includes('night') && (!t.nightName || !t.nightAddress || !t.nightDistance)) { Animations.showToast("Remplissez les champs obligatoires du lieu de couchage", "error"); return false; }
+    }
+    return true;
   },
 
-handleNext() {
+  handleNext() {
+    this.saveCurrentStepData(); 
+
+    if (this.validateStep()) {
+      if (this.currentStep === 1 && this.guestData.attending === false) { this.submitForm(); return; }
+      if (this.currentStep === 1) {
+        const existing = Store.getGuestByPhone(this.guestData.phone);
+        if (existing && existing.id !== this.guestData.id) this.guestData = { ...this.guestData, ...existing };
+      }
+      
+      // Adaptation des sauts d'étapes (Le récapitulatif est l'étape 6)
+      if (this.currentStep === 2 && this.guestData.attending !== true) { this.currentStep = 6; this.render(); return; }
+
+      if (this.currentStep < this.totalSteps) {
+        this.currentStep++;
+        this.render();
+      } else {
+        this.submitForm();
+      }
+    }
   },
 
-handlePrev() {
+  handlePrev() {
+    this.saveCurrentStepData();
+    // Adaptation des sauts d'étapes
+    if (this.currentStep === 6 && this.guestData.attending !== true) { this.currentStep = 2; this.render(); return; }
+    
+    if (this.currentStep > 1) {
+      this.currentStep--;
+      this.render();
+    }
   },
 
-async submitForm() {
+  async submitForm() {
+    const submitBtn = document.getElementById('final-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi en cours...";
+    }
+
+    let savedGuest;
+    if (this.guestData.id) savedGuest = Store.updateGuest(this.guestData.id, this.guestData);
+    else savedGuest = Store.saveGuest(this.guestData);
+    Store.setCurrentGuest(savedGuest.id);
+
+    const t = savedGuest.transport;
+    if (t && (t.carpoolRole === 'offer' || t.carpoolRole === 'need')) {
+      Store.getCarpoolsByGuestId(savedGuest.id).forEach(c => Store.deleteCarpool(c.id));
+      Store.saveCarpool({
+        guestId: savedGuest.id,
+        type: t.carpoolRole,
+        city: t.city,
+        seatsAvailable: t.seatsAvailable,
+        seatsNeeded: t.seatsNeeded,
+        contact: savedGuest.phone
+      });
+    }
+
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyszfkicFmzXw7gFPnvJwQGVEk1NPmVLO6_9v9XId3UUcn7CHZBFsFfEty1JXpgMrkHrg/exec";
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.guestData)
+      });
+      Animations.showToast("Réponse transmise aux mariés !", "success");
+    } catch (error) {
+      console.error("[RSVP] Erreur envoi Google :", error);
+      Animations.showToast("Erreur d'envoi vers la base centrale.", "error");
+    }
+
+    this.currentStep = 1;
+    Router.navigate('#/mes-reponses');
   }
 };
 
