@@ -98,6 +98,7 @@ function toApp(g) {
     diet:              g.diet              || [],
     allergyDetails:    g.allergy_details,
     brunch:            g.brunch,
+    dessert:           g.dessert           || null,
     transport:         g.transport         || {},
     accommodationId:   g.accommodation_id,
     accommodationName: g.accommodation_name,
@@ -118,6 +119,7 @@ function toDb(data) {
   if (data.diet              !== undefined) obj.diet               = data.diet;
   if (data.allergyDetails    !== undefined) obj.allergy_details    = data.allergyDetails;
   if (data.brunch            !== undefined) obj.brunch             = data.brunch;
+  if (data.dessert           !== undefined) obj.dessert            = data.dessert;
   if (data.transport         !== undefined) obj.transport          = data.transport;
   if (data.accommodationId   !== undefined) obj.accommodation_id   = data.accommodationId;
   if (data.accommodationName !== undefined) obj.accommodation_name = data.accommodationName;

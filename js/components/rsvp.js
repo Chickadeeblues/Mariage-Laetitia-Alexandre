@@ -7,7 +7,7 @@ const tr = (fr, es) => (window.I18n && window.I18n.currentLang === 'es') ? es : 
 const RSVP = {
   container: null,
   currentStep: 1,
-  totalSteps: 5,
+  totalSteps: 6,
   guestData: {
     id: null,
     firstName: '',
@@ -23,6 +23,7 @@ const RSVP = {
     allergyDetails: '',
     allergyList: [],
     allergyOther: '',
+    dessert: { participate: null, type: '', portions: '', fridge: null },
     accommodationStatus: '',
     accommodationId: null,
     accommodationName: '',
@@ -83,6 +84,7 @@ const RSVP = {
           allergyList: mainA.list,
           allergyOther: mainA.other,
           companions: comps,
+          dessert: currentGuest.dessert || { participate: null, type: '', portions: '', fridge: null },
           transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
         };
       }
@@ -185,6 +187,7 @@ const RSVP = {
           ${this.renderStep3()}
           ${this.renderStep4()}
           ${this.renderStep5()}
+          ${this.renderStep6()}
         </div>
       </div>`;
   },
@@ -194,6 +197,7 @@ const RSVP = {
       tr('Réponse', 'Respuesta'), 
       tr('Régime alimentaire & Allergies', 'Régimen y Alergias'), 
       tr('Brunch', 'Brunch'), 
+      tr('Buffet gourmand', 'Bufé goloso'),
       tr('Transport', 'Transporte'), 
       tr('Récapitulatif', 'Resumen')
     ];
@@ -325,7 +329,7 @@ const RSVP = {
     };
 
     let html = `<div class="form-step ${v?'active':''}" id="step-2">`;
-    html += renderBlock(tr('Pour vous', 'Para usted'), 'main', this.guestData.diet, this.guestData.allergyList, this.guestData.allergyOther);
+    html += renderBlock(tr('Pour moi', 'Para mí'), 'main', this.guestData.diet, this.guestData.allergyList, this.guestData.allergyOther);
     companions.forEach((c, i) => html += renderBlock(tr(`Pour ${this.companionLabel(c, i)}`, `Para ${this.companionLabel(c, i)}`), String(i), c.diet, c.allergyList, c.allergyOther));
     html += `<div class="form-actions" style="justify-content: center; gap: 20px;">
       <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
@@ -355,6 +359,53 @@ const RSVP = {
 
   renderStep4() {
     const v = this.currentStep === 4;
+    const d = this.guestData.dessert;
+    return `
+      <div class="form-step ${v ? 'active' : ''}" id="step-4">
+        <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
+          ${tr('Pour le dessert, nous vous proposons, si vous le souhaitez et le pouvez bien sûr, de participer à créer une farandole de gourmandise, en apportant votre meilleur dessert !', 'Para el postre, les proponemos, si lo desean y pueden por supuesto, participar en crear un festín de golosinas, ¡trayendo su mejor postre!')}
+        </p>
+        <div class="attendance-options">
+          <button type="button" class="choice-btn ${d.participate === true ? 'selected' : ''}" data-dessert="true"> <span>🍰</span> <strong>${tr('Oui, je suis partant(e)', 'Sí, me apunto')}</strong></button>
+          <button type="button" class="choice-btn ${d.participate === false ? 'selected' : ''}" data-dessert="false"><span>🙏</span> <strong>${tr('Non, difficile pour moi', 'No, es difícil para mí')}</strong></button>
+        </div>
+        
+        <div id="dessert-details" class="${d.participate === true ? '' : 'hidden'}" style="margin-top: 20px; background: #fdfaf5; border: 1.5px solid #e7dcc4; border-radius: 10px; padding: 16px;">
+          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:6px;">
+            ${tr('Type de dessert *', 'Tipo de postre *')}
+          </label>
+          <input type="text" id="d-type" class="compact-input" value="${this.esc(d.type)}" placeholder="${tr('Ex : Tarte au citron, Tiramisu...', 'Ej : Tarta de limón, Tiramisú...')}">
+          
+          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:6px; margin-top:12px;">
+            ${tr('Nombre de parts (environ) *', 'Número de porciones (aprox.) *')}
+          </label>
+          <input type="number" id="d-portions" class="compact-input" value="${this.esc(d.portions)}" placeholder="${tr('Ex : 8', 'Ej : 8')}">
+          
+          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:8px; margin-top:12px;">
+            ${tr('Besoin de le stocker au frais ?', '¿Necesita guardarse en frío?')}
+          </label>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
+              <input type="radio" name="d-fridge" value="yes" ${d.fridge === 'yes' ? 'checked' : ''}> ${tr('Oui', 'Sí')}
+            </label>
+            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
+              <input type="radio" name="d-fridge" value="no" ${d.fridge === 'no' ? 'checked' : ''}> ${tr('Non', 'No')}
+            </label>
+            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
+              <input type="radio" name="d-fridge" value="maybe" ${d.fridge === 'maybe' ? 'checked' : ''}> ${tr('Surprise, je répondrai plus tard', 'Sorpresa, responderé más tarde')}
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2.5rem;">
+          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
+        </div>
+      </div>`;
+  },
+
+  renderStep5() {
+    const v = this.currentStep === 5;
     const tData = this.guestData.transport || {};
     const isCar = tData.mode === 'car';
     const n = tData.passengerNeeds || [];
@@ -436,8 +487,8 @@ const RSVP = {
       </div>`;
   },
 
-  renderStep5() {
-    const v = this.currentStep === 5;
+  renderStep6() {
+    const v = this.currentStep === 6;
     const g = this.guestData;
     const t = g.transport || {};
 
@@ -511,6 +562,15 @@ const RSVP = {
         <div class="recap-section">
           <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
           <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
+        </div>
+        
+        <div class="recap-section">
+          <h4>🍰 ${tr('Buffet gourmand', 'Bufé goloso')}</h4>
+          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.dessert?.participate === true ? tr('Oui, je participe', 'Sí, participo') : g.dessert?.participate === false ? tr('Non, difficile pour moi', 'No, es difícil') : '—'}</span></div>
+          ${g.dessert?.participate === true ? `
+            <div class="recap-row"><span>${tr('Dessert', 'Postre')}</span><span>${this.esc(g.dessert.type) || '—'} (${this.esc(g.dessert.portions) || '?'} parts)</span></div>
+            <div class="recap-row"><span>${tr('Au frais', 'En frío')}</span><span>${g.dessert.fridge === 'yes' ? tr('Oui', 'Sí') : g.dessert.fridge === 'no' ? tr('Non', 'No') : tr('Surprise', 'Sorpresa')}</span></div>
+          ` : ''}
         </div>` : ''}
 
         ${g.attending === true ? `
@@ -601,6 +661,19 @@ const RSVP = {
       });
     });
 
+    // Dessert
+    this.container.querySelectorAll('[data-dessert]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const val = e.currentTarget.dataset.dessert === 'true';
+        this.guestData.dessert = this.guestData.dessert || { type: '', portions: '', fridge: null };
+        this.guestData.dessert.participate = val;
+        this.container.querySelectorAll('[data-dessert]').forEach(b => b.classList.remove('selected'));
+        e.currentTarget.classList.add('selected');
+        const details = this.container.querySelector('#dessert-details');
+        if (details) details.classList.toggle('hidden', !val);
+      });
+    });
+
     // Transport
     this.container.querySelectorAll('[data-mode],[data-role],[data-need]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -688,6 +761,17 @@ const RSVP = {
       });
     }
     if (this.currentStep === 4) {
+      if (this.guestData.dessert && this.guestData.dessert.participate === true) {
+        this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
+        this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
+        this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
+      } else if (this.guestData.dessert && this.guestData.dessert.participate === false) {
+        this.guestData.dessert.type = '';
+        this.guestData.dessert.portions = '';
+        this.guestData.dessert.fridge = null;
+      }
+    }
+    if (this.currentStep === 5) {
       const t = this.guestData.transport;
       t.arrivalBeforeDDay = document.getElementById('t-arrive-before')?.checked || false;
       if (t.arrivalBeforeDDay) {
@@ -746,6 +830,19 @@ const RSVP = {
     if (this.currentStep === 3 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
       Animations.showToast('Veuillez indiquer votre réponse pour le brunch', 'error'); return false;
     }
+    if (this.currentStep === 4 && (this.guestData.attending === true || this.guestData.attending === 'maybe')) {
+      if (!this.guestData.dessert || this.guestData.dessert.participate === null) {
+        Animations.showToast('Veuillez indiquer votre réponse pour le buffet gourmand', 'error'); return false;
+      }
+      if (this.guestData.dessert.participate === true) {
+        if (!this.guestData.dessert.type) {
+          Animations.showToast('Veuillez préciser le type de dessert', 'error'); return false;
+        }
+        if (!this.guestData.dessert.portions) {
+          Animations.showToast('Veuillez indiquer le nombre de parts', 'error'); return false;
+        }
+      }
+    }
     return true;
   },
 
@@ -786,6 +883,7 @@ const RSVP = {
     }
 
     if (this.currentStep === 1 && this.guestData.attending !== true) { this.currentStep = 3; this.render(); return; }
+    if (this.currentStep === 3 && this.guestData.attending !== true) { this.currentStep = 5; this.render(); return; }
 
     if (this.currentStep < this.totalSteps) { this.currentStep++; this.render(); }
     else { this.submitForm(); }
@@ -794,6 +892,7 @@ const RSVP = {
   handlePrev() {
     this.saveCurrentStepData();
     if (this.currentStep === 3 && this.guestData.attending !== true) { this.currentStep = 1; this.render(); return; }
+    if (this.currentStep === 5 && this.guestData.attending !== true) { this.currentStep = 3; this.render(); return; }
     if (this.currentStep > 1) { this.currentStep--; this.render(); }
   },
 

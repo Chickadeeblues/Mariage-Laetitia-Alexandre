@@ -1160,18 +1160,18 @@ async renderGuestsList(guests) {
     // 1. Tableau collé aux onglets (margin-top: 0)
     let html = `
       <div class="table-responsive" style="margin-top:0;">
-        <table class="admin-table" style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <table class="admin-table" style="width:100%; border-collapse:collapse;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
-              <th rowspan="2" style="padding:10px; width:32%; vertical-align:bottom;">Nom &amp; Téléphone</th>
-              <th rowspan="2" style="padding:10px; width:25%; vertical-align:bottom;">Rôle(s)</th>
+              <th rowspan="2" style="padding:10px; width:26%; vertical-align:bottom;">Nom &amp; Téléphone</th>
+              <th rowspan="2" style="padding:10px; width:30%; vertical-align:bottom;">Rôle(s)</th>
               <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
               <th rowspan="2" style="padding:10px; width:50px; vertical-align:bottom; text-align:center;">Actions</th>
             </tr>
             <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
-              <th style="padding:6px 4px; width:12%; text-align:center;">Jeudi</th>
-              <th style="padding:6px 4px; width:12%; text-align:center;">Vendredi</th>
-              <th style="padding:6px 4px; width:12%; text-align:center;">Samedi</th>
+              <th style="padding:6px 4px; text-align:center;">Jeudi</th>
+              <th style="padding:6px 4px; text-align:center;">Vendredi</th>
+              <th style="padding:6px 4px; text-align:center;">Samedi</th>
             </tr>
           </thead>
           <tbody>
@@ -2024,11 +2024,11 @@ async _deleteMoodboardItem(id) {
       <div style="display:flex; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
         <button class="mass-nav-btn ${activeSubTab === 'roles' ? 'active' : ''}" data-sub="roles"
                 style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'roles' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'roles' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
-          👥 1. Qui fait quoi ?
+          1. Qui fait quoi ?
         </button>
         <button class="mass-nav-btn ${activeSubTab === 'schedule' ? 'active' : ''}" data-sub="schedule"
                 style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'schedule' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'schedule' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
-          📜 2. Déroulé de la messe
+          2. Déroulé de la messe
         </button>
       </div>
     `;
