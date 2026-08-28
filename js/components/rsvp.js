@@ -498,7 +498,7 @@ renderStep5() {
           <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
-  },
+},
 
 renderStep6() {
     const v = this.currentStep === 6;
@@ -625,10 +625,9 @@ renderStep6() {
           <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 140px;">${tr('Confirmer ✓', 'Confirmar ✓')}</button>
         </div>
       </div>`;
-  }
-},
+  },
 
-attachEvents() {
+  attachEvents() {
   },
 
 saveCurrentStepData() {
