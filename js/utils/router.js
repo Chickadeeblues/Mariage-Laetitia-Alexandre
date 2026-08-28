@@ -128,7 +128,7 @@ const Router = {
    */
   _closeMobileMenu() {
     // Fermer le menu de navigation mobile
-    const navMenu = document.querySelector('.nav__menu');
+    const navMenu = document.querySelector('.nav__links');
     if (navMenu) {
       navMenu.classList.remove('open');
     }

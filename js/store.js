@@ -159,11 +159,44 @@ function accToApp(a) {
   };
 }
 
+function animToApp(a) {
+  if (!a) return null;
+  return {
+    id:             a.id,
+    guestId:        a.guest_id,
+    firstName:      a.first_name,
+    type:           a.type,
+    details:        a.details,
+    timing:         a.timing,
+    equipment:      a.equipment || [],
+    equipmentOther: a.equipment_other,
+    createdAt:      a.created_at
+  };
+}
+
+function animToDb(data) {
+  return {
+    guest_id:        data.guestId        || null,
+    first_name:      data.firstName,
+    type:            data.type,
+    details:         data.details        || '',
+    timing:          data.timing,
+    equipment:       data.equipment      || [],
+    equipment_other: data.equipmentOther || ''
+  };
+}
+
 const Store = {
 
   on(event, callback) {
     if (!_listeners[event]) _listeners[event] = [];
     _listeners[event].push(callback);
+    // Retourne une fonction de désinscription
+    return () => {
+      if (_listeners[event]) {
+        _listeners[event] = _listeners[event].filter(cb => cb !== callback);
+      }
+    };
   },
 
   off(event, callback) {
@@ -387,14 +420,51 @@ const Store = {
   },
 
   // Discours et animations ──────────────────────────────────────
-  
+
   async getAnimations() {
-    const { data, error } = await supabase.from('animations').select('*');
-    if (error) {
-      console.error("Erreur lors de la récupération des animations:", error);
+    try {
+      const rows = await supabase('GET', 'animations', { filter: 'select=*&order=created_at.asc' });
+      return rows.map(animToApp);
+    } catch (e) {
+      console.error('[Store] Erreur getAnimations :', e);
       return [];
     }
-    return data || [];
+  },
+
+  async getAnimationsByGuestId(guestId) {
+    try {
+      const rows = await supabase('GET', 'animations', { filter: `select=*&guest_id=eq.${guestId}&order=created_at.asc` });
+      return rows.map(animToApp);
+    } catch (e) {
+      console.error('[Store] Erreur getAnimationsByGuestId :', e);
+      return [];
+    }
+  },
+
+  async saveAnimation(data) {
+    const body = { ...animToDb(data), created_at: new Date().toISOString() };
+    const rows = await supabase('POST', 'animations', { body });
+    const saved = animToApp(rows[0]);
+    this._emit('animations-changed');
+    return saved;
+  },
+
+  async updateAnimation(id, data) {
+    const rows = await supabase('PATCH', 'animations', { filter: `id=eq.${id}`, body: animToDb(data) });
+    if (!rows || rows.length === 0) {
+      throw new Error("La modification n'a pas été appliquée (0 ligne modifiée — vérifiez la policy RLS 'update' sur la table animations).");
+    }
+    const updated = animToApp(rows[0]);
+    this._emit('animations-changed');
+    return updated;
+  },
+
+  async deleteAnimation(id) {
+    const rows = await supabase('DELETE', 'animations', { filter: `id=eq.${id}` });
+    if (!rows || rows.length === 0) {
+      throw new Error("La suppression n'a pas été appliquée (0 ligne supprimée — vérifiez la policy RLS 'delete' sur la table animations).");
+    }
+    this._emit('animations-changed');
   },
   
   // ── Statistiques ──────────────────────────────────────
@@ -424,7 +494,7 @@ const Store = {
 
     confirmed.forEach(g => {
       countDiets(g.diet, `${g.firstName} ${g.lastName}`, g.allergyDetails);
-      (g.companions || []).forEach(c => countDiets(c.diet, c.name || 'Accompagnant', c.allergyDetails));
+      (g.companions || []).forEach(c => countDiets(c.diet, `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Accompagnant', c.allergyDetails));
     });
 
     const offers   = carpools.filter(c => c.type === 'offer');
@@ -456,36 +526,5 @@ const Store = {
     catch (e) { console.error(e); }
   }
 };
-
-function renderProgram(anims, revealed) {
-  const slots = ['Vin d\'honneur', 'Pendant le repas', 'Premier intermède', 'Deuxième intermède'];
-  return slots.map(slot => `
-    <div class="slot-card" style="margin-bottom:20px; padding:15px; background:#fff; border-radius:8px;">
-      <h3>${slot}</h3>
-      <div class="${revealed ? '' : 'blur-effect'}">
-        ${anims.filter(a => a.timing === slot).map(a => `
-          <p><strong>${a.name}</strong> - ${a.type}</p>
-        `).join('') || '<p style="color:#ccc;">Aucune animation pour le moment</p>'}
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderParticipationForm() {
-  return `
-    <form id="animation-form" style="background:#fdfaf5; padding:20px; border-radius:8px;">
-      <p><em>Remplissez ce formulaire pour proposer une animation (5 min max).</em></p>
-      <input type="text" id="anim-type" placeholder="Type d'animation (ex: Discours)" class="form-control" required style="width:100%; margin-bottom:10px;">
-      <select id="anim-timing" class="form-control" style="width:100%; margin-bottom:10px;">
-        <option>Vin d'honneur</option>
-        <option>Pendant le repas</option>
-        <option>Premier intermède</option>
-        <option>Deuxième intermède</option>
-      </select>
-      <button type="submit" class="btn btn--primary">Envoyer</button>
-    </form>
-  `;
-}
-
 
 export default Store;

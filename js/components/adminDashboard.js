@@ -849,11 +849,13 @@ async renderGuestsList(guests) {
 
     // 1. DÉFINITION DE L'ORDRE DE PRIORITÉ DES TAGS
     const tagPriority = {
-      'Famille Mariée': 1,
-      'Famille Marié': 2,
-      'Ami(e) Mariée': 3,
-      'Ami(e) Marié': 4,
-      'Prêtre': 5
+      'Mariée': 1,
+      'Marié': 2,
+      'Prêtre': 3,
+      'Famille Mariée': 4,
+      'Famille Marié': 5,
+      'Ami(e) Mariée': 6,
+      'Ami(e) Marié': 7
     };
 
     // 2. TRI DES INVITÉS (Tag puis Nom de famille)
@@ -872,10 +874,10 @@ async renderGuestsList(guests) {
     });
 
     const badgeFor = (attending) => {
-      if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓ Oui</span>';
-      if (attending === false || attending === 'false' || attending === 'non') return '<span class="badge badge--declined">✗ Non</span>';
-      if (attending === 'maybe') return '<span class="badge badge--pending">? Peut-être</span>';
-      return '<span class="badge badge--pending">En attente</span>';
+      if (attending === true || attending === 'true' || attending === 'oui') return '<span class="badge badge--confirmed">✓</span>';
+      if (attending === false || attending === 'false' || attending === 'non') return '<span class="badge badge--declined">✗</span>';
+      if (attending === 'maybe') return '<span class="badge badge--pending">?</span>';
+      return '<span class="badge badge--pending">?</span>';
     };
 
     const getDietBadges = (person) => {
@@ -895,11 +897,11 @@ async renderGuestsList(guests) {
       if (!tag) return id ? `<span id="tag-display-${id}" class="badge-tag" data-id="${id}" style="display:none; cursor:pointer;" title="Modifier le groupe"></span>` : '';
       
       let bg = '#f3f4f6', color = '#374151', border = '#d1d5db';
-      if (tag === 'Famille Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
-      else if (tag === 'Famille Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      if (tag === 'Mariée' || tag === 'Famille Mariée') { bg = '#FDF2F8'; color = '#BE185D'; border = '#FBCFE8'; } // Rose
+      else if (tag === 'Marié' || tag === 'Famille Marié') { bg = '#EFF6FF'; color = '#1D4ED8'; border = '#BFDBFE'; } // Bleu
+      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
       else if (tag === 'Ami(e) Mariée') { bg = '#FFF7ED'; color = '#C2410C'; border = '#FFEDD5'; } // Orange
       else if (tag === 'Ami(e) Marié') { bg = '#F0FDF4'; color = '#15803D'; border = '#BBF7D0'; } // Vert
-      else if (tag === 'Prêtre') { bg = '#FAF5FF'; color = '#7E22CE'; border = '#E9D5FF'; } // Violet
       
       const idAttr = id ? `id="tag-display-${id}"` : '';
       return `<span ${idAttr} class="badge badge-tag" data-id="${id || ''}" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; display:inline-block; cursor:pointer;" title="Modifier le groupe">${tag}</span>`;
@@ -912,22 +914,22 @@ async renderGuestsList(guests) {
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
               <th style="padding:10px;">Nom & Contact</th>
               <th style="padding:10px;">Groupe</th>
-              <th style="padding:10px;">Présence</th>
-              <th style="padding:10px;">Brunch</th>
-              <th style="padding:10px;">Régime</th>
+              <th style="padding:10px; text-align:center;">Présence</th>
+              <th style="padding:10px; text-align:center;">Brunch</th>
+              <th style="padding:10px; text-align:center;">Régime</th>
               <th style="padding:10px;">Transport</th>
               <th style="padding:10px;">Hébergement</th>
-              <th style="padding:10px; width: 80px;">Actions</th>
+              <th style="padding:10px; width: 50px;">Actions</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    const tagOptions = ['Famille Mariée', 'Famille Marié', 'Ami(e) Mariée', 'Ami(e) Marié', 'Prêtre'];
+    const tagOptions = ['Mariée', 'Marié', 'Prêtre', 'Famille Mariée', 'Famille Marié', 'Ami(e) Mariée', 'Ami(e) Marié'];
 
     // On boucle désormais sur le tableau trié
     sortedGuests.forEach((g, idx) => {
-      const bg = idx % 2 === 0 ? '#FFFFFF' : '#FDFBF7';
+      const bg = idx % 2 === 0 ? '#FFFFFF' : '#F0F4F1';
       const currentTag = g.tag || ''; 
       
       let transportText = '—';
@@ -935,33 +937,38 @@ async renderGuestsList(guests) {
         const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
         transportText = modes[g.transport.mode] || g.transport.mode;
       }
-      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose</span>`;
-      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande</span>`;
+      if (g.transport?.carpoolRole === 'offer') transportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose covoiturage</span>`;
+      else if (g.transport?.carpoolRole === 'need') transportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande covoiturage</span>`;
 
       const isBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
-      const brunchText = isBrunch ? '☕ Oui' : '🙏 Non';
+      const brunchText = isBrunch ? 'Oui' : 'Non';
       const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
       html += `
         <tr style="background:${bg}; border-bottom:${g.companions?.length > 0 ? 'none' : '1px solid #eee'};">
-          <td style="padding:10px;">
-            <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
-            ${formattedPhone ? `
-              <span style="cursor:pointer; margin-left:6px; filter: grayscale(20%); transition: transform 0.2s;" 
-                    onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
-                    title="Afficher/Masquer le numéro">📞</span>
-              <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px; padding-left:4px; border-left: 2px solid var(--sage);">
-                ${formattedPhone}
-              </div>
-            ` : ''}
+          <td style="padding:10px 10px 10px 40px; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>${g.firstName || ''} ${g.lastName || ''}</strong>
+              ${formattedPhone ? `
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                  <span style="cursor:pointer; filter: grayscale(100%) opacity(0.4); transition: opacity 0.2s;" 
+                        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4"
+                        onclick="const p = document.getElementById('phone-${g.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                        title="Afficher/Masquer le numéro">📞</span>
+                  <div id="phone-${g.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px;">
+                    ${formattedPhone}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
           </td>
           
           <td style="padding:10px;">
             <div style="display:flex; align-items:center; gap:6px;">
               ${buildTagBadge(currentTag, g.id)}
               <div style="position:relative;">
-                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:var(--forest); font-size:14px; padding:0; ${currentTag ? 'display:none;' : ''}" title="Définir le groupe">➕</button>
+                <button class="btn-tag-toggle" data-id="${g.id}" style="background:none; border:none; cursor:pointer; color:var(--forest); opacity:0.8; font-size:14px; padding:0; ${currentTag ? 'display:none;' : ''}" title="Définir le groupe">➕</button>
                 <select class="tag-select" data-id="${g.id}" style="display:none; position:absolute; top:20px; left:0; font-size:11px; padding:4px; border-radius:4px; border:1px solid #ccc; z-index:10;">
                   <option value="">Sélectionner...</option>
                   ${tagOptions.map(t => `<option value="${t}" ${currentTag === t ? 'selected' : ''}>${t}</option>`).join('')}
@@ -970,14 +977,13 @@ async renderGuestsList(guests) {
             </div>
           </td>
 
-          <td style="padding:10px;">${badgeFor(g.attending)}</td>
-          <td style="padding:10px;">${brunchText}</td>
-          <td style="padding:10px;">${getDietBadges(g)}</td>
+          <td style="padding:10px; text-align:center;">${badgeFor(g.attending)}</td>
+          <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
+          <td style="padding:10px; text-align:center;">${getDietBadges(g)}</td>
           <td style="padding:10px;">${transportText}</td>
           <td style="padding:10px;"><strong>${accommodation}</strong></td>
-          <td style="padding:10px; display:flex; gap:6px;">
+          <td style="padding:10px; text-align:center;">
             <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
-            <button class="btn btn--outline delete-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer">×</button>
           </td>
         </tr>
       `;
@@ -988,21 +994,20 @@ async renderGuestsList(guests) {
           const isLast = cIdx === g.companions.length - 1;
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
-              <td style="padding:10px; position:relative; padding-left: 20px;">
-                <span style="color:var(--gold); font-weight:bold; font-size:16px; margin-right:4px;">+</span>
+              <td style="padding:10px 10px 10px 40px; position:relative;">
+                <div style="position:absolute; left:6px; top:-12px; width:24px; height:24px; border-radius:50%; background:var(--gold); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold; z-index:1; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
                 <strong>${comp.name}</strong>
               </td>
               <td style="padding:10px;">
                 ${currentTag ? buildTagBadge(currentTag) : '<span class="text-muted">—</span>'}
               </td>
-              <td style="padding:10px;">${badgeFor(g.attending)}</td>
-              <td style="padding:10px;">${brunchText}</td>
-              <td style="padding:10px;">${getDietBadges(comp)}</td>
+              <td style="padding:10px; text-align:center;">${badgeFor(g.attending)}</td>
+              <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
+              <td style="padding:10px; text-align:center;">${getDietBadges(comp)}</td>
               <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px; display:flex; gap:6px;">
+              <td style="padding:10px;"><strong>${accommodation}</strong></td>
+              <td style="padding:10px; text-align:center;">
                 <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
-                <button class="btn btn--outline delete-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:red; border-color:red; font-weight:bold; cursor:pointer;" title="Supprimer l'accompagnant">×</button>
               </td>
             </tr>
           `;
@@ -1069,18 +1074,6 @@ async renderGuestsList(guests) {
         const guest = guests.find(g => g.id === id);
         if (guest) {
           this.openEditModal(guest);
-        }
-      });
-    });
-
-    // --- Suppression d'un groupe (Invité principal + accompagnants) ---
-    container.querySelectorAll('.delete-guest-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm("Supprimer définitivement cet invité et ses accompagnants ?")) {
-          await Store.deleteGuest(id);
-          if(typeof Animations !== 'undefined') Animations.showToast("Invité supprimé", "success");
-          this.renderDashboard();
         }
       });
     });
@@ -1167,43 +1160,73 @@ async renderGuestsList(guests) {
     // 1. Tableau collé aux onglets (margin-top: 0)
     let html = `
       <div class="table-responsive" style="margin-top:0;">
-        <table class="admin-table" style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <table class="admin-table" style="width:100%; border-collapse:collapse;">
           <thead>
             <tr style="border-bottom: 2px solid var(--gold); text-align: left;">
               <th rowspan="2" style="padding:10px; width:26%; vertical-align:bottom;">Nom &amp; Téléphone</th>
-              <th rowspan="2" style="padding:10px; width:20%; vertical-align:bottom;">Rôle(s)</th>
+              <th rowspan="2" style="padding:10px; width:30%; vertical-align:bottom;">Rôle(s)</th>
               <th colspan="3" style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd; color:var(--forest);">Arrivée</th>
-              <th rowspan="2" style="padding:10px; width:11%; text-align:center; vertical-align:bottom;">Loge sur place</th>
-              <th rowspan="2" style="padding:10px; width:70px; vertical-align:bottom; text-align:center;">Actions</th>
+              <th rowspan="2" style="padding:10px; width:50px; vertical-align:bottom; text-align:center;">Actions</th>
             </tr>
             <tr style="border-bottom: 2px solid var(--gold); text-align: center; font-size:12px;">
-              <th style="padding:6px 4px; width:12%; text-align:center;">Jeudi</th>
-              <th style="padding:6px 4px; width:12%; text-align:center;">Vendredi</th>
-              <th style="padding:6px 4px; width:12%; text-align:center;">Samedi</th>
+              <th style="padding:6px 4px; text-align:center;">Jeudi</th>
+              <th style="padding:6px 4px; text-align:center;">Vendredi</th>
+              <th style="padding:6px 4px; text-align:center;">Samedi</th>
             </tr>
           </thead>
           <tbody>
     `;
 
     if (!team || team.length === 0) {
-      html += `<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
+      html += `<tr><td colspan="6" class="text-center text-muted" style="padding:20px;">Aucun membre dans l'équipe pour le moment.</td></tr>`;
     } else {
-      team.forEach((m, idx) => {
-        const bg = idx % 2 === 0 ? '#fafafa' : '#fff';
+      const sortedTeam = [...team].sort((a, b) => {
+        const roleA = a.role ? a.role.split(',')[0].trim() : 'Z';
+        const roleB = b.role ? b.role.split(',')[0].trim() : 'Z';
+        const roleCmp = roleA.localeCompare(roleB);
+        if (roleCmp !== 0) return roleCmp;
+        
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      sortedTeam.forEach((m, idx) => {
+        const bg = idx % 2 === 0 ? '#FFFFFF' : '#F0F4F1';
         const formattedPhone = typeof formatPhone === 'function' ? formatPhone(m.phone) : (m.phone || '');
         
         // 2. Gestion de l'affichage multi-rôles (max 3)
         const rolesArray = m.role ? m.role.split(',').map(r => r.trim()).slice(0, 3) : ['Organisation'];
-        const rolesHtml = rolesArray.map(r => `
-          <span class="badge" style="background:#e8f0e6; color:var(--forest); border:1px solid var(--sage); font-weight:600; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">
-            ${r}
-          </span>`).join('');
+        const rolesHtml = rolesArray.map(r => {
+          let rBg = '#f3f4f6', rColor = '#374151', rBorder = '#d1d5db';
+          if (r === 'Messe') { rBg = '#FAF5FF'; rColor = '#7E22CE'; rBorder = '#E9D5FF'; }
+          else if (r === 'Animation') { rBg = '#FFF7ED'; rColor = '#C2410C'; rBorder = '#FFEDD5'; }
+          else if (r === 'Covoiturage') { rBg = '#EFF6FF'; rColor = '#1D4ED8'; rBorder = '#BFDBFE'; }
+          else if (r === 'Décoration' || r === 'Fleuriste') { rBg = '#FDF2F8'; rColor = '#BE185D'; rBorder = '#FBCFE8'; }
+          else if (r === 'Logistique' || r === 'Organisation') { rBg = '#F0FDF4'; rColor = '#15803D'; rBorder = '#BBF7D0'; }
+          else if (r === 'Traiteur') { rBg = '#FEF2F2'; rColor = '#B91C1C'; rBorder = '#FECACA'; }
+          else if (r === 'Coordination') { rBg = '#FDF9EE'; rColor = '#8C7326'; rBorder = '#E8D5A3'; }
+          
+          return `<span class="badge" style="background:${rBg}; color:${rColor}; border:1px solid ${rBorder}; font-weight:600; padding:2px 6px; border-radius:12px; font-size:11px; display:inline-block; margin:1px 2px 1px 0;">${r}</span>`;
+        }).join('');
 
         html += `
           <tr style="background:${bg}; border-bottom:1px solid #eee;">
-            <td style="padding:10px; word-wrap:break-word;">
-              <strong>${m.name || 'Sans nom'}</strong>
-              ${formattedPhone ? `<br><small style="color:var(--text-muted); font-family:monospace; font-size:12px;">${formattedPhone}</small>` : ''}
+            <td style="padding:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>${m.name || 'Sans nom'}</strong>
+                ${formattedPhone ? `
+                  <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <span style="cursor:pointer; filter: grayscale(100%) opacity(0.4); transition: opacity 0.2s;" 
+                          onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4"
+                          onclick="const p = document.getElementById('phone-team-${m.id}'); p.style.display = p.style.display === 'none' ? 'block' : 'none';" 
+                          title="Afficher/Masquer le numéro">📞</span>
+                    <div id="phone-team-${m.id}" style="display:none; color:var(--text-muted); font-family:monospace; font-size:12px; margin-top:4px;">
+                      ${formattedPhone}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
             </td>
             <td style="padding:10px;">
               <div style="display:flex; flex-wrap:wrap; gap:2px;">${rolesHtml}</div>
@@ -1212,11 +1235,7 @@ async renderGuestsList(guests) {
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_friday, m.time_friday)}</td>
             <td style="padding:10px; text-align:center;">${formatDayBadge(m.arrival_saturday, m.time_saturday)}</td>
             <td style="padding:10px; text-align:center;">
-              ${m.stays_on_site ? '<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:600;">Oui</span>' : '<span style="color:#999;">Non</span>'}
-            </td>
-            <td style="padding:10px; display:flex; gap:6px; justify-content:center;">
               <button class="btn btn--outline edit-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
-              <button class="btn btn--outline delete-team-btn" data-id="${m.id}" style="padding:2px 6px; font-size:13px; color:red; border-color:red; cursor:pointer;" title="Supprimer">×</button>
             </td>
           </tr>
         `;
@@ -1233,7 +1252,7 @@ async renderGuestsList(guests) {
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalThu}</td>
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalFri}</td>
               <td style="padding:12px 4px; text-align:center; color:var(--forest);">${totalSat}</td>
-              <td colspan="2"></td>
+              <td colspan="1"></td>
             </tr>
           </tfoot>
         </table>
@@ -1255,18 +1274,6 @@ async renderGuestsList(guests) {
       btn.addEventListener('click', (e) => {
         const target = team.find(item => item.id == e.currentTarget.dataset.id);
         if (target) this.openTeamModal(target, guests);
-      });
-    });
-
-    container.querySelectorAll('.delete-team-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
-          await this._deleteTeamMember(e.currentTarget.dataset.id);
-          if (typeof Animations !== 'undefined' && Animations.showToast) {
-            Animations.showToast("Membre supprimé", "success");
-          }
-          await this.renderTeam(guests);
-        }
       });
     });
   },
@@ -1377,9 +1384,12 @@ async renderGuestsList(guests) {
               </div>
             </fieldset>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-              <button type="button" id="team-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
-              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer</button>
+            <div style="display:flex; justify-content:${member ? 'space-between' : 'flex-end'}; align-items:center; margin-top:8px;">
+              ${member ? `<button type="button" id="delete-team-btn" class="btn btn--outline" style="padding:10px 18px; color:red; border-color:red; font-weight:600;">Supprimer le membre</button>` : ''}
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="team-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+                <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer</button>
+              </div>
             </div>
           </form>
 
@@ -1413,6 +1423,18 @@ async renderGuestsList(guests) {
         }
       });
     });
+
+    const deleteBtn = document.getElementById('delete-team-btn');
+    if (deleteBtn && member) {
+      deleteBtn.addEventListener('click', async () => {
+        if (confirm("Supprimer cette personne de l'équipe prépa ?")) {
+          await this._deleteTeamMember(member.id);
+          if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Membre supprimé", "success");
+          closeModal();
+          await this.renderTeam(guests);
+        }
+      });
+    }
 
     guestSelect.addEventListener('change', (e) => {
       const gId = e.target.value;
@@ -1587,9 +1609,12 @@ async renderGuestsList(guests) {
               </div>
             </fieldset>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-              <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
-              <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <button type="button" id="delete-guest-btn-modal" class="btn btn--outline" style="padding:10px 18px; color:red; border-color:red; font-weight:600;">Supprimer l'invité</button>
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="edit-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+                <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
+              </div>
             </div>
           </form>
 
@@ -1608,6 +1633,15 @@ async renderGuestsList(guests) {
     cancelBtn.addEventListener('click', closeModal);
     closeX.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById('delete-guest-btn-modal').addEventListener('click', async () => {
+      if (confirm("Supprimer définitivement cet invité et ses accompagnants ?")) {
+        await Store.deleteGuest(guest.id);
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Invité supprimé", "success");
+        closeModal();
+        this.renderDashboard();
+      }
+    });
 	
 	// Pré-cochage automatique des jours suivants (décochable manuellement)
     document.getElementById('team-arr-thu')?.addEventListener('change', (e) => {
@@ -1990,11 +2024,11 @@ async _deleteMoodboardItem(id) {
       <div style="display:flex; gap:8px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #eee;">
         <button class="mass-nav-btn ${activeSubTab === 'roles' ? 'active' : ''}" data-sub="roles"
                 style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'roles' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'roles' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
-          👥 1. Qui fait quoi ?
+          1. Qui fait quoi ?
         </button>
         <button class="mass-nav-btn ${activeSubTab === 'schedule' ? 'active' : ''}" data-sub="schedule"
                 style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--gold); background: ${activeSubTab === 'schedule' ? 'var(--forest)' : '#fff'}; color: ${activeSubTab === 'schedule' ? '#fff' : 'var(--forest)'}; font-weight: 600; cursor: pointer; font-size: 13px;">
-          📜 2. Déroulé de la messe
+          2. Déroulé de la messe
         </button>
       </div>
     `;

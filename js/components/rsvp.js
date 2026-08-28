@@ -8,7 +8,6 @@ const RSVP = {
   container: null,
   currentStep: 1,
   totalSteps: 5,
-  _accommodations: [], // cache pour l'autocomplete
   guestData: {
     id: null,
     firstName: '',
@@ -53,10 +52,6 @@ const RSVP = {
     this.container = document.getElementById('rsvp-container');
     if (!this.container) return;
     try {
-      // Charger les hébergements pour l'autocomplete
-      const accs = await Store.getAccommodationsWithAvailability();
-      this._accommodations = Array.isArray(accs) ? accs : [];
-
       const currentGuest = await Store.getCurrentGuest();
       if (currentGuest) {
         this.guestData = {
@@ -110,25 +105,50 @@ const RSVP = {
         .choice-btn { display:flex;align-items:center;gap:12px;padding:14px 18px;border:1.5px solid #e5e0d5;border-radius:8px;background:#fff;cursor:pointer;font-size:15px;text-align:left;width:100%;transition:all .15s; }
         .choice-btn:hover { border-color:#9b8660;background:#fdfaf5; }
         .choice-btn.selected { border-color:#9b8660;background:#fdfaf5;font-weight:500; }
-        .diet-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:15px 0; }
-        .diet-option { display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;color:#555; }
+        .link-btn { background:none;border:none;color:#9b8660;font-size:13px;text-decoration:underline;cursor:pointer;padding:4px 0;margin-bottom:10px; }
+        .link-btn:hover { color:#7a6a4f; }
+
+        /* Accompagnants (étape 1) */
+        .companion-toggle { display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#4a4a4a;cursor:pointer; }
+        .companion-toggle input { width:17px;height:17px;accent-color: var(--sage, #7fa876); }
+        .companion-card { background:#fdfaf5;border:1.5px solid #e7dcc4;border-radius:10px;padding:14px;margin-bottom:10px; }
+        .companion-card-title { margin:0 0 8px;font-size:13px;font-weight:600;color: var(--forest, #2D5A3D); }
+        .companion-card .compact-input { margin-bottom:8px; }
+        .companion-card .compact-input:last-child { margin-bottom:0; }
+
+        /* Régimes alimentaires : pastilles "bubbly" champêtre (vert sauge / doré / blanc) */
+        .diet-pills { display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 18px; }
+        .diet-pill {
+          display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:999px;
+          border:2px solid var(--sage, #a9c6a0);background:#fff;font-size:14px;color:var(--forest, #2D5A3D);
+          cursor:pointer;transition:all .18s ease;user-select:none;
+        }
+        .diet-pill input { display:none; }
+        .diet-pill:hover { border-color:var(--gold, #9b8660);transform:translateY(-1px); }
+        .diet-pill:has(input:checked) {
+          background:var(--sage, #a9c6a0);border-color:var(--sage, #a9c6a0);color:#fff;font-weight:600;
+          box-shadow:0 3px 8px rgba(127,168,118,.35);
+        }
         .allergy-sub { background:#faf8f5;padding:12px;border-radius:8px;margin-top:8px;border:1px dashed #e0d5c1; }
+        .info-note {
+          background:#fdfaf5;border:1.5px solid var(--sage, #d8e6d2);border-radius:12px;
+          padding:14px 16px;margin-bottom:18px;font-size:13px;color:#5c6b52;line-height:1.6;
+          display:flex;align-items:flex-start;gap:10px;
+        }
+        .info-note .icon { font-size:18px;flex-shrink:0; }
+
         .transport-mode { display:flex;gap:10px;margin-bottom:1.5rem; }
         .mode-btn { flex:1;padding:10px 5px;border:1.5px solid #e5e0d5;border-radius:8px;background:#fff;cursor:pointer;text-align:center;font-size:13px;transition:all .15s; }
         .mode-btn.selected { border-color:#9b8660;background:#fdfaf5;font-weight:500; }
         .hidden { display:none !important; }
 
-        /* Autocomplete hébergement */
-        .acc-autocomplete { position:relative; }
-        .acc-suggestions { position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #e0d5c1;border-top:none;border-radius:0 0 8px 8px;z-index:100;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1); }
-        .acc-suggestion { padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid #f5f0e8; }
-        .acc-suggestion:hover { background:#fdfaf5; }
-        .acc-suggestion:last-child { border-bottom:none; }
-        .acc-spots { font-size:12px;margin-left:6px; }
-        .acc-spots.green  { color:#1e8449; }
-        .acc-spots.orange { color:#b7770d; }
-        .acc-spots.red    { color:#c0392b; }
-        .acc-info-box { background:#fdfaf5;border:1.5px solid #e0d5c1;border-radius:8px;padding:12px 14px;margin-top:8px;font-size:13px;color:#5c4e35;line-height:1.6; }
+        /* Récapitulatif (étape 5) */
+        .recap-section { background:#fff;border:1.5px solid #f0ebe0;border-radius:10px;padding:16px 18px;margin-bottom:14px; }
+        .recap-section h4 { margin:0 0 10px;font-size:14px;color:var(--forest, #2D5A3D);display:flex;align-items:center;gap:8px; }
+        .recap-row { display:flex;justify-content:space-between;gap:10px;font-size:14px;color:#444;padding:5px 0;border-bottom:1px solid #f5f2eb; }
+        .recap-row:last-child { border-bottom:none; }
+        .recap-row span:first-child { color:#888; }
+        .recap-empty { font-size:13px;color:#aaa;font-style:italic; }
       </style>
 
       <div class="card form-steps-card" style="padding:20px;overflow-x:hidden;">
@@ -147,9 +167,9 @@ const RSVP = {
     const labels = [
       tr('Réponse', 'Respuesta'), 
       tr('Brunch', 'Brunch'), 
-      tr('Repas', 'Comida'), 
+      tr('Régime alimentaire', 'Régimen alimentario'), 
       tr('Transport', 'Transporte'), 
-      tr('Logement', 'Alojamiento')
+      tr('Récapitulatif', 'Resumen')
     ];
     let html = '<div class="step-indicator">';
     for (let i = 1; i <= this.totalSteps; i++) {
@@ -172,47 +192,72 @@ const RSVP = {
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   },
 
+  companionLabel(c, i) {
+    const full = `${c?.firstName || ''} ${c?.lastName || ''}`.trim();
+    return full || tr('Accompagnant ' + (i + 1), 'Acompañante ' + (i + 1));
+  },
+
 renderStep1() {
   const v = this.currentStep === 1;
   const att = this.guestData.attending;
   const companions = this.guestData.companions || [];
+  const hasCompanions = companions.length > 0;
+
+  // 1° Une fois une réponse choisie, on n'affiche que le choix retenu (gain de place),
+  // avec un lien discret pour en changer si besoin.
+  const attendanceBlock = att === null ? `
+    <div class="attendance-options">
+      <button type="button" class="choice-btn" data-val="true">  <span>🎉</span> <strong>${tr('Je viens avec joie !', '¡Asistiré con gusto!')}</strong></button>
+      <button type="button" class="choice-btn" data-val="maybe"><span>🤔</span> <strong>${tr('Je viens peut-être', 'Tal vez asista')}</strong></button>
+      <button type="button" class="choice-btn" data-val="false"><span>💌</span> <strong>${tr('Je ne peux pas venir', 'No podré asistir')}</strong></button>
+    </div>` : `
+    <div class="attendance-options">
+      <button type="button" class="choice-btn selected" data-val="${att}">
+        <span>${att === true ? '🎉' : att === 'maybe' ? '🤔' : '💌'}</span>
+        <strong>${att === true ? tr('Je viens avec joie !', '¡Asistiré con gusto!') : att === 'maybe' ? tr('Je viens peut-être', 'Tal vez asista') : tr('Je ne peux pas venir', 'No podré asistir')}</strong>
+      </button>
+    </div>
+    <button type="button" id="change-answer-btn" class="link-btn">${tr('↺ Changer ma réponse', '↺ Cambiar mi respuesta')}</button>`;
+
+  const companionBlock = att === true ? `
+    <div id="companions-section" style="margin-top:16px;">
+      <label class="companion-toggle">
+        <input type="checkbox" id="guest-has-companions" ${hasCompanions ? 'checked' : ''}>
+        ${tr('Je viens accompagné(e)', 'Vengo acompañado/a')}
+      </label>
+
+      <div id="companion-count-block" class="${hasCompanions ? '' : 'hidden'}" style="margin-top:12px;">
+        <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
+          ${tr('Nombre d\'accompagnants *', 'Número de acompañantes *')}
+        </label>
+        <select id="guest-companions-count" class="compact-input">
+          <option value="">-- ${tr('Choisir', 'Elegir')} --</option>
+          ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
+        </select>
+
+        <div id="companions-list" style="margin-top:8px;">
+          ${companions.map((c, idx) => `
+            <div class="companion-card">
+              <p class="companion-card-title">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
+              <input type="text" class="compact-input companion-firstname" data-index="${idx}" value="${this.esc(c.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}">
+              <input type="text" class="compact-input companion-lastname"  data-index="${idx}" value="${this.esc(c.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}">
+              <input type="tel"  class="compact-input companion-phone"     data-index="${idx}" value="${this.esc(c.phone)}"     placeholder="${tr('Téléphone (optionnel)', 'Teléfono (opcional)')}">
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
   return `
     <div class="form-step ${v ? 'active' : ''}" id="step-1">
       <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}" required>
       <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}" required>
       <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="${tr('Téléphone portable *', 'Teléfono móvil *')}" required>
-      <div style="height:1px;background:#f5f2eb;margin:1rem 0;"></div>
 
-      <div class="attendance-options">
-        <button type="button" class="choice-btn ${att === true    ? 'selected' : ''}" data-val="true">  <span>🎉</span> <strong>${tr('Je viens avec joie !', '¡Asistiré con gusto!')}</strong></button>
-        <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>${tr('Je viens peut-être', 'Tal vez asista')}</strong></button>
-        <button type="button" class="choice-btn ${att === false   ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>${tr('Je ne peux pas venir', 'No podré asistir')}</strong></button>
-      </div>
-
-      ${att === true ? `
-        <div id="companions-section" style="margin-top:14px;">
-          <div class="companion-warning" style="background:#fdf8ee;border-left:3px solid #d4aa5a;border-radius:6px;padding:10px 14px;font-size:13px;color:#7a6135;margin-bottom:12px;">
-            ${tr('Si vous souhaitez venir avec quelqu\'un que nous n\'avions pas prévu, demandez-nous !', 'Si desea venir con alguien no previsto, ¡por favor pregúntenos!')}
-          </div>
-          
-          <label for="guest-companions-count" style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
-            ${tr('Nombre d\'accompagnants', 'Número de acompañantes')} <span style="font-weight:normal; font-style:italic;">(${tr('optionnel', 'opcional')})</span>
-          </label>
-          <select id="guest-companions-count" class="compact-input" style="width:100%;">
-            <option value="0" ${companions.length === 0 ? 'selected' : ''}>0 (${tr('Aucun accompagnant', 'Ningún acompañante')})</option>
-            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n} ${tr('accompagnant' + (n>1?'s':''), 'acompañante' + (n>1?'s':''))}</option>`).join('')}
-          </select>
-
-          <div id="companions-list" style="margin-top:8px;">
-            ${companions.map((c, idx) => `
-              <div style="margin-bottom:8px;">
-                <input type="text" class="compact-input companion-name" data-index="${idx}" value="${this.esc(c.name)}" placeholder="${tr('Prénom et Nom de l\'accompagnant', 'Nombre y Apellido del acompañante')} ${idx+1}">
-              </div>`).join('')}
-          </div>
-        </div>` : ''}
+      ${attendanceBlock}
+      ${companionBlock}
 
       <div class="form-actions">
-        <button type="button" class="btn btn--primary next-btn" style="width:100%;">${tr('Suivant →', 'Siguiente →')}</button>
+        <button type="button" class="btn btn--primary next-btn" style="width:100%;">${tr('Suivant', 'Siguiente')}</button>
       </div>
     </div>`;
 },
@@ -231,7 +276,7 @@ renderStep1() {
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
@@ -239,50 +284,39 @@ renderStep1() {
   renderStep3() {
     const v = this.currentStep === 3;
     const companions = this.guestData.companions || [];
-	
-	const ALLERGY_REASSURANCE = `
-	<div class="rsvp-allergy-note">
-    ${tr('Toutes vos contraintes alimentaires seront transmises à notre traiteur. Renseignez-les sans hésiter !', 'Todas sus restricciones alimentarias serán transmitidas a nuestro catering. ¡Indíquelas sin dudarlo!')}
-	</div>
-`	;
 
     const renderBlock = (label, key, diet, allergyDetails) => {
       const d = diet || [];
       const hasAllergy = d.includes('allergy');
-      const det = allergyDetails || '';
-      const isLactose = det.includes('[Lactose]');
-      const isGluten  = det.includes('[Gluten]');
-      const isSea     = det.includes('[Fruits de mer]');
-      const isPeanut  = det.includes('[Arachides]');
-      const otherM    = det.match(/\[Autre:(.*?)\]/);
-      const otherTxt  = otherM ? otherM[1].trim() : '';
       return `
-        <div style="margin-bottom:1.5rem;">
+        <div style="margin-bottom:1.8rem;">
           <p style="font-weight:500;border-bottom:1px solid #f5f2eb;padding-bottom:4px;">${label}</p>
-          <div class="diet-grid">
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegetarian" ${d.includes('vegetarian')?'checked':''}><span>🥗 ${tr('Végétarien', 'Vegetariano')}</span></label>
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegan"       ${d.includes('vegan')      ?'checked':''}><span>🌱 ${tr('Végan', 'Vegano')}</span></label>
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${key}" value="no-alcohol"  ${d.includes('no-alcohol') ?'checked':''}><span>🧃 ${tr('Sans alcool', 'Sin alcohol')}</span></label>
-            <label class="diet-option"><input type="checkbox" class="diet-cb" data-person="${key}" value="allergy"     ${hasAllergy               ?'checked':''}><span>⚠️ ${tr('Allergie', 'Alergia')}</span></label>
+          <div class="diet-pills">
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegetarian" ${d.includes('vegetarian')?'checked':''}><span>🥗 ${tr('Végétarien', 'Vegetariano')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegan"       ${d.includes('vegan')      ?'checked':''}><span>🌱 ${tr('Végan', 'Vegano')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="no-alcohol"  ${d.includes('no-alcohol') ?'checked':''}><span>🧃 ${tr('Sans alcool', 'Sin alcohol')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="allergy"     ${hasAllergy               ?'checked':''}><span>⚠️ ${tr('Allergie / Intolérance', 'Alergia / Intolerancia')}</span></label>
           </div>
           <div class="allergy-sub ${hasAllergy?'':'hidden'}" id="allergy-details-${key}">
-            <p style="font-size:12px;margin-bottom:8px;">${tr('Précisez :', 'Especifique:')}</p>
-            <label style="margin-right:10px;font-size:13px;"><input type="checkbox" class="allergy-sub-cb" data-person="${key}" value="Lactose"       ${isLactose?'checked':''}> ${tr('Lactose', 'Lactosa')}</label>
-            <label style="margin-right:10px;font-size:13px;"><input type="checkbox" class="allergy-sub-cb" data-person="${key}" value="Gluten"        ${isGluten ?'checked':''}> ${tr('Gluten', 'Gluten')}</label>
-            <label style="margin-right:10px;font-size:13px;"><input type="checkbox" class="allergy-sub-cb" data-person="${key}" value="Fruits de mer" ${isSea    ?'checked':''}> ${tr('Fruits de mer', 'Mariscos')}</label>
-            <label style="margin-right:10px;font-size:13px;"><input type="checkbox" class="allergy-sub-cb" data-person="${key}" value="Arachides"     ${isPeanut ?'checked':''}> ${tr('Arachides', 'Cacahuetes')}</label>
-            <label style="margin-right:10px;font-size:13px;"><input type="checkbox" class="allergy-sub-cb allergy-other-trigger" data-person="${key}" value="Autre" ${otherM?'checked':''}> ${tr('Autre', 'Otro')}</label>
-            <input type="text" class="compact-input allergy-other-input ${otherM?'':'hidden'}" data-person="${key}" value="${this.esc(otherTxt)}" placeholder="${tr('Précisez…', 'Especifique…')}" style="margin-top:8px;">
+            <label style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;color:#5c4e35;">
+              ${tr('Précisez votre allergie / intolérance :', 'Especifique su alergia / intolerancia:')}
+            </label>
+            <input type="text" class="compact-input allergy-free-text" data-person="${key}" value="${this.esc(allergyDetails)}" placeholder="${tr('Ex : allergie aux fruits de mer, intolérance au gluten…', 'Ej: alergia a los mariscos, intolerancia al gluten…')}" style="margin-bottom:0;">
           </div>
         </div>`;
     };
 
     let html = `<div class="form-step ${v?'active':''}" id="step-3">`;
+    html += `
+      <div class="info-note">
+        <span class="icon">👩‍🍳</span>
+        <span>${tr('Ces informations permettront à notre traiteur de vous proposer des plats adaptés !', 'Esta información permitirá a nuestro catering ofrecerles platos adaptados.')}</span>
+      </div>`;
     html += renderBlock(tr('Pour vous', 'Para usted'), 'main', this.guestData.diet, this.guestData.allergyDetails);
-    companions.forEach((c, i) => html += renderBlock(tr(`Pour ${c.name||'Accompagnant '+(i+1)}`, `Para ${c.name||'Acompañante '+(i+1)}`), String(i), c.diet, c.allergyDetails));
+    companions.forEach((c, i) => html += renderBlock(tr(`Pour ${this.companionLabel(c, i)}`, `Para ${this.companionLabel(c, i)}`), String(i), c.diet, c.allergyDetails));
     html += `<div class="form-actions">
       <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-      <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+      <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
     </div></div>`;
     return html;
   },
@@ -365,62 +399,99 @@ renderStep1() {
 
         <div class="form-actions">
           <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant →', 'Siguiente →')}</button>
+          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
 
   renderStep5() {
     const v = this.currentStep === 5;
-    const acc = this.guestData.accommodationStatus;
-    const accName = this.guestData.accommodationName || '';
+    const g = this.guestData;
+    const t = g.transport || {};
 
-    // Trouver l'hébergement sélectionné pour afficher les infos
-    const selected = this._accommodations.find(a => a.id === this.guestData.accommodationId);
-    let infoBox = '';
-    if (selected) {
-      const spots = selected.spotsLeft;
-      const total = selected.capacityNumber;
-      let spotsLine = '';
-      if (total > 0 && spots !== undefined) {
-        const color = spots === 0 ? '#c0392b' : spots <= 2 ? '#b7770d' : '#1e8449';
-        spotsLine = `<div style="color:${color};font-weight:600;margin-top:4px;">
-          🛏️ ${spots} place${spots>1?'s':''} restante${spots>1?'s':''} / ${total}
-        </div>`;
-      }
-      infoBox = `<div class="acc-info-box">
-        <strong>${selected.name}</strong><br>
-        📏 ${selected.distance || '—'}<br>
-        ${selected.description || ''}
-        ${spotsLine}
-      </div>`;
+    const dietLabel = code => ({
+      vegetarian: tr('Végétarien', 'Vegetariano'),
+      vegan: tr('Végan', 'Vegano'),
+      'no-alcohol': tr('Sans alcool', 'Sin alcohol'),
+      allergy: tr('Allergie/Intolérance', 'Alergia/Intolerancia')
+    }[code] || code);
+
+    const dietSummary = (diet, allergyDetails) => {
+      const d = diet || [];
+      if (!d.length) return tr('Aucune restriction', 'Sin restricciones');
+      let s = d.map(dietLabel).join(', ');
+      if (d.includes('allergy') && allergyDetails) s += ` — ${this.esc(allergyDetails)}`;
+      return s;
+    };
+
+    const attLabel = g.attending === true ? tr('Je viens avec joie !', '¡Asistiré con gusto!')
+      : g.attending === 'maybe' ? tr('Je viens peut-être', 'Tal vez asista')
+      : tr('Je ne peux pas venir', 'No podré asistir');
+
+    let transportSummary = tr('Non renseigné', 'No especificado');
+    if (t.mode === 'car') {
+      transportSummary = t.carpoolRole === 'offer'
+        ? tr(`Je propose ${t.seatsAvailable || 1} place(s) depuis ${t.city || '—'}`, `Ofrezco ${t.seatsAvailable || 1} plaza(s) desde ${t.city || '—'}`)
+        : tr('En voiture — pas de place supplémentaire', 'En coche — sin plazas adicionales');
+    } else if (t.mode) {
+      transportSummary = t.carpoolRole === 'need'
+        ? tr('Covoiturage demandé', 'Transporte compartido solicitado')
+        : tr('Je me débrouille par mes propres moyens', 'Me organizo por mi cuenta');
     }
 
+    const companionsHtml = (g.companions || []).length
+      ? (g.companions || []).map((c, i) => `
+          <div class="recap-row"><span>${this.esc(this.companionLabel(c, i))}</span><span>${c.phone ? '📞 ' + this.esc(c.phone) : '—'}</span></div>
+        `).join('')
+      : `<p class="recap-empty">${tr('Aucun accompagnant', 'Sin acompañantes')}</p>`;
+
+    const dietHtml = `
+      <div class="recap-row"><span>${tr('Vous', 'Usted')}</span><span>${dietSummary(g.diet, g.allergyDetails)}</span></div>
+      ${(g.companions || []).map((c, i) => `<div class="recap-row"><span>${this.esc(this.companionLabel(c, i))}</span><span>${dietSummary(c.diet, c.allergyDetails)}</span></div>`).join('')}
+    `;
+
     return `
-      <div class="form-step ${v?'active':''}" id="step-5">
-        <div class="attendance-options">
-          <button type="button" class="choice-btn ${acc==='found'    ?'selected':''}" data-acc="found">    <span>🏡</span> <strong>${tr('J\'ai trouvé un logement', 'He encontrado alojamiento')}</strong></button>
-          <button type="button" class="choice-btn ${acc==='searching'?'selected':''}" data-acc="searching"><span>🔍</span> <strong>${tr('Je cherche encore', 'Todavía estoy buscando')}</strong></button>
+      <div class="form-step ${v ? 'active' : ''}" id="step-5">
+        <p style="text-align:center;font-size:14px;color:#666;margin-bottom:1.2rem;">
+          ${tr('Vérifiez que tout est correct avant de confirmer votre réponse.', 'Compruebe que todo sea correcto antes de confirmar su respuesta.')}
+        </p>
+
+        <div class="recap-section">
+          <h4>👤 ${tr('Vos informations', 'Sus datos')}</h4>
+          <div class="recap-row"><span>${tr('Nom', 'Nombre')}</span><span>${this.esc(g.firstName)} ${this.esc(g.lastName)}</span></div>
+          <div class="recap-row"><span>${tr('Téléphone', 'Teléfono')}</span><span>${this.esc(g.phone)}</span></div>
+          <div class="recap-row"><span>${tr('Présence', 'Asistencia')}</span><span>${attLabel}</span></div>
         </div>
 
-        <div id="acc-found-section" class="${acc==='found'?'':'hidden'}" style="margin-top:14px;">
-          <label style="font-size:14px;font-weight:500;display:block;margin-bottom:6px;">${tr('Où logerez-vous ?', '¿Dónde se alojarán?')}</label>
-          <div class="acc-autocomplete">
-            <input type="text" id="acc-name-input" class="compact-input" 
-              value="${this.esc(accName)}" 
-              placeholder="${tr('Tapez au moins 3 lettres pour chercher…', 'Escriba al menos 3 letras para buscar…')}"
-              autocomplete="off">
-            <div id="acc-suggestions" class="acc-suggestions hidden"></div>
-          </div>
-          ${infoBox}
+        ${g.attending === true ? `
+        <div class="recap-section">
+          <h4>👥 ${tr('Accompagnants', 'Acompañantes')}</h4>
+          ${companionsHtml}
+        </div>` : ''}
+
+        ${(g.attending === true || g.attending === 'maybe') ? `
+        <div class="recap-section">
+          <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
+          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
+        </div>` : ''}
+
+        ${g.attending === true ? `
+        <div class="recap-section">
+          <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
+          ${dietHtml}
         </div>
+
+        <div class="recap-section">
+          <h4>🚗 ${tr('Transport', 'Transporte')}</h4>
+          <div class="recap-row"><span>${tr('Résumé', 'Resumen')}</span><span>${transportSummary}</span></div>
+        </div>` : ''}
 
         <p style="font-size:13px;color:#777;text-align:center;font-style:italic;margin-top:14px;">
-          ${tr('Les hébergements du Pilat se remplissent vite — réservez dès que possible !', 'Los alojamientos del Pilat se llenan rápido — ¡reserven lo antes posible!')}<br>
+          ${tr('Besoin d\'un hébergement ?', '¿Necesita alojamiento?')}
           <a href="#/hebergements" style="color:#9b8660;">${tr('Voir la liste des hébergements →', 'Ver la lista de alojamientos →')}</a>
         </p>
 
-        <div class="form-actions" style="margin-top:2rem;">
+        <div class="form-actions" style="margin-top:1.5rem;">
           <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
           <button type="button" class="btn btn--primary next-btn" id="final-submit-btn">${tr('Confirmer ma réponse ✓', 'Confirmar mi respuesta ✓')}</button>
         </div>
@@ -431,43 +502,51 @@ renderStep1() {
     this.container.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', () => this.handleNext()));
     this.container.querySelectorAll('.prev-btn').forEach(btn => btn.addEventListener('click', () => this.handlePrev()));
 
-    // Présence / brunch / hébergement
-    this.container.querySelectorAll('[data-val],[data-brunch],[data-acc]').forEach(btn => {
+    // Présence / brunch
+    this.container.querySelectorAll('[data-val],[data-brunch]').forEach(btn => {
       btn.addEventListener('click', e => {
         const d = e.currentTarget.dataset;
         if (d.val)   this.guestData.attending = d.val==='true' ? true : d.val==='false' ? false : 'maybe';
         if (d.brunch) this.guestData.brunch   = d.brunch === 'true';
-        if (d.acc) {
-          this.guestData.accommodationStatus = d.acc;
-          if (d.acc !== 'found') { this.guestData.accommodationId = null; this.guestData.accommodationName = ''; }
-        }
         this.saveCurrentStepData();
         this.render();
       });
     });
 
-    // Accompagnants
+    // 1° Changer de réponse (ré-affiche les 3 choix)
+    const changeAnswerBtn = this.container.querySelector('#change-answer-btn');
+    if (changeAnswerBtn) {
+      changeAnswerBtn.addEventListener('click', () => {
+        this.guestData.attending = null;
+        this.render();
+      });
+    }
+
+    // 1° Case "Je viens accompagné(e)"
+    const hasCompanionsCb = this.container.querySelector('#guest-has-companions');
+    if (hasCompanionsCb) {
+      hasCompanionsCb.addEventListener('change', e => {
+        if (!e.target.checked) this.guestData.companions = [];
+        this.render();
+      });
+    }
+
+    // Nombre d'accompagnants
     const compSelect = this.container.querySelector('#guest-companions-count');
     if (compSelect) {
       compSelect.addEventListener('change', e => {
-        const count = parseInt(e.target.value, 10);
-        while (this.guestData.companions.length < count) this.guestData.companions.push({ name:'', diet:[], allergyDetails:'' });
+        const count = parseInt(e.target.value, 10) || 0;
+        while (this.guestData.companions.length < count) this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
         if (this.guestData.companions.length > count) this.guestData.companions = this.guestData.companions.slice(0, count);
         this.render();
       });
     }
 
-    // Régimes
+    // Régimes : révèle le champ libre allergie/intolérance
     this.container.querySelectorAll('.diet-cb').forEach(cb => {
       cb.addEventListener('change', () => {
         const sub = this.container.querySelector(`#allergy-details-${cb.dataset.person}`);
         if (cb.value === 'allergy' && sub) sub.classList.toggle('hidden', !cb.checked);
-      });
-    });
-    this.container.querySelectorAll('.allergy-other-trigger').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const inp = this.container.querySelector(`.allergy-other-input[data-person="${cb.dataset.person}"]`);
-        if (inp) inp.classList.toggle('hidden', !cb.checked);
       });
     });
 
@@ -501,52 +580,6 @@ renderStep1() {
       });
     });
 
-    // Autocomplete hébergement
-    const accInput = this.container.querySelector('#acc-name-input');
-    const accSugg  = this.container.querySelector('#acc-suggestions');
-    if (accInput && accSugg) {
-      accInput.addEventListener('input', () => {
-        const val = accInput.value.trim();
-        if (val.length < 3) { accSugg.classList.add('hidden'); accSugg.innerHTML = ''; return; }
-
-        const matches = this._accommodations.filter(a =>
-          a.name.toLowerCase().includes(val.toLowerCase())
-        );
-
-        if (!matches.length) { accSugg.classList.add('hidden'); return; }
-
-        accSugg.innerHTML = matches.map(a => {
-          let spotsHtml = '';
-          if (a.capacityNumber > 0 && a.spotsLeft !== undefined) {
-            const cls = a.spotsLeft === 0 ? 'red' : a.spotsLeft <= 2 ? 'orange' : 'green';
-            spotsHtml = `<span class="acc-spots ${cls}">(${a.spotsLeft} place${a.spotsLeft>1?'s':''} restante${a.spotsLeft>1?'s':''})</span>`;
-          }
-          return `<div class="acc-suggestion" data-id="${a.id}" data-name="${this.esc(a.name)}">
-            ${a.name} ${spotsHtml}
-          </div>`;
-        }).join('');
-
-        accSugg.classList.remove('hidden');
-
-        accSugg.querySelectorAll('.acc-suggestion').forEach(item => {
-          item.addEventListener('click', () => {
-            this.guestData.accommodationId   = item.dataset.id;
-            this.guestData.accommodationName = item.dataset.name;
-            accInput.value = item.dataset.name;
-            accSugg.classList.add('hidden');
-            // Rafraîchir l'info box sans re-render complet
-            this.render();
-          });
-        });
-      });
-
-      // Fermer suggestions si clic ailleurs
-      document.addEventListener('click', e => {
-        if (!accInput.contains(e.target) && !accSugg.contains(e.target)) {
-          accSugg.classList.add('hidden');
-        }
-      }, { once: false });
-    }
   },
 
   saveCurrentStepData() {
@@ -554,24 +587,29 @@ renderStep1() {
       this.guestData.firstName = (document.getElementById('guest-firstname')?.value || '').trim();
       this.guestData.lastName  = (document.getElementById('guest-lastname')?.value  || '').trim();
       this.guestData.phone     = (document.getElementById('guest-phone')?.value     || '').trim();
-      this.container.querySelectorAll('.companion-name').forEach(inp => {
-        if (this.guestData.companions[inp.dataset.index])
-          this.guestData.companions[inp.dataset.index].name = inp.value.trim();
-      });
+
+      const hasCompanionsChecked = document.getElementById('guest-has-companions')?.checked;
+      if (!hasCompanionsChecked) {
+        this.guestData.companions = [];
+      } else {
+        this.container.querySelectorAll('.companion-firstname').forEach(inp => {
+          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].firstName = inp.value.trim();
+        });
+        this.container.querySelectorAll('.companion-lastname').forEach(inp => {
+          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].lastName = inp.value.trim();
+        });
+        this.container.querySelectorAll('.companion-phone').forEach(inp => {
+          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].phone = inp.value.trim();
+        });
+      }
     }
     if (this.currentStep === 3) {
       const proc = key => {
         const diets = Array.from(this.container.querySelectorAll(`.diet-cb[data-person="${key}"]:checked`)).map(c => c.value);
-        let allergy = '';
-        if (diets.includes('allergy')) {
-          this.container.querySelectorAll(`.allergy-sub-cb[data-person="${key}"]:checked`).forEach(c => {
-            if (c.value === 'Autre') {
-              const txt = this.container.querySelector(`.allergy-other-input[data-person="${key}"]`)?.value.trim();
-              if (txt) allergy += ` [Autre: ${txt}]`;
-            } else allergy += ` [${c.value}]`;
-          });
-        }
-        return { diet: diets, details: allergy.trim() };
+        const details = diets.includes('allergy')
+          ? (this.container.querySelector(`.allergy-free-text[data-person="${key}"]`)?.value.trim() || '')
+          : '';
+        return { diet: diets, details };
       };
       const main = proc('main');
       this.guestData.diet = main.diet;
@@ -613,15 +651,7 @@ renderStep1() {
         }
       }
     }
-    if (this.currentStep === 5) {
-      // accommodationId et accommodationName sont mis à jour par le clic sur suggestion
-      const inp = document.getElementById('acc-name-input');
-      if (inp && inp.value.trim() !== this.guestData.accommodationName) {
-        // L'utilisateur a modifié le texte sans sélectionner de suggestion
-        this.guestData.accommodationName = inp.value.trim();
-        this.guestData.accommodationId   = null;
-      }
-    }
+    // Step 5 : récapitulatif en lecture seule, rien à sauvegarder ici.
   },
 
   validateStep() {
@@ -632,8 +662,14 @@ renderStep1() {
       if (this.guestData.attending === null) {
         Animations.showToast('Veuillez indiquer votre présence', 'error'); return false;
       }
-      if (this.guestData.attending === true && !this.guestData.companions.every(c => c.name.trim())) {
-        Animations.showToast('Veuillez renseigner les noms des accompagnants', 'error'); return false;
+      if (this.guestData.attending === true) {
+        const hasCompanionsChecked = this.container.querySelector('#guest-has-companions')?.checked;
+        if (hasCompanionsChecked && this.guestData.companions.length === 0) {
+          Animations.showToast("Veuillez indiquer le nombre d'accompagnants", 'error'); return false;
+        }
+        if (!this.guestData.companions.every(c => c.firstName.trim() && c.lastName.trim())) {
+          Animations.showToast('Veuillez renseigner le prénom et le nom de chaque accompagnant', 'error'); return false;
+        }
       }
     }
     if (this.currentStep === 2 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {

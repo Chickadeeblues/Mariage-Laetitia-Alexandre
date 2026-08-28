@@ -20,7 +20,12 @@ const GuestProfile = {
 
   async render() {
     if (!this.container) return;
-    const guest = await Store.getCurrentGuest();
+    let guest = null;
+    try {
+      guest = await Store.getCurrentGuest();
+    } catch (e) {
+      console.warn('[GuestProfile] Impossible de charger le profil (réseau indisponible) :', e);
+    }
 
     if (!guest) {
       this.container.innerHTML = this.renderLoginForm();
