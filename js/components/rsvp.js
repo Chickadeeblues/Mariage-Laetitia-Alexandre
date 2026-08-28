@@ -571,14 +571,32 @@ renderStep4() {
           ${dietHtml}
         </div>` : ''}
 		
+        ${g.attending === true ? `
         <div class="recap-section">
           <h4>🍰 ${tr('Buffet gourmand', 'Bufé goloso')}</h4>
-          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.dessert?.participate === true ? tr('Oui, je participe', 'Sí, participo') : g.dessert?.participate === false ? tr('Non, difficile pour moi', 'No, es difícil') : '—'}</span></div>
-          ${g.dessert?.participate === true ? `
-            <div class="recap-row"><span>${tr('Dessert', 'Postre')}</span><span>${this.esc(g.dessert.type) || '—'} (${this.esc(g.dessert.portions) || '?'} parts)</span></div>
-            <div class="recap-row"><span>${tr('Au frais', 'En frío')}</span><span>${g.dessert.fridge === 'yes' ? tr('Oui', 'Sí') : g.dessert.fridge === 'no' ? tr('Non', 'No') : tr('Surprise', 'Sorpresa')}</span></div>
-          ` : ''}
-        </div>` : ''}		
+          <div class="recap-row">
+            <span>${tr('Réponse', 'Respuesta')}</span>
+            <span>${g.dessert?.participate === true ? tr('Oui, je participe', 'Sí, participo') : g.dessert?.participate === false ? tr('Non, difficile pour moi', 'No, es difícil') : '—'}</span>
+          </div>
+          ${g.dessert?.participate === true ? (
+            g.dessert?.isSurprise === true || g.dessert?.isSurprise === 'true' ? `
+              <div class="recap-row">
+                <span>${tr('Dessert', 'Postre')}</span>
+                <span>${tr('Surprise, je répondrai plus tard !', '¡Sorpresa, responderé más tarde!')}</span>
+              </div>
+            ` : `
+              <div class="recap-row">
+                <span>${tr('Dessert', 'Postre')}</span>
+                <span>${this.esc(g.dessert.type) || '—'} (${this.esc(g.dessert.portions) || '?'} parts)</span>
+              </div>
+              <div class="recap-row">
+                <span>${tr('Au frais', 'En frío')}</span>
+                <span>${g.dessert.fridge === 'yes' ? tr('Oui', 'Sí') : g.dessert.fridge === 'no' ? tr('Non', 'No') : tr('Surprise', 'Sorpresa')}</span>
+              </div>
+            `
+          ) : ''}
+        </div>
+        ` : ''}	
 
         ${(g.attending === true || g.attending === 'maybe') ? `
         <div class="recap-section">
@@ -586,7 +604,6 @@ renderStep4() {
           <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
         </div>
         
-
         ${g.attending === true ? `
         <div class="recap-section">
           <h4>🚗 ${tr('Transport', 'Transporte')}</h4>
