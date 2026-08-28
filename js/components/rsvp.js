@@ -422,84 +422,145 @@ renderStep5() {
     const tData = this.guestData.transport || {};
     const isCar = tData.mode === 'car';
     const n = tData.passengerNeeds || [];
+    
+    // Valeur par défaut pour le compteur de places
+    const seats = tData.seatsAvailable || 1;
+
     return `
-      <div class="form-step ${v?'active':''}" id="step-4">
+      <div class="form-step ${v ? 'active' : ''}" id="step-5">
 
+        <!-- 1. En-tête : Je viens : -->
         <div style="margin-bottom:18px;border-bottom:1px solid #e5e0d5;padding-bottom:14px;">
-          <label style="font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="t-arrive-before" ${tData.arrivalBeforeDDay?'checked':''}>
-            ${tr('Arriver dans la région avant le jour J', 'Llegar a la región antes del gran día')}
+          <label style="font-size:16px;font-weight:500;display:block;margin-bottom:12px;">
+            ${tr('Je viens :', 'Vengo :')}
           </label>
-          <div id="arrive-before-fields" class="${tData.arrivalBeforeDDay?'':'hidden'}" style="margin-top:10px;">
-            <input type="text" id="t-arr-from"  class="compact-input" placeholder="${tr('Lieu de départ', 'Lugar de salida')}"  value="${this.esc(tData.arrivalFrom)}">
-            <input type="text" id="t-arr-to"    class="compact-input" placeholder="${tr('Lieu d\'arrivée', 'Lugar de llegada')}"  value="${this.esc(tData.arrivalTo)}">
-            <input type="date" id="t-arr-date"  class="compact-input" value="${this.esc(tData.arrivalDate)}">
+          <div class="transport-mode">
+            <button type="button" class="mode-btn ${tData.mode === 'car' ? 'selected' : ''}" data-mode="car">  <span style="display:block;font-size:20px;">🚗</span>${tr('En voiture', 'En coche')}</button>
+            <button type="button" class="mode-btn ${tData.mode === 'train' ? 'selected' : ''}" data-mode="train"><span style="display:block;font-size:20px;">🚆</span>${tr('En train', 'En tren')}</button>
+            <button type="button" class="mode-btn ${tData.mode === 'other' ? 'selected' : ''}" data-mode="other"><span style="display:block;font-size:20px;">✈️</span>${tr('Autre', 'Otro')}</button>
           </div>
         </div>
 
-        <div class="transport-mode">
-          <button type="button" class="mode-btn ${tData.mode==='car'   ?'selected':''}" data-mode="car">  <span style="display:block;font-size:20px;">🚗</span>${tr('En voiture', 'En coche')}</button>
-          <button type="button" class="mode-btn ${tData.mode==='train' ?'selected':''}" data-mode="train"><span style="display:block;font-size:20px;">🚆</span>${tr('En train', 'En tren')}</button>
-          <button type="button" class="mode-btn ${tData.mode==='other' ?'selected':''}" data-mode="other"><span style="display:block;font-size:20px;">✈️</span>${tr('Autre', 'Otro')}</button>
-        </div>
-
-        <div id="car-section" class="${isCar?'':'hidden'}">
+        <div id="car-section" class="${isCar ? '' : 'hidden'}">
           <div class="attendance-options">
-            <button type="button" class="choice-btn ${tData.carpoolRole==='offer'?'selected':''}" data-role="offer">🙌 ${tr('Je peux proposer des places', 'Puedo ofrecer plazas')}</button>
-            <button type="button" class="choice-btn ${tData.carpoolRole==='none' ?'selected':''}" data-role="none"> 👍 ${tr('Je n\'ai pas de place supplémentaire', 'No tengo plazas adicionales')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'offer' ? 'selected' : ''}" data-role="offer">🙌 ${tr('Je peux proposer des places', 'Puedo ofrecer plazas')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'none' ? 'selected' : ''}" data-role="none"> 👍 ${tr('Je n\'ai pas de place supplémentaire', 'No tengo plazas adicionales')}</button>
           </div>
-          <div id="offer-section" class="${tData.carpoolRole==='offer'?'':'hidden'}" style="margin-top:10px;">
-            <input type="text" id="t-driver-city"  class="compact-input" value="${this.esc(tData.city)}" placeholder="${tr('Ville de départ (ex: Lyon)', 'Ciudad de salida (ej: Madrid)')}">
-            <select id="t-driver-seats" class="compact-input">
-              ${[1,2,3,4,5,6].map(num=>`<option value="${num}" ${tData.seatsAvailable==num?'selected':''}>${num} ${tr('place'+(num>1?'s':''), 'plaza'+(num>1?'s':''))}</option>`).join('')}
-            </select>
-            <input type="date" id="t-driver-day"  class="compact-input" value="${this.esc(tData.departureDay)}">
-            <input type="time" id="t-driver-time" class="compact-input" value="${this.esc(tData.departureTime)}">
-            <input type="tel"  id="t-driver-phone" class="compact-input" value="${this.esc(tData.contactPhone||this.guestData.phone)}" placeholder="${tr('Téléphone de contact', 'Teléfono de contacto')}">
+          
+          <div id="offer-section" class="${tData.carpoolRole === 'offer' ? '' : 'hidden'}" style="margin-top:16px;">
+            
+            <!-- 2. Compteur de places (+ / -) -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-bottom:16px;">
+              <button type="button" class="seat-adjust-btn" data-action="minus" style="width:36px;height:36px;border-radius:50%;border:1px solid #ccc;background:#fff;font-size:18px;cursor:pointer;">-</button>
+              <span style="font-size:16px;font-weight:500;min-width:80px;text-align:center;">
+                ${seats} ${tr('place' + (seats > 1 ? 's' : ''), 'plaza' + (seats > 1 ? 's' : ''))}
+              </span>
+              <button type="button" class="seat-adjust-btn" data-action="plus" style="width:36px;height:36px;border-radius:50%;border:1px solid #ccc;background:#fff;font-size:18px;cursor:pointer;">+</button>
+              <input type="hidden" id="t-driver-seats" value="${seats}">
+            </div>
+
+            <!-- 3. Informations de départ -->
+            <input type="text" id="t-driver-city" class="compact-input" value="${this.esc(tData.city)}" placeholder="${tr('Ville de départ *', 'Ciudad de salida *')}">
+            
+            <!-- Astuce : type="text" transformé en "date/time" au clic pour afficher le placeholder proprement -->
+            <input type="text" id="t-driver-day" class="compact-input" value="${this.esc(tData.departureDay)}" placeholder="${tr('Jour de départ *', 'Día de salida *')}" onfocus="(this.type='date')" onblur="(this.value === '' ? this.type='text' : this.type='date')">
+            <input type="text" id="t-driver-time" class="compact-input" value="${this.esc(tData.departureTime)}" placeholder="${tr('Heure approximative de départ (optionnel)', 'Hora aproximada de salida (opcional)')}" onfocus="(this.type='time')" onblur="(this.value === '' ? this.type='text' : this.type='time')">
+
+            <!-- 4. Contact -->
+            <div style="margin-top:20px;margin-bottom:8px;font-weight:500;font-size:14px;">
+              ${tr('Comment me contacter :', 'Cómo contactarme :')}
+            </div>
+            <input type="tel" id="t-driver-phone" class="compact-input" value="${this.esc(tData.contactPhone || this.guestData.phone)}" placeholder="${tr('Téléphone de contact', 'Teléfono de contacto')}">
             <input type="email" id="t-driver-email" class="compact-input" value="${this.esc(tData.contactEmail)}" placeholder="${tr('Email (optionnel)', 'Email (opcional)')}">
           </div>
         </div>
 
-        <div id="other-section" class="${!isCar?'':'hidden'}">
+        <div id="other-section" class="${!isCar ? '' : 'hidden'}">
           <div class="attendance-options">
-            <button type="button" class="choice-btn ${tData.carpoolRole==='need'?'selected':''}" data-need="need">🙋 ${tr('J\'ai besoin d\'un covoiturage', 'Necesito transporte')}</button>
-            <button type="button" class="choice-btn ${tData.carpoolRole==='none'?'selected':''}" data-need="none">👌 ${tr('Je me débrouille', 'Me organizo solo')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'need' ? 'selected' : ''}" data-need="need">🙋 ${tr('J\'ai besoin d\'un covoiturage', 'Necesito transporte')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'none' ? 'selected' : ''}" data-need="none">👌 ${tr('Je me débrouille', 'Me organizo solo')}</button>
           </div>
-          <div id="need-section" class="${tData.carpoolRole==='need'?'':'hidden'}" style="margin-top:14px;">
-            <label style="font-weight:500;margin-bottom:8px;display:block;">${tr('Pour quel(s) trajet(s) ?', '¿Para qué trayecto(s)?')}</label>
-            <label style="display:block;margin-bottom:6px;font-size:14px;"><input type="checkbox" class="p-need-cb" value="church" ${n.includes('church')?'checked':''}> ${tr('Aller à l\'église de Malleval', 'Ir a la iglesia de Malleval')}</label>
-            <div class="${n.includes('church')?'':'hidden'}" id="church-options" style="margin-left:20px;margin-bottom:8px;">
-              <label style="display:block;font-size:13px;margin-bottom:4px;"><input type="radio" name="churchArrival" value="ter" ${tData.churchArrival==='ter'?'checked':''}> ${tr('Depuis la gare TER Le Péage-de-Roussillon', 'Desde la estación Le Péage-de-Roussillon')}</label>
-              <input type="time" id="t-church-time" class="compact-input ${tData.churchArrival==='ter'?'':'hidden'}" value="${this.esc(tData.churchTime)}" placeholder="${tr('Heure d\'arrivée prévue', 'Hora prevista de llegada')}">
-              <label style="display:block;font-size:13px;margin-bottom:4px;"><input type="radio" name="churchArrival" value="far" ${tData.churchArrival==='far'?'checked':''}> ${tr('Depuis un autre lieu', 'Desde otro lugar')}</label>
-              <div id="church-far-options" class="${tData.churchArrival==='far'?'':'hidden'}">
+          <div id="need-section" class="${tData.carpoolRole === 'need' ? '' : 'hidden'}" style="margin-top:14px;">
+            <label style="font-weight:600;margin-bottom:14px;display:block;">${tr('Pour quel(s) trajet(s) avez-vous besoin d\'aide ?', '¿Para qué trayecto(s) necesitas ayuda?')}</label>
+            
+            <style>
+              .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
+              .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+              .switch input { opacity: 0; width: 0; height: 0; }
+              .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
+              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+              input:checked + .slider { background-color: #4CAF50; }
+              input:checked + .slider:before { transform: translateX(20px); }
+            </style>
+
+            <!-- Trajet 1 : Église -->
+            <div class="switch-row">
+              <span>${tr('Aller à l\'église de Malleval', 'Ir a la iglesia de Malleval')}</span>
+              <label class="switch">
+                <input type="checkbox" class="p-need-cb" value="church" ${n.includes('church') ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="${n.includes('church') ? '' : 'hidden'}" id="church-options" style="background:#f9f9f9;padding:10px;border-radius:6px;margin-bottom:12px;">
+              <label style="display:block;font-size:13px;margin-bottom:6px;"><input type="radio" name="churchArrival" value="ter" ${tData.churchArrival === 'ter' ? 'checked' : ''}> ${tr('Depuis la gare TER Le Péage-de-Roussillon', 'Desde la estación Le Péage-de-Roussillon')}</label>
+              <input type="text" id="t-church-time" class="compact-input ${tData.churchArrival === 'ter' ? '' : 'hidden'}" value="${this.esc(tData.churchTime)}" placeholder="${tr('Heure d\'arrivée prévue', 'Hora prevista de llegada')}" onfocus="(this.type='time')" onblur="(this.value === '' ? this.type='text' : this.type='time')">
+              <label style="display:block;font-size:13px;margin-bottom:6px;"><input type="radio" name="churchArrival" value="far" ${tData.churchArrival === 'far' ? 'checked' : ''}> ${tr('Depuis un autre lieu', 'Desde otro lugar')}</label>
+              <div id="church-far-options" class="${tData.churchArrival === 'far' ? '' : 'hidden'}">
                 <input type="text" id="t-pass-city" class="compact-input" value="${this.esc(tData.city)}" placeholder="${tr('Ville de départ *', 'Ciudad de salida *')}">
-                <input type="date" id="t-pass-day"  class="compact-input" value="${this.esc(tData.departureDay)}">
+                <input type="text" id="t-pass-day" class="compact-input" value="${this.esc(tData.departureDay)}" placeholder="${tr('Jour de départ *', 'Día de salida *')}" onfocus="(this.type='date')" onblur="(this.value === '' ? this.type='text' : this.type='date')">
               </div>
             </div>
-            <label style="display:block;margin-bottom:6px;font-size:14px;"><input type="checkbox" class="p-need-cb" value="church-venue" ${n.includes('church-venue')?'checked':''}> ${tr('De l\'église à la Scie du May', 'De la iglesia a la Scie du May')}</label>
-            <label style="display:block;margin-bottom:6px;font-size:14px;"><input type="checkbox" class="p-need-cb" value="night" ${n.includes('night')?'checked':''}> ${tr('Aller à mon lieu de couchage le soir', 'Ir a mi alojamiento por la noche')}</label>
-            <div id="night-fields" class="${n.includes('night')?'':'hidden'}" style="margin-left:20px;">
+
+            <!-- Trajet 2 : Église -> Réception (ON par défaut si non défini) -->
+            <div class="switch-row">
+              <span>${tr('De l\'église à la Scie du May', 'De la iglesia a la Scie du May')}</span>
+              <label class="switch">
+                <input type="checkbox" class="p-need-cb" value="church-venue" ${(n.length === 0 && tData.carpoolRole === 'need') || n.includes('church-venue') ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Trajet 3 : Couchage -->
+            <div class="switch-row">
+              <span>${tr('Aller au lieu de couchage (samedi soir)', 'Ir al alojamiento (sábado por la noche)')}</span>
+              <label class="switch">
+                <input type="checkbox" class="p-need-cb" value="night" ${n.includes('night') ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="night-fields" class="${n.includes('night') ? '' : 'hidden'}" style="background:#f9f9f9;padding:10px;border-radius:6px;margin-bottom:12px;">
               <input type="text"   id="night-name"     class="compact-input" value="${this.esc(tData.nightName)}"     placeholder="${tr('Nom du lieu *', 'Nombre del lugar *')}">
               <input type="text"   id="night-address"  class="compact-input" value="${this.esc(tData.nightAddress)}"  placeholder="${tr('Adresse *', 'Dirección *')}">
               <input type="text"   id="night-city"     class="compact-input" value="${this.esc(tData.nightCity)}"     placeholder="${tr('Ville *', 'Ciudad *')}">
               <input type="text"   id="night-zip"      class="compact-input" value="${this.esc(tData.nightZip)}"      placeholder="${tr('Code postal *', 'Código postal *')}">
-              <input type="number" id="night-distance" class="compact-input" value="${this.esc(tData.nightDistance)}" placeholder="${tr('Distance depuis réception (min) *', 'Distancia desde la recepción (min) *')}">
+              <input type="number" id="night-distance" class="compact-input" value="${this.esc(tdata?.nightDistance || tData.nightDistance)}" placeholder="${tr('Distance depuis réception (min) *', 'Distancia desde la recepción (min) *')}">
             </div>
-            <label style="display:block;margin-bottom:10px;font-size:14px;"><input type="checkbox" class="p-need-cb" value="brunch" ${n.includes('brunch')?'checked':''}> ${tr('Venir au brunch le dimanche', 'Asistir al brunch el domingo')}</label>
-            <select id="t-pass-seats" class="compact-input">
-              ${[1,2,3,4,5].map(num=>`<option value="${num}" ${tData.seatsNeeded==num?'selected':''}>${num} ${tr('place'+(num>1?'s':'')+' nécessaire'+(num>1?'s':''), 'plaza'+(num>1?'s':'')+' necesaria'+(num>1?'s':''))}</option>`).join('')}
-            </select>
+
+            <!-- Trajet 4 : Brunch -->
+            <div class="switch-row">
+              <span>${tr('Venir au brunch le dimanche', 'Asistir al brunch el domingo')}</span>
+              <label class="switch">
+                <input type="checkbox" class="p-need-cb" value="brunch" ${n.includes('brunch') ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Nombre de places nécessaires -->
+            <div style="margin-top:16px;border-top:1px solid #eee;padding-top:12px;">
+              <label style="font-size:13px;display:block;margin-bottom:6px;">${tr('Nombre de places nécessaires :', 'Plazas necesarias :')}</label>
+              <select id="t-pass-seats" class="compact-input">
+                ${[1,2,3,4,5].map(num => `<option value="${num}" ${tData.seatsNeeded == num ? 'selected' : ''}>${num} ${tr('place' + (num > 1 ? 's' : '') + ' nécessaire' + (num > 1 ? 's' : ''), 'plaza' + (num > 1 ? 's' : '') + ' necesaria' + (num > 1 ? 's' : ''))}</option>`).join('')}
+              </select>
+            </div>
           </div>
-        </div>
 
         <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2rem;">
           <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
           <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
-},
-
+  }
+  
 renderStep6() {
     const v = this.currentStep === 6;
     const g = this.guestData;
@@ -724,7 +785,7 @@ renderStep6() {
         if (this.guestData.companions[input.dataset.index]) this.guestData.companions[input.dataset.index].name = input.value.trim();
       });
     }
-    if (this.currentStep === 3) {
+    if (this.currentStep === 2) {
       const processDiet = (personKey) => {
         const dietCbs = Array.from(this.container.querySelectorAll(`.diet-cb[data-person="${personKey}"]:checked`)).map(cb => cb.value);
         let allergyStr = '';
@@ -748,8 +809,19 @@ renderStep6() {
       });
     }
     
-    // AJOUT : Sauvegarde des champs du Buffet Gourmand (Étape 4)
-    if (this.currentStep === 4) {
+	// AJOUT : Sauvegarde des champs du Buffet Gourmand (Étape 3)
+    if (this.currentStep === 3) {
+      if (this.guestData.dessert && this.guestData.dessert.participate === true) {
+        const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
+        this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
+        
+        this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
+        this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
+        this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
+      }
+    }
+	
+	if (this.currentStep === 4) {
       if (this.guestData.dessert && this.guestData.dessert.participate === true) {
         const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
         this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
@@ -760,7 +832,6 @@ renderStep6() {
       }
     }
 
-    // AJOUT : Le transport passe à l'étape 5 au lieu de 4
     if (this.currentStep === 5) {
       const t = this.guestData.transport;
       t.arrivalBeforeDDay = document.getElementById('t-arrive-before')?.checked || false;
@@ -776,7 +847,15 @@ renderStep6() {
         t.departureDay   = document.getElementById('t-driver-day')?.value || '';
         t.departureTime  = document.getElementById('t-driver-time')?.value || '';
       } else if (t.carpoolRole === 'need') {
-        t.passengerNeeds = Array.from(this.container.querySelectorAll('.p-need-cb:checked')).map(cb => cb.value);
+        let checkedNeeds = Array.from(this.container.querySelectorAll('.p-need-cb:checked')).map(cb => cb.value);
+        
+        // Si l'utilisateur vient de basculer en mode "need" et qu'aucune case n'a encore été manipulée, 
+        // on active par défaut le trajet Église -> Réception (church-venue)
+        if (checkedNeeds.length === 0 && !t.passengerNeeds) {
+          checkedNeeds = ['church-venue'];
+        }
+        t.passengerNeeds = checkedNeeds;
+
         t.churchArrival  = this.container.querySelector('input[name="churchArrival"]:checked')?.value || '';
         t.seatsNeeded    = parseInt(document.getElementById('t-pass-seats')?.value || '1', 10);
         
@@ -794,6 +873,21 @@ renderStep6() {
           t.nightZip      = (document.getElementById('night-zip')?.value || '').trim();
           t.nightDistance = (document.getElementById('night-distance')?.value || '').trim();
         }
+		
+		// AJOUT : Compteur de places pour le covoiturage (Étape 5)
+    this.container.querySelectorAll('.seat-adjust-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const action = e.currentTarget.dataset.action;
+        let currentSeats = this.guestData.transport.seatsAvailable || 1;
+        
+        if (action === 'plus' && currentSeats < 6) currentSeats++;
+        if (action === 'minus' && currentSeats > 1) currentSeats--;
+        
+        this.guestData.transport.seatsAvailable = currentSeats;
+        this.saveCurrentStepData();
+        this.render();
+      });
+    });
       }
     }
   },
