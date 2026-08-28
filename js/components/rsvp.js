@@ -195,10 +195,10 @@ const RSVP = {
   renderProgressBar() {
     const labels = [
       tr('Réponse', 'Respuesta'), 
-      tr('Régime alimentaire & Allergies', 'Régimen y Alergias'), 
-      tr('Brunch', 'Brunch'), 
-      tr('Buffet gourmand', 'Bufé goloso'),
-      tr('Transport', 'Transporte'), 
+      tr('Régime alimentaire', 'Régimen'), 
+	  tr('Buffet gourmand', 'Bufé goloso'),
+      tr('Brunch du lendemain', 'Brunch'),      
+      tr('Transport et Covoiturage', 'Transporte'), 
       tr('Récapitulatif', 'Resumen')
     ];
     let html = '<div class="step-indicator">';
@@ -357,13 +357,17 @@ const RSVP = {
       </div>`;
   },
 
-  renderStep4() {
+renderStep4() {
     const v = this.currentStep === 4;
-    const d = this.guestData.dessert;
+    const d = this.guestData.dessert || {};
+    
+    // Par défaut, on considère que c'est une surprise si l'utilisateur n'a pas encore répondu "false"
+    const isSurprise = d.isSurprise !== false;
+
     return `
       <div class="form-step ${v ? 'active' : ''}" id="step-4">
         <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
-          ${tr('Pour le dessert, nous vous proposons, si vous le souhaitez et le pouvez bien sûr, de participer à créer une farandole de gourmandise, en apportant votre meilleur dessert !', 'Para el postre, les proponemos, si lo desean y pueden por supuesto, participar en crear un festín de golosinas, ¡trayendo su mejor postre!')}
+          ${tr('Nous vous proposons, si vous le souhaitez et si le pouvez, de participer à créer un buffet gourmand, en apportant votre meilleur dessert !', 'Les proponemos, si lo desean y pueden por supuesto, participar en crear un festín de golosinas, ¡trayendo su mejor postre!')}
         </p>
         <div class="attendance-options">
           <button type="button" class="choice-btn ${d.participate === true ? 'selected' : ''}" data-dessert="true"> <span>🍰</span> <strong>${tr('Oui, je suis partant(e)', 'Sí, me apunto')}</strong></button>
@@ -371,30 +375,39 @@ const RSVP = {
         </div>
         
         <div id="dessert-details" class="${d.participate === true ? '' : 'hidden'}" style="margin-top: 20px; background: #fdfaf5; border: 1.5px solid #e7dcc4; border-radius: 10px; padding: 16px;">
-          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:6px;">
-            ${tr('Type de dessert *', 'Tipo de postre *')}
-          </label>
-          <input type="text" id="d-type" class="compact-input" value="${this.esc(d.type)}" placeholder="${tr('Ex : Tarte au citron, Tiramisu...', 'Ej : Tarta de limón, Tiramisú...')}">
           
-          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:6px; margin-top:12px;">
-            ${tr('Nombre de parts (environ) *', 'Número de porciones (aprox.) *')}
-          </label>
-          <input type="number" id="d-portions" class="compact-input" value="${this.esc(d.portions)}" placeholder="${tr('Ex : 8', 'Ej : 8')}">
-          
-          <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:8px; margin-top:12px;">
-            ${tr('Besoin de le stocker au frais ?', '¿Necesita guardarse en frío?')}
-          </label>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
-              <input type="radio" name="d-fridge" value="yes" ${d.fridge === 'yes' ? 'checked' : ''}> ${tr('Oui', 'Sí')}
+          <!-- Choix : Surprise ou je sais déjà -->
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <label style="font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="radio" name="d-isSurprise" value="true" ${isSurprise ? 'checked' : ''} onchange="document.getElementById('dessert-details-fields').style.display='none'">
+              ${tr('Surprise, je répondrai plus tard !', '¡Sorpresa, responderé más tarde!')}
             </label>
-            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
-              <input type="radio" name="d-fridge" value="no" ${d.fridge === 'no' ? 'checked' : ''}> ${tr('Non', 'No')}
-            </label>
-            <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
-              <input type="radio" name="d-fridge" value="maybe" ${d.fridge === 'maybe' ? 'checked' : ''}> ${tr('Surprise, je répondrai plus tard', 'Sorpresa, responderé más tarde')}
+            <label style="font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="radio" name="d-isSurprise" value="false" ${!isSurprise ? 'checked' : ''} onchange="document.getElementById('dessert-details-fields').style.display='block'">
+              ${tr('Je sais ce que je vais apporter', 'Sé lo que voy a llevar')}
             </label>
           </div>
+
+          <!-- Les champs à remplir (masqués si 'Surprise' est coché) -->
+          <div id="dessert-details-fields" style="display: ${!isSurprise ? 'block' : 'none'}; border-top: 1px dashed #e7dcc4; padding-top: 15px;">
+            
+            <input type="text" id="d-type" class="compact-input" value="${this.esc(d.type)}" placeholder="${tr('Type de dessert (ex: Tarte au citron...) *', 'Tipo de postre (ej: Tarta de limón...) *')}">
+            
+            <input type="number" id="d-portions" class="compact-input" value="${this.esc(d.portions)}" placeholder="${tr('Nombre de parts (environ) *', 'Número de porciones (aprox.) *')}" style="margin-top: 10px;">
+            
+            <label style="display:block; font-size:13px; font-weight:500; color:var(--text-dark); margin-bottom:8px; margin-top:15px;">
+              ${tr('Besoin de le stocker au frais ?', '¿Necesita guardarse en frío?')}
+            </label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
+                <input type="radio" name="d-fridge" value="yes" ${d.fridge === 'yes' ? 'checked' : ''}> ${tr('Oui', 'Sí')}
+              </label>
+              <label style="font-size:14px; display:flex; align-items:center; gap:6px;">
+                <input type="radio" name="d-fridge" value="no" ${d.fridge === 'no' ? 'checked' : ''}> ${tr('Non', 'No')}
+              </label>
+            </div>
+          </div>
+          
         </div>
 
         <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2.5rem;">
@@ -403,7 +416,7 @@ const RSVP = {
         </div>
       </div>`;
   },
-
+  
   renderStep5() {
     const v = this.currentStep === 5;
     const tData = this.guestData.transport || {};
@@ -557,13 +570,7 @@ const RSVP = {
           <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
           ${dietHtml}
         </div>` : ''}
-
-        ${(g.attending === true || g.attending === 'maybe') ? `
-        <div class="recap-section">
-          <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
-          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
-        </div>
-        
+		
         <div class="recap-section">
           <h4>🍰 ${tr('Buffet gourmand', 'Bufé goloso')}</h4>
           <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.dessert?.participate === true ? tr('Oui, je participe', 'Sí, participo') : g.dessert?.participate === false ? tr('Non, difficile pour moi', 'No, es difícil') : '—'}</span></div>
@@ -571,7 +578,14 @@ const RSVP = {
             <div class="recap-row"><span>${tr('Dessert', 'Postre')}</span><span>${this.esc(g.dessert.type) || '—'} (${this.esc(g.dessert.portions) || '?'} parts)</span></div>
             <div class="recap-row"><span>${tr('Au frais', 'En frío')}</span><span>${g.dessert.fridge === 'yes' ? tr('Oui', 'Sí') : g.dessert.fridge === 'no' ? tr('Non', 'No') : tr('Surprise', 'Sorpresa')}</span></div>
           ` : ''}
-        </div>` : ''}
+        </div>` : ''}		
+
+        ${(g.attending === true || g.attending === 'maybe') ? `
+        <div class="recap-section">
+          <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
+          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
+        </div>
+        
 
         ${g.attending === true ? `
         <div class="recap-section">
@@ -762,13 +776,13 @@ const RSVP = {
     }
     if (this.currentStep === 4) {
       if (this.guestData.dessert && this.guestData.dessert.participate === true) {
+        // Enregistre le choix de la surprise
+        const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
+        this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
+        
         this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
         this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
         this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
-      } else if (this.guestData.dessert && this.guestData.dessert.participate === false) {
-        this.guestData.dessert.type = '';
-        this.guestData.dessert.portions = '';
-        this.guestData.dessert.fridge = null;
       }
     }
     if (this.currentStep === 5) {
