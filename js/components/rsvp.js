@@ -559,7 +559,7 @@ renderStep5() {
           <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
-  }
+  },
   
 renderStep6() {
     const v = this.currentStep === 6;
