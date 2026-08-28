@@ -219,31 +219,31 @@ const RSVP = {
 
     const companionBlock = (att === true || att === 'maybe') ? `
       <div id="companions-section" style="margin-top:16px;">
-        <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:8px; font-weight:500;">
-          ${tr('Je viens accompagné(e) :', 'Vengo acompañado/a:')}
-        </label>
-        <div class="attendance-options" style="flex-direction: row; gap: 10px;">
-          <button type="button" class="choice-btn ${hasCompanions === true ? 'selected' : ''}" data-has-companions="true" style="text-align:center; justify-content:center;"><strong>${tr('Oui', 'Sí')}</strong></button>
-          <button type="button" class="choice-btn ${hasCompanions === false ? 'selected' : ''}" data-has-companions="false" style="text-align:center; justify-content:center;"><strong>${tr('Non', 'No')}</strong></button>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+          <label style="font-size:16px; color:var(--text-dark); font-weight:600; margin:0;">
+            ${tr('Je viens accompagné(e) :', 'Vengo acompañado/a:')}
+          </label>
+          <div class="attendance-options" style="display: flex; gap: 8px; flex-direction: row; margin:0;">
+            <button type="button" class="choice-btn ${hasCompanions === true ? 'selected' : ''}" data-has-companions="true" style="padding: 8px 20px; width: auto; min-width: 60px; text-align:center; justify-content:center;"><strong>${tr('Oui', 'Sí')}</strong></button>
+            <button type="button" class="choice-btn ${hasCompanions === false ? 'selected' : ''}" data-has-companions="false" style="padding: 8px 20px; width: auto; min-width: 60px; text-align:center; justify-content:center;"><strong>${tr('Non', 'No')}</strong></button>
+          </div>
         </div>
 
         <div id="companion-count-block" class="${hasCompanions === true ? '' : 'hidden'}" style="margin-top:16px;">
-          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
-            ${tr('Nombre d\'accompagnants *', 'Número de acompañantes *')}
-          </label>
-          <select id="guest-companions-count" class="compact-input">
-            <option value="">-- ${tr('Choisir', 'Elegir')} --</option>
-            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
-          </select>
-
-          <div id="companions-list" style="margin-top:8px;">
+          <div id="companions-list">
             ${companions.map((c, idx) => `
               <div class="companion-card">
-                <p class="companion-card-title">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <p class="companion-card-title" style="margin: 0;">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
+                  ${idx > 0 ? `<button type="button" class="link-btn remove-companion-btn" data-index="${idx}" style="margin: 0; color: #d32f2f;">✕ ${tr('Retirer', 'Quitar')}</button>` : ''}
+                </div>
                 <input type="text" class="compact-input companion-firstname" data-index="${idx}" value="${this.esc(c.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}">
                 <input type="text" class="compact-input companion-lastname"  data-index="${idx}" value="${this.esc(c.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}">
                 <input type="tel"  class="compact-input companion-phone"     data-index="${idx}" value="${this.esc(c.phone)}"     placeholder="${tr('Téléphone (optionnel)', 'Teléfono (opcional)')}">
               </div>`).join('')}
+          </div>
+          <div style="text-align: center; margin-top: 10px;">
+            <button type="button" class="btn btn--secondary" id="add-companion-btn" style="padding: 8px 16px; font-size: 14px;">+ ${tr('Ajouter une personne', 'Añadir una persona')}</button>
           </div>
         </div>
       </div>` : '';
@@ -522,22 +522,37 @@ const RSVP = {
         this.guestData.hasCompanions = val;
         if (!val) {
           this.guestData.companions = [];
+        } else if (this.guestData.companions.length === 0) {
+          // Si 0 accompagnant, on en ajoute un par défaut
+          this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
         }
         this.saveCurrentStepData();
         this.render();
       });
     });
 
-    // Nombre d'accompagnants
-    const compSelect = this.container.querySelector('#guest-companions-count');
-    if (compSelect) {
-      compSelect.addEventListener('change', e => {
-        const count = parseInt(e.target.value, 10) || 0;
-        while (this.guestData.companions.length < count) this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
-        if (this.guestData.companions.length > count) this.guestData.companions = this.guestData.companions.slice(0, count);
+    // 1° Ajouter un accompagnant
+    const addCompanionBtn = this.container.querySelector('#add-companion-btn');
+    if (addCompanionBtn) {
+      addCompanionBtn.addEventListener('click', () => {
+        this.saveCurrentStepData();
+        this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
         this.render();
       });
     }
+
+    // 1° Retirer un accompagnant
+    this.container.querySelectorAll('.remove-companion-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        this.saveCurrentStepData();
+        const idx = parseInt(e.currentTarget.dataset.index, 10);
+        this.guestData.companions.splice(idx, 1);
+        if (this.guestData.companions.length === 0) {
+           this.guestData.hasCompanions = false;
+        }
+        this.render();
+      });
+    });
 
     // Régimes : révèle le champ libre allergie/intolérance
     this.container.querySelectorAll('.diet-cb').forEach(cb => {
