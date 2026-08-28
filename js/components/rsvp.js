@@ -15,12 +15,14 @@ const RSVP = {
     email: '',
     phone: '',
     attending: null,
-    hasCompanions: null,
+    hasCompanions: false,
     companionCount: 0,
     companions: [],
     brunch: null,
     diet: [],
     allergyDetails: '',
+    allergyList: [],
+    allergyOther: '',
     accommodationStatus: '',
     accommodationId: null,
     accommodationName: '',
@@ -55,10 +57,32 @@ const RSVP = {
     try {
       const currentGuest = await Store.getCurrentGuest();
       if (currentGuest) {
+        const parseAllergy = (str) => {
+          if (!str) return { list: [], other: '' };
+          const list = [];
+          let other = str;
+          if (other.includes('[Gluten]')) { list.push('gluten'); other = other.replace('[Gluten]', ''); }
+          if (other.includes('[Lactose]')) { list.push('lactose'); other = other.replace('[Lactose]', ''); }
+          if (other.includes('[Fruits à coque]')) { list.push('nuts'); other = other.replace('[Fruits à coque]', ''); }
+          if (other.includes('[Fruits de mer]')) { list.push('seafood'); other = other.replace('[Fruits de mer]', ''); }
+          other = other.replace(/^- /, '').trim();
+          if (other) list.push('other');
+          return { list, other };
+        };
+        
+        const mainA = parseAllergy(currentGuest.allergyDetails);
+        const comps = (currentGuest.companions || []).map(c => {
+          const ca = parseAllergy(c.allergyDetails);
+          return { ...c, allergyList: ca.list, allergyOther: ca.other };
+        });
+
         this.guestData = {
           ...this.guestData,
           ...currentGuest,
-          hasCompanions: (currentGuest.companions && currentGuest.companions.length > 0) ? true : ((currentGuest.attending === true || currentGuest.attending === 'maybe') ? false : null),
+          hasCompanions: (currentGuest.companions && currentGuest.companions.length > 0) ? true : false,
+          allergyList: mainA.list,
+          allergyOther: mainA.other,
+          companions: comps,
           transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
         };
       }
@@ -168,8 +192,8 @@ const RSVP = {
   renderProgressBar() {
     const labels = [
       tr('Réponse', 'Respuesta'), 
+      tr('Régime alimentaire & Allergies', 'Régimen y Alergias'), 
       tr('Brunch', 'Brunch'), 
-      tr('Régime alimentaire', 'Régimen alimentario'), 
       tr('Transport', 'Transporte'), 
       tr('Récapitulatif', 'Resumen')
     ];
@@ -235,7 +259,7 @@ const RSVP = {
               <div class="companion-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <p class="companion-card-title" style="margin: 0;">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
-                  ${idx > 0 ? `<button type="button" class="link-btn remove-companion-btn" data-index="${idx}" style="margin: 0; color: #d32f2f;">✕ ${tr('Retirer', 'Quitar')}</button>` : ''}
+                  ${idx > 0 ? `<button type="button" class="link-btn remove-companion-btn" data-index="${idx}" style="margin: 0; color: var(--sage, #7fa876); font-weight: 500; font-size: 14px; text-decoration: none;">✕ ${tr('Retirer', 'Quitar')}</button>` : ''}
                 </div>
                 <input type="text" class="compact-input companion-firstname" data-index="${idx}" value="${this.esc(c.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}">
                 <input type="text" class="compact-input companion-lastname"  data-index="${idx}" value="${this.esc(c.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}">
@@ -258,69 +282,75 @@ const RSVP = {
         ${declineMessage}
         ${companionBlock}
 
-        <div class="form-actions">
-          <button type="button" class="btn btn--primary next-btn" style="width:100%;">${att === false ? tr('Confirmer ma réponse ✓', 'Confirmar mi respuesta ✓') : tr('Suivant', 'Siguiente')}</button>
+        <div class="form-actions" style="justify-content: flex-end;">
+          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${att === false ? tr('Confirmer ma réponse ✓', 'Confirmar mi respuesta ✓') : tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
 
   renderStep2() {
     const v = this.currentStep === 2;
+    const companions = this.guestData.companions || [];
+
+    const renderBlock = (label, key, diet, allergyList, allergyOther) => {
+      const d = diet || [];
+      const al = allergyList || [];
+      const hasAllergy = d.includes('allergy');
+      const hasOther = al.includes('other');
+      
+      return `
+        <div style="margin-bottom:1.8rem;">
+          <p style="font-weight:500;border-bottom:1px solid #f5f2eb;padding-bottom:4px;text-align:center;">${label}</p>
+          <div class="diet-pills" style="justify-content: center;">
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegetarian" ${d.includes('vegetarian')?'checked':''}><span>🥗 ${tr('Végétarien', 'Vegetariano')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegan"       ${d.includes('vegan')      ?'checked':''}><span>🌱 ${tr('Végan', 'Vegano')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="no-alcohol"  ${d.includes('no-alcohol') ?'checked':''}><span>🧃 ${tr('Sans alcool', 'Sin alcohol')}</span></label>
+            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="allergy"     ${hasAllergy               ?'checked':''}><span>⚠️ ${tr('Allergie / Intolérance', 'Alergia / Intolerancia')}</span></label>
+          </div>
+          
+          <div class="allergy-sub ${hasAllergy?'':'hidden'}" id="allergy-details-${key}">
+            <p style="text-align: center; margin-bottom: 10px; font-size: 13px; font-weight: 500; color: #5c4e35;">${tr('Précisez :', 'Especifique:')}</p>
+            <div class="diet-pills" style="justify-content: center; margin-top: 0; margin-bottom: 10px;">
+              <label class="diet-pill"><input type="checkbox" class="allergy-type-cb" data-person="${key}" value="gluten" ${al.includes('gluten')?'checked':''}><span>🌾 Gluten</span></label>
+              <label class="diet-pill"><input type="checkbox" class="allergy-type-cb" data-person="${key}" value="lactose" ${al.includes('lactose')?'checked':''}><span>🥛 Lactose</span></label>
+              <label class="diet-pill"><input type="checkbox" class="allergy-type-cb" data-person="${key}" value="nuts" ${al.includes('nuts')?'checked':''}><span>🥜 Fruits à coque</span></label>
+              <label class="diet-pill"><input type="checkbox" class="allergy-type-cb" data-person="${key}" value="seafood" ${al.includes('seafood')?'checked':''}><span>🦐 Fruits de mer</span></label>
+              <label class="diet-pill"><input type="checkbox" class="allergy-type-cb" data-person="${key}" value="other" ${hasOther?'checked':''}><span>Autre</span></label>
+            </div>
+            <div class="allergy-other-sub ${hasOther?'':'hidden'}" id="allergy-other-${key}">
+              <input type="text" class="compact-input allergy-free-text" data-person="${key}" value="${this.esc(allergyOther)}" placeholder="${tr('Précisez (ex : fraises, soja…)', 'Especifique (ej: fresas, soja…)')}" style="margin-bottom:0;">
+            </div>
+          </div>
+        </div>`;
+    };
+
+    let html = `<div class="form-step ${v?'active':''}" id="step-2">`;
+    html += renderBlock(tr('Pour vous', 'Para usted'), 'main', this.guestData.diet, this.guestData.allergyList, this.guestData.allergyOther);
+    companions.forEach((c, i) => html += renderBlock(tr(`Pour ${this.companionLabel(c, i)}`, `Para ${this.companionLabel(c, i)}`), String(i), c.diet, c.allergyList, c.allergyOther));
+    html += `<div class="form-actions" style="justify-content: center; gap: 20px;">
+      <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+      <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
+    </div></div>`;
+    return html;
+  },
+
+  renderStep3() {
+    const v = this.currentStep === 3;
     const b = this.guestData.brunch;
     return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-2">
-        <p style="text-align:center;font-size:14px;color:#666;margin-bottom:1.5rem;">
+      <div class="form-step ${v ? 'active' : ''}" id="step-3">
+        <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
           ${tr('Pour faire durer le plaisir, nous vous convions à un brunch le <strong>dimanche 9 mai</strong>, de 9h30 à 13h30 au Domaine de la Scie du May.', 'Para prolongar el placer, os invitamos a un brunch el <strong>domingo 9 de mayo</strong>, de 9:30 a 13:30 en la Finca de la Scie du May.')}
         </p>
         <div class="attendance-options">
           <button type="button" class="choice-btn ${b === true  ? 'selected' : ''}" data-brunch="true"> <span>☕</span> <strong>${tr('Oui, avec plaisir !', '¡Sí, con gusto!')}</strong></button>
           <button type="button" class="choice-btn ${b === false ? 'selected' : ''}" data-brunch="false"><span>🙏</span> <strong>${tr('Non, merci !', '¡No, gracias!')}</strong></button>
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
+        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2.5rem;">
+          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
-  },
-
-  renderStep3() {
-    const v = this.currentStep === 3;
-    const companions = this.guestData.companions || [];
-
-    const renderBlock = (label, key, diet, allergyDetails) => {
-      const d = diet || [];
-      const hasAllergy = d.includes('allergy');
-      return `
-        <div style="margin-bottom:1.8rem;">
-          <p style="font-weight:500;border-bottom:1px solid #f5f2eb;padding-bottom:4px;">${label}</p>
-          <div class="diet-pills">
-            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegetarian" ${d.includes('vegetarian')?'checked':''}><span>🥗 ${tr('Végétarien', 'Vegetariano')}</span></label>
-            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="vegan"       ${d.includes('vegan')      ?'checked':''}><span>🌱 ${tr('Végan', 'Vegano')}</span></label>
-            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="no-alcohol"  ${d.includes('no-alcohol') ?'checked':''}><span>🧃 ${tr('Sans alcool', 'Sin alcohol')}</span></label>
-            <label class="diet-pill"><input type="checkbox" class="diet-cb" data-person="${key}" value="allergy"     ${hasAllergy               ?'checked':''}><span>⚠️ ${tr('Allergie / Intolérance', 'Alergia / Intolerancia')}</span></label>
-          </div>
-          <div class="allergy-sub ${hasAllergy?'':'hidden'}" id="allergy-details-${key}">
-            <label style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;color:#5c4e35;">
-              ${tr('Précisez votre allergie / intolérance :', 'Especifique su alergia / intolerancia:')}
-            </label>
-            <input type="text" class="compact-input allergy-free-text" data-person="${key}" value="${this.esc(allergyDetails)}" placeholder="${tr('Ex : allergie aux fruits de mer, intolérance au gluten…', 'Ej: alergia a los mariscos, intolerancia al gluten…')}" style="margin-bottom:0;">
-          </div>
-        </div>`;
-    };
-
-    let html = `<div class="form-step ${v?'active':''}" id="step-3">`;
-    html += `
-      <div class="info-note">
-        <span class="icon">👩‍🍳</span>
-        <span>${tr('Ces informations permettront à notre traiteur de vous proposer des plats adaptés !', 'Esta información permitirá a nuestro catering ofrecerles platos adaptados.')}</span>
-      </div>`;
-    html += renderBlock(tr('Pour vous', 'Para usted'), 'main', this.guestData.diet, this.guestData.allergyDetails);
-    companions.forEach((c, i) => html += renderBlock(tr(`Pour ${this.companionLabel(c, i)}`, `Para ${this.companionLabel(c, i)}`), String(i), c.diet, c.allergyDetails));
-    html += `<div class="form-actions">
-      <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-      <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
-    </div></div>`;
-    return html;
   },
 
   renderStep4() {
@@ -399,9 +429,9 @@ const RSVP = {
           </div>
         </div>
 
-        <div class="form-actions">
-          <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn">${tr('Suivant', 'Siguiente')}</button>
+        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2rem;">
+          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
         </div>
       </div>`;
   },
@@ -473,16 +503,17 @@ const RSVP = {
 
         ${(g.attending === true || g.attending === 'maybe') ? `
         <div class="recap-section">
+          <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
+          ${dietHtml}
+        </div>` : ''}
+
+        ${(g.attending === true || g.attending === 'maybe') ? `
+        <div class="recap-section">
           <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
           <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
         </div>` : ''}
 
         ${g.attending === true ? `
-        <div class="recap-section">
-          <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
-          ${dietHtml}
-        </div>
-
         <div class="recap-section">
           <h4>🚗 ${tr('Transport', 'Transporte')}</h4>
           <div class="recap-row"><span>${tr('Résumé', 'Resumen')}</span><span>${transportSummary}</span></div>
@@ -493,9 +524,9 @@ const RSVP = {
           <a href="#/hebergements" style="color:#9b8660;">${tr('Voir la liste des hébergements →', 'Ver la lista de alojamientos →')}</a>
         </p>
 
-        <div class="form-actions" style="margin-top:1.5rem;">
-          <button type="button" class="btn btn--secondary prev-btn">← ${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn" id="final-submit-btn">${tr('Confirmer ma réponse ✓', 'Confirmar mi respuesta ✓')}</button>
+        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 1.5rem;">
+          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+          <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 140px;">${tr('Confirmer ✓', 'Confirmar ✓')}</button>
         </div>
       </div>`;
   },
@@ -562,6 +593,14 @@ const RSVP = {
       });
     });
 
+    // Sous-allergies : révèle le champ "Autre"
+    this.container.querySelectorAll('.allergy-type-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const sub = this.container.querySelector(`#allergy-other-${cb.dataset.person}`);
+        if (cb.value === 'other' && sub) sub.classList.toggle('hidden', !cb.checked);
+      });
+    });
+
     // Transport
     this.container.querySelectorAll('[data-mode],[data-role],[data-need]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -614,19 +653,38 @@ const RSVP = {
         });
       }
     }
-    if (this.currentStep === 3) {
+    if (this.currentStep === 2) {
       const proc = key => {
         const diets = Array.from(this.container.querySelectorAll(`.diet-cb[data-person="${key}"]:checked`)).map(c => c.value);
-        const details = diets.includes('allergy')
-          ? (this.container.querySelector(`.allergy-free-text[data-person="${key}"]`)?.value.trim() || '')
-          : '';
-        return { diet: diets, details };
+        let details = '';
+        const allergyList = [];
+        let allergyOther = '';
+        if (diets.includes('allergy')) {
+          Array.from(this.container.querySelectorAll(`.allergy-type-cb[data-person="${key}"]:checked`)).forEach(c => {
+             allergyList.push(c.value);
+             if (c.value === 'gluten') details += '[Gluten] ';
+             if (c.value === 'lactose') details += '[Lactose] ';
+             if (c.value === 'nuts') details += '[Fruits à coque] ';
+             if (c.value === 'seafood') details += '[Fruits de mer] ';
+          });
+          if (allergyList.includes('other')) {
+             allergyOther = (this.container.querySelector(`.allergy-free-text[data-person="${key}"]`)?.value.trim() || '');
+             if (allergyOther) details += '- ' + allergyOther;
+          }
+        }
+        return { diet: diets, details: details.trim(), allergyList, allergyOther };
       };
       const main = proc('main');
       this.guestData.diet = main.diet;
       this.guestData.allergyDetails = main.details;
+      this.guestData.allergyList = main.allergyList;
+      this.guestData.allergyOther = main.allergyOther;
       this.guestData.companions.forEach((c, i) => {
-        const r = proc(String(i)); c.diet = r.diet; c.allergyDetails = r.details;
+        const r = proc(String(i)); 
+        c.diet = r.diet; 
+        c.allergyDetails = r.details;
+        c.allergyList = r.allergyList;
+        c.allergyOther = r.allergyOther;
       });
     }
     if (this.currentStep === 4) {
@@ -685,7 +743,7 @@ const RSVP = {
         }
       }
     }
-    if (this.currentStep === 2 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
+    if (this.currentStep === 3 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
       Animations.showToast('Veuillez indiquer votre réponse pour le brunch', 'error'); return false;
     }
     return true;
@@ -700,12 +758,34 @@ const RSVP = {
     if (this.currentStep === 1) {
       const existing = await Store.getGuestByPhone(this.guestData.phone);
       if (existing && existing.id !== this.guestData.id) {
-        this.guestData = { ...this.guestData, ...existing, transport: { ...this.guestData.transport, ...(existing.transport||{}) } };
+        const p = (a) => {
+          const lst = [];
+          let oth = a || '';
+          if(oth.includes('[Gluten]')){ lst.push('gluten'); oth = oth.replace('[Gluten]', ''); }
+          if(oth.includes('[Lactose]')){ lst.push('lactose'); oth = oth.replace('[Lactose]', ''); }
+          if(oth.includes('[Fruits à coque]')){ lst.push('nuts'); oth = oth.replace('[Fruits à coque]', ''); }
+          if(oth.includes('[Fruits de mer]')){ lst.push('seafood'); oth = oth.replace('[Fruits de mer]', ''); }
+          oth = oth.replace(/^- /, '').trim();
+          if (oth) lst.push('other');
+          return { list: lst, other: oth };
+        };
+        const mA = p(existing.allergyDetails);
+        const cA = (existing.companions||[]).map(c => {
+           const ca = p(c.allergyDetails);
+           return {...c, allergyList: ca.list, allergyOther: ca.other};
+        });
+
+        this.guestData = { 
+           ...this.guestData, 
+           ...existing, 
+           allergyList: mA.list, allergyOther: mA.other, companions: cA,
+           transport: { ...this.guestData.transport, ...(existing.transport||{}) } 
+        };
         Animations.showToast('Profil retrouvé !', 'success');
       }
     }
 
-    if (this.currentStep === 2 && this.guestData.attending !== true) { this.currentStep = 4; this.render(); return; }
+    if (this.currentStep === 1 && this.guestData.attending !== true) { this.currentStep = 3; this.render(); return; }
 
     if (this.currentStep < this.totalSteps) { this.currentStep++; this.render(); }
     else { this.submitForm(); }
@@ -713,7 +793,7 @@ const RSVP = {
 
   handlePrev() {
     this.saveCurrentStepData();
-    if (this.currentStep === 4 && this.guestData.attending !== true) { this.currentStep = 2; this.render(); return; }
+    if (this.currentStep === 3 && this.guestData.attending !== true) { this.currentStep = 1; this.render(); return; }
     if (this.currentStep > 1) { this.currentStep--; this.render(); }
   },
 
