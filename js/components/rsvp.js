@@ -625,4 +625,4 @@ renderStep6() {
           <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 140px;">${tr('Confirmer ✓', 'Confirmar ✓')}</button>
         </div>
       </div>`;
-  },
+  }
