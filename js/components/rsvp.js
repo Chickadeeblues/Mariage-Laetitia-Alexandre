@@ -627,3 +627,5 @@ renderStep6() {
       </div>`;
   }
 }
+
+export default RSVP;
