@@ -500,7 +500,7 @@ renderStep4() {
       </div>`;
   },
 
-  renderStep6() {
+renderStep6() {
     const v = this.currentStep === 6;
     const g = this.guestData;
     const t = g.transport || {};
@@ -552,6 +552,7 @@ renderStep4() {
           ${tr('Vérifiez que tout est correct avant de confirmer votre réponse.', 'Compruebe que todo sea correcto antes de confirmar su respuesta.')}
         </p>
 
+        <!-- Vos informations -->
         <div class="recap-section">
           <h4>👤 ${tr('Vos informations', 'Sus datos')}</h4>
           <div class="recap-row"><span>${tr('Nom', 'Nombre')}</span><span>${this.esc(g.firstName)} ${this.esc(g.lastName)}</span></div>
@@ -559,18 +560,21 @@ renderStep4() {
           <div class="recap-row"><span>${tr('Présence', 'Asistencia')}</span><span>${attLabel}</span></div>
         </div>
 
+        <!-- Accompagnants -->
         ${g.attending === true ? `
         <div class="recap-section">
           <h4>👥 ${tr('Accompagnants', 'Acompañantes')}</h4>
           ${companionsHtml}
         </div>` : ''}
 
+        <!-- Régime alimentaire -->
         ${(g.attending === true || g.attending === 'maybe') ? `
         <div class="recap-section">
           <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
           ${dietHtml}
         </div>` : ''}
 		
+        <!-- Buffet gourmand -->
         ${g.attending === true ? `
         <div class="recap-section">
           <h4>🍰 ${tr('Buffet gourmand', 'Bufé goloso')}</h4>
@@ -595,15 +599,16 @@ renderStep4() {
               </div>
             `
           ) : ''}
-        </div>
-        ` : ''}	
+        </div>` : ''}
 
+        <!-- Brunch du dimanche -->
         ${(g.attending === true || g.attending === 'maybe') ? `
         <div class="recap-section">
           <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
           <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
-        </div>
-        
+        </div>` : ''}
+
+        <!-- Transport -->
         ${g.attending === true ? `
         <div class="recap-section">
           <h4>🚗 ${tr('Transport', 'Transporte')}</h4>
@@ -621,346 +626,3 @@ renderStep4() {
         </div>
       </div>`;
   },
-
-  attachEvents() {
-    this.container.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', () => this.handleNext()));
-    this.container.querySelectorAll('.prev-btn').forEach(btn => btn.addEventListener('click', () => this.handlePrev()));
-
-    // Présence / brunch
-    this.container.querySelectorAll('[data-val],[data-brunch]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const d = e.currentTarget.dataset;
-        if (d.val)   this.guestData.attending = d.val==='true' ? true : d.val==='false' ? false : 'maybe';
-        if (d.brunch) this.guestData.brunch   = d.brunch === 'true';
-        this.saveCurrentStepData();
-        this.render();
-      });
-    });
-
-    // 1° Boutons "Je viens accompagné(e) : Oui / Non"
-    this.container.querySelectorAll('[data-has-companions]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const val = e.currentTarget.dataset.hasCompanions === 'true';
-        this.guestData.hasCompanions = val;
-        if (!val) {
-          this.guestData.companions = [];
-        } else if (this.guestData.companions.length === 0) {
-          // Si 0 accompagnant, on en ajoute un par défaut
-          this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
-        }
-        this.saveCurrentStepData();
-        this.render();
-      });
-    });
-
-    // 1° Ajouter un accompagnant
-    const addCompanionBtn = this.container.querySelector('#add-companion-btn');
-    if (addCompanionBtn) {
-      addCompanionBtn.addEventListener('click', () => {
-        this.saveCurrentStepData();
-        this.guestData.companions.push({ firstName:'', lastName:'', phone:'', diet:[], allergyDetails:'' });
-        this.render();
-      });
-    }
-
-    // 1° Retirer un accompagnant
-    this.container.querySelectorAll('.remove-companion-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
-        this.saveCurrentStepData();
-        const idx = parseInt(e.currentTarget.dataset.index, 10);
-        this.guestData.companions.splice(idx, 1);
-        if (this.guestData.companions.length === 0) {
-           this.guestData.hasCompanions = false;
-        }
-        this.render();
-      });
-    });
-
-    // Régimes : révèle le champ libre allergie/intolérance
-    this.container.querySelectorAll('.diet-cb').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const sub = this.container.querySelector(`#allergy-details-${cb.dataset.person}`);
-        if (cb.value === 'allergy' && sub) sub.classList.toggle('hidden', !cb.checked);
-      });
-    });
-
-    // Sous-allergies : révèle le champ "Autre"
-    this.container.querySelectorAll('.allergy-type-cb').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const sub = this.container.querySelector(`#allergy-other-${cb.dataset.person}`);
-        if (cb.value === 'other' && sub) sub.classList.toggle('hidden', !cb.checked);
-      });
-    });
-
-    // Dessert
-    this.container.querySelectorAll('[data-dessert]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const val = e.currentTarget.dataset.dessert === 'true';
-        this.guestData.dessert = this.guestData.dessert || { type: '', portions: '', fridge: null };
-        this.guestData.dessert.participate = val;
-        this.container.querySelectorAll('[data-dessert]').forEach(b => b.classList.remove('selected'));
-        e.currentTarget.classList.add('selected');
-        const details = this.container.querySelector('#dessert-details');
-        if (details) details.classList.toggle('hidden', !val);
-      });
-    });
-
-    // Transport
-    this.container.querySelectorAll('[data-mode],[data-role],[data-need]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const d = e.currentTarget.dataset;
-        if (d.mode) { this.guestData.transport.mode = d.mode; this.guestData.transport.carpoolRole = 'none'; }
-        if (d.role || d.need) this.guestData.transport.carpoolRole = d.role || d.need;
-        this.saveCurrentStepData();
-        this.render();
-      });
-    });
-
-    const arrCb = this.container.querySelector('#t-arrive-before');
-    if (arrCb) arrCb.addEventListener('change', e => {
-      this.container.querySelector('#arrive-before-fields')?.classList.toggle('hidden', !e.target.checked);
-    });
-
-    this.container.querySelectorAll('.p-need-cb').forEach(cb => {
-      cb.addEventListener('change', e => {
-        if (e.target.value === 'church') this.container.querySelector('#church-options')?.classList.toggle('hidden', !e.target.checked);
-        if (e.target.value === 'night')  this.container.querySelector('#night-fields')?.classList.toggle('hidden', !e.target.checked);
-      });
-    });
-
-    this.container.querySelectorAll('input[name="churchArrival"]').forEach(r => {
-      r.addEventListener('change', e => {
-        this.container.querySelector('#t-church-time')?.classList.toggle('hidden', e.target.value !== 'ter');
-        this.container.querySelector('#church-far-options')?.classList.toggle('hidden', e.target.value !== 'far');
-      });
-    });
-
-  },
-
-  saveCurrentStepData() {
-    if (this.currentStep === 1) {
-      this.guestData.firstName = (document.getElementById('guest-firstname')?.value || '').trim();
-      this.guestData.lastName  = (document.getElementById('guest-lastname')?.value  || '').trim();
-      this.guestData.phone     = (document.getElementById('guest-phone')?.value     || '').trim();
-
-      if (!this.guestData.hasCompanions) {
-        this.guestData.companions = [];
-      } else {
-        this.container.querySelectorAll('.companion-firstname').forEach(inp => {
-          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].firstName = inp.value.trim();
-        });
-        this.container.querySelectorAll('.companion-lastname').forEach(inp => {
-          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].lastName = inp.value.trim();
-        });
-        this.container.querySelectorAll('.companion-phone').forEach(inp => {
-          if (this.guestData.companions[inp.dataset.index]) this.guestData.companions[inp.dataset.index].phone = inp.value.trim();
-        });
-      }
-    }
-    if (this.currentStep === 2) {
-      const proc = key => {
-        const diets = Array.from(this.container.querySelectorAll(`.diet-cb[data-person="${key}"]:checked`)).map(c => c.value);
-        let details = '';
-        const allergyList = [];
-        let allergyOther = '';
-        if (diets.includes('allergy')) {
-          Array.from(this.container.querySelectorAll(`.allergy-type-cb[data-person="${key}"]:checked`)).forEach(c => {
-             allergyList.push(c.value);
-             if (c.value === 'gluten') details += '[Gluten] ';
-             if (c.value === 'lactose') details += '[Lactose] ';
-             if (c.value === 'nuts') details += '[Fruits à coque] ';
-             if (c.value === 'seafood') details += '[Fruits de mer] ';
-          });
-          if (allergyList.includes('other')) {
-             allergyOther = (this.container.querySelector(`.allergy-free-text[data-person="${key}"]`)?.value.trim() || '');
-             if (allergyOther) details += '- ' + allergyOther;
-          }
-        }
-        return { diet: diets, details: details.trim(), allergyList, allergyOther };
-      };
-      const main = proc('main');
-      this.guestData.diet = main.diet;
-      this.guestData.allergyDetails = main.details;
-      this.guestData.allergyList = main.allergyList;
-      this.guestData.allergyOther = main.allergyOther;
-      this.guestData.companions.forEach((c, i) => {
-        const r = proc(String(i)); 
-        c.diet = r.diet; 
-        c.allergyDetails = r.details;
-        c.allergyList = r.allergyList;
-        c.allergyOther = r.allergyOther;
-      });
-    }
-    if (this.currentStep === 4) {
-      if (this.guestData.dessert && this.guestData.dessert.participate === true) {
-        // Enregistre le choix de la surprise
-        const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
-        this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
-        
-        this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
-        this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
-        this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
-      }
-    }
-    if (this.currentStep === 5) {
-      const t = this.guestData.transport;
-      t.arrivalBeforeDDay = document.getElementById('t-arrive-before')?.checked || false;
-      if (t.arrivalBeforeDDay) {
-        t.arrivalFrom = (document.getElementById('t-arr-from')?.value || '').trim();
-        t.arrivalTo   = (document.getElementById('t-arr-to')?.value   || '').trim();
-        t.arrivalDate = document.getElementById('t-arr-date')?.value  || '';
-      }
-      if (t.mode === 'car' && t.carpoolRole === 'offer') {
-        t.city           = (document.getElementById('t-driver-city')?.value  || '').trim();
-        t.seatsAvailable = parseInt(document.getElementById('t-driver-seats')?.value || '1', 10);
-        t.departureDay   = document.getElementById('t-driver-day')?.value   || '';
-        t.departureTime  = document.getElementById('t-driver-time')?.value  || '';
-        t.contactPhone   = (document.getElementById('t-driver-phone')?.value || '').trim();
-        t.contactEmail   = (document.getElementById('t-driver-email')?.value || '').trim();
-      } else if (t.carpoolRole === 'need') {
-        t.passengerNeeds = Array.from(this.container.querySelectorAll('.p-need-cb:checked')).map(c => c.value);
-        t.churchArrival  = this.container.querySelector('input[name="churchArrival"]:checked')?.value || '';
-        t.seatsNeeded    = parseInt(document.getElementById('t-pass-seats')?.value || '1', 10);
-        if (t.churchArrival === 'ter') t.churchTime = document.getElementById('t-church-time')?.value || '';
-        if (t.churchArrival === 'far') {
-          t.city         = (document.getElementById('t-pass-city')?.value || '').trim();
-          t.departureDay = document.getElementById('t-pass-day')?.value   || '';
-        }
-        if (t.passengerNeeds.includes('night')) {
-          t.nightName     = (document.getElementById('night-name')?.value     || '').trim();
-          t.nightAddress  = (document.getElementById('night-address')?.value  || '').trim();
-          t.nightCity     = (document.getElementById('night-city')?.value     || '').trim();
-          t.nightZip      = (document.getElementById('night-zip')?.value      || '').trim();
-          t.nightDistance = (document.getElementById('night-distance')?.value || '').trim();
-        }
-      }
-    }
-    // Step 5 : récapitulatif en lecture seule, rien à sauvegarder ici.
-  },
-
-  validateStep() {
-    if (this.currentStep === 1) {
-      if (!this.guestData.firstName || !this.guestData.lastName || !this.guestData.phone) {
-        Animations.showToast('Veuillez remplir Prénom, Nom et Téléphone', 'error'); return false;
-      }
-      if (this.guestData.attending === null) {
-        Animations.showToast('Veuillez indiquer votre présence', 'error'); return false;
-      }
-      if (this.guestData.attending === true || this.guestData.attending === 'maybe') {
-        if (this.guestData.hasCompanions === null) {
-          Animations.showToast('Veuillez indiquer si vous venez accompagné(e)', 'error'); return false;
-        }
-        if (this.guestData.hasCompanions && this.guestData.companions.length === 0) {
-          Animations.showToast("Veuillez indiquer le nombre d'accompagnants", 'error'); return false;
-        }
-        if (this.guestData.hasCompanions && !this.guestData.companions.every(c => c.firstName.trim() && c.lastName.trim())) {
-          Animations.showToast('Veuillez renseigner le prénom et le nom de chaque accompagnant', 'error'); return false;
-        }
-      }
-    }
-    if (this.currentStep === 3 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
-      Animations.showToast('Veuillez indiquer votre réponse pour le brunch', 'error'); return false;
-    }
-    if (this.currentStep === 4 && (this.guestData.attending === true || this.guestData.attending === 'maybe')) {
-      if (!this.guestData.dessert || this.guestData.dessert.participate === null) {
-        Animations.showToast('Veuillez indiquer votre réponse pour le buffet gourmand', 'error'); return false;
-      }
-      if (this.guestData.dessert.participate === true) {
-        if (!this.guestData.dessert.type) {
-          Animations.showToast('Veuillez préciser le type de dessert', 'error'); return false;
-        }
-        if (!this.guestData.dessert.portions) {
-          Animations.showToast('Veuillez indiquer le nombre de parts', 'error'); return false;
-        }
-      }
-    }
-    return true;
-  },
-
-  async handleNext() {
-    this.saveCurrentStepData();
-    if (!this.validateStep()) return;
-
-    if (this.currentStep === 1 && this.guestData.attending === false) { this.submitForm(); return; }
-
-    if (this.currentStep === 1) {
-      const existing = await Store.getGuestByPhone(this.guestData.phone);
-      if (existing && existing.id !== this.guestData.id) {
-        const p = (a) => {
-          const lst = [];
-          let oth = a || '';
-          if(oth.includes('[Gluten]')){ lst.push('gluten'); oth = oth.replace('[Gluten]', ''); }
-          if(oth.includes('[Lactose]')){ lst.push('lactose'); oth = oth.replace('[Lactose]', ''); }
-          if(oth.includes('[Fruits à coque]')){ lst.push('nuts'); oth = oth.replace('[Fruits à coque]', ''); }
-          if(oth.includes('[Fruits de mer]')){ lst.push('seafood'); oth = oth.replace('[Fruits de mer]', ''); }
-          oth = oth.replace(/^- /, '').trim();
-          if (oth) lst.push('other');
-          return { list: lst, other: oth };
-        };
-        const mA = p(existing.allergyDetails);
-        const cA = (existing.companions||[]).map(c => {
-           const ca = p(c.allergyDetails);
-           return {...c, allergyList: ca.list, allergyOther: ca.other};
-        });
-
-        this.guestData = { 
-           ...this.guestData, 
-           ...existing, 
-           allergyList: mA.list, allergyOther: mA.other, companions: cA,
-           transport: { ...this.guestData.transport, ...(existing.transport||{}) } 
-        };
-        Animations.showToast('Profil retrouvé !', 'success');
-      }
-    }
-
-    if (this.currentStep === 1 && this.guestData.attending !== true) { this.currentStep = 3; this.render(); return; }
-    if (this.currentStep === 3 && this.guestData.attending !== true) { this.currentStep = 5; this.render(); return; }
-
-    if (this.currentStep < this.totalSteps) { this.currentStep++; this.render(); }
-    else { this.submitForm(); }
-  },
-
-  handlePrev() {
-    this.saveCurrentStepData();
-    if (this.currentStep === 3 && this.guestData.attending !== true) { this.currentStep = 1; this.render(); return; }
-    if (this.currentStep === 5 && this.guestData.attending !== true) { this.currentStep = 3; this.render(); return; }
-    if (this.currentStep > 1) { this.currentStep--; this.render(); }
-  },
-
-  async submitForm() {
-    try {
-      let savedGuest;
-      if (this.guestData.id) {
-        savedGuest = await Store.updateGuest(this.guestData.id, this.guestData);
-      } else {
-        savedGuest = await Store.saveGuest(this.guestData);
-      }
-      Store.setCurrentGuest(savedGuest.id);
-
-      const t = savedGuest.transport;
-      if (t && (t.carpoolRole === 'offer' || t.carpoolRole === 'need')) {
-        const existing = await Store.getCarpoolsByGuestId(savedGuest.id);
-        for (const c of existing) await Store.deleteCarpool(c.id);
-        await Store.saveCarpool({
-          guestId:        savedGuest.id,
-          type:           t.carpoolRole === 'offer' ? 'offer' : 'request',
-          city:           t.city,
-          seatsAvailable: t.seatsAvailable,
-          seatsNeeded:    t.seatsNeeded,
-          departureDay:   t.departureDay,
-          departureTime:  t.departureTime,
-          contact:        t.contactPhone || savedGuest.phone
-        });
-      }
-
-      Animations.showToast('Merci pour votre réponse !', 'success');
-      this.currentStep = 1;
-      Router.navigate('#/mes-reponses');
-    } catch (err) {
-      console.error('[RSVP] Erreur submitForm :', err);
-      Animations.showToast('Une erreur est survenue, veuillez réessayer.', 'error');
-    }
-  }
-};
-
-export default RSVP;
