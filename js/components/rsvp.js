@@ -626,7 +626,7 @@ renderStep6() {
         </div>
       </div>`;
   }
-}
+},
 
 attachEvents() {
   },
