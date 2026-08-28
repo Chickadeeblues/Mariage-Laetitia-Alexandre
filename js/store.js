@@ -191,6 +191,12 @@ const Store = {
   on(event, callback) {
     if (!_listeners[event]) _listeners[event] = [];
     _listeners[event].push(callback);
+    // Retourne une fonction de désinscription
+    return () => {
+      if (_listeners[event]) {
+        _listeners[event] = _listeners[event].filter(cb => cb !== callback);
+      }
+    };
   },
 
   off(event, callback) {

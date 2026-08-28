@@ -147,13 +147,12 @@ const HowToGet = {
 
     const receptionContent = isCar
       ? `<p class="htg-text">
-           Le trajet depuis l'église dure environ 35 minutes. 
+           Comptez environ 35 minutes depuis l'église. 
          </p>
          <div class="htg-highlight-box">
            <strong>Stationnement :</strong> Un parking gratuit est disponible sur place. Une fois arrivés à Doizieux, suivez les ballons pour trouver l'entrée du domaine !
          </div>`
       : `<p class="htg-text">
-           Le domaine de la Scie du May est situé en pleine nature dans le parc naturel du Pilat.
          </p>
          <div class="htg-highlight-box">
            <strong>Important :</strong> Le domaine n'étant pas desservi directement par les transports en commun, <strong>le covoiturage est indispensable</strong> depuis l'église ou la gare pour vous y rendre.

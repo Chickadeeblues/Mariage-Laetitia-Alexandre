@@ -152,14 +152,17 @@ const Carpool = {
     
     let isPublished = true;
     try {
-      isPublished = await Store.getSettings('publication').then(s => s['covoiturage']);
-    } catch (err) {}
+      const settings = await Store.getSettings('publication');
+      isPublished = settings && settings['covoiturage'] !== false;
+    } catch (err) {
+      console.warn('[Carpool] Impossible de vérifier la publication, affichage par défaut.', err);
+    }
 
     if (!isPublished) {
       this._elements.container.innerHTML = `
         <div class="container" style="text-align: center; padding: 4rem 1rem;">
            <span style="font-size:3rem;display:block;margin-bottom:16px;">⏳</span>
-           <h3 style="color:#2D5A3D; font-family: var(--font-display);">${window.I18n.t('publication.comingSoon')}</h3>
+           <h3 style="color:#2D5A3D; font-family: var(--font-display);">${window.I18n && window.I18n.t ? window.I18n.t('publication.comingSoon') : 'Bientôt disponible'}</h3>
         </div>
       `;
       return;
@@ -222,10 +225,9 @@ const Carpool = {
           <!-- Jour de départ (Indicateur intégré) -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
             <select id="carpool-day" class="form-control carpool-placeholder-select" style="text-align: center; text-align-last: center;">
-              <option value="" selected disabled>Jour de départ</option>
-              <option value="2027-05-06">Jeudi 6 mai 2027</option>
-              <option value="2027-05-07">Vendredi 7 mai 2027</option>
-              <option value="2027-05-08">Samedi 8 mai 2027</option>
+              <option value="2027-05-06">6 mai 2027 (jeudi)</option>
+              <option value="2027-05-07">7 mai 2027 (vendredi)</option>
+              <option value="2027-05-08">8 mai 2027 (samedi)</option>
             </select>
           </div>
 
@@ -245,6 +247,11 @@ const Carpool = {
 
         </div>
 
+        <!-- Bouton de validation dynamique -->
+        <div style="text-align: right; margin-top: 1.5rem;">
+          <button id="btn-validate-carpool" class="btn btn-primary" style="background-color: var(--forest); color: white;">
+            Valider
+          </button>
         </div>
       </div>
 
@@ -470,16 +477,82 @@ const Carpool = {
 
     // 5. Validation et enregistrement (Logique Supabase)
     if (btnValidate) {
-      btnValidate.addEventListener('click', () => {
-        const payload = {
-          type: selectedMode,
-          city: stationCheckbox && stationCheckbox.checked ? 'Gare TER Péage-de-Roussillon' : (cityInput ? cityInput.value : ''),
-          departureDay: daySelect ? daySelect.value : '',
-          departureTime: timeInput ? timeInput.value : '',
-          seats: seatsInput ? (parseInt(seatsInput.value, 10) || 1) : 1
-        };
-        console.log("Données à enregistrer :", payload);
-        // await Store.saveCarpool(payload);
+      btnValidate.addEventListener('click', async () => {
+        if (!selectedMode) {
+          if (typeof Animations.showToast === 'function') {
+            Animations.showToast('Veuillez d\'abord choisir "Demander" ou "Proposer" un covoiturage.', 'error');
+          }
+          return;
+        }
+
+        // Vérifier que l'invité est connecté
+        const guestId = localStorage.getItem('wedding_current_guest_id');
+        if (!guestId) {
+          if (typeof Animations.showToast === 'function') {
+            Animations.showToast('Veuillez d\'abord confirmer votre présence (RSVP) avant de proposer ou demander un covoiturage.', 'error');
+          }
+          return;
+        }
+
+        const city = stationCheckbox && stationCheckbox.checked
+          ? 'Gare TER Péage-de-Roussillon'
+          : (cityInput ? cityInput.value.trim() : '');
+
+        if (!city) {
+          if (typeof Animations.showToast === 'function') {
+            Animations.showToast('Veuillez indiquer une ville de départ.', 'error');
+          }
+          return;
+        }
+
+        const seats = seatsInput ? (parseInt(seatsInput.value, 10) || 1) : 1;
+
+        try {
+          // Récupérer le profil invité pour le contact
+          const guest = await Store.getGuest(JSON.parse(guestId));
+          const contact = guest ? (guest.phone || guest.email || '') : '';
+
+          const payload = {
+            guestId: JSON.parse(guestId),
+            type: selectedMode === 'offer' ? 'offer' : 'request',
+            city: city,
+            seatsAvailable: selectedMode === 'offer' ? seats : null,
+            seatsNeeded: selectedMode === 'request' ? seats : null,
+            departureDay: daySelect ? daySelect.value : '',
+            departureTime: timeInput ? timeInput.value : '',
+            contact: contact
+          };
+
+          // Sauvegarder aussi dans le transport de l'invité
+          const transportUpdate = {
+            ...(guest?.transport || {}),
+            carpoolRole: selectedMode === 'offer' ? 'offer' : 'need',
+            city: city,
+            seatsAvailable: selectedMode === 'offer' ? seats : undefined,
+            seatsNeeded: selectedMode === 'request' ? seats : undefined,
+            departureDay: daySelect ? daySelect.value : '',
+            departureTime: timeInput ? timeInput.value : '',
+            contactPhone: contact
+          };
+          await Store.updateGuest(JSON.parse(guestId), { transport: transportUpdate });
+
+          if (typeof Animations.showToast === 'function') {
+            Animations.showToast(
+              selectedMode === 'offer'
+                ? 'Votre proposition de covoiturage a été enregistrée !'
+                : 'Votre demande de covoiturage a été enregistrée !',
+              'success'
+            );
+          }
+
+          // Re-render pour afficher la nouvelle carte
+          await this._render();
+        } catch (e) {
+          console.error('[Carpool] Erreur lors de l\'enregistrement :', e);
+          if (typeof Animations.showToast === 'function') {
+            Animations.showToast('Erreur lors de l\'enregistrement. Veuillez réessayer.', 'error');
+          }
+        }
       });
     }
 
