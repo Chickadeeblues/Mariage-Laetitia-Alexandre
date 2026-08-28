@@ -15,6 +15,7 @@ const RSVP = {
     email: '',
     phone: '',
     attending: null,
+    hasCompanions: null,
     companionCount: 0,
     companions: [],
     brunch: null,
@@ -57,6 +58,7 @@ const RSVP = {
         this.guestData = {
           ...this.guestData,
           ...currentGuest,
+          hasCompanions: (currentGuest.companions && currentGuest.companions.length > 0) ? true : ((currentGuest.attending === true || currentGuest.attending === 'maybe') ? false : null),
           transport: { ...this.guestData.transport, ...(currentGuest.transport || {}) }
         };
       }
@@ -197,70 +199,70 @@ const RSVP = {
     return full || tr('Accompagnant ' + (i + 1), 'Acompañante ' + (i + 1));
   },
 
-renderStep1() {
-  const v = this.currentStep === 1;
-  const att = this.guestData.attending;
-  const companions = this.guestData.companions || [];
-  const hasCompanions = companions.length > 0;
+  renderStep1() {
+    const v = this.currentStep === 1;
+    const att = this.guestData.attending;
+    const hasCompanions = this.guestData.hasCompanions;
+    const companions = this.guestData.companions || [];
 
-  // 1° Une fois une réponse choisie, on n'affiche que le choix retenu (gain de place),
-  // avec un lien discret pour en changer si besoin.
-  const attendanceBlock = att === null ? `
-    <div class="attendance-options">
-      <button type="button" class="choice-btn" data-val="true">  <span>🎉</span> <strong>${tr('Je viens avec joie !', '¡Asistiré con gusto!')}</strong></button>
-      <button type="button" class="choice-btn" data-val="maybe"><span>🤔</span> <strong>${tr('Je viens peut-être', 'Tal vez asista')}</strong></button>
-      <button type="button" class="choice-btn" data-val="false"><span>💌</span> <strong>${tr('Je ne peux pas venir', 'No podré asistir')}</strong></button>
-    </div>` : `
-    <div class="attendance-options">
-      <button type="button" class="choice-btn selected" data-val="${att}">
-        <span>${att === true ? '🎉' : att === 'maybe' ? '🤔' : '💌'}</span>
-        <strong>${att === true ? tr('Je viens avec joie !', '¡Asistiré con gusto!') : att === 'maybe' ? tr('Je viens peut-être', 'Tal vez asista') : tr('Je ne peux pas venir', 'No podré asistir')}</strong>
-      </button>
-    </div>
-    <button type="button" id="change-answer-btn" class="link-btn">${tr('↺ Changer ma réponse', '↺ Cambiar mi respuesta')}</button>`;
+    const attendanceBlock = `
+      <div class="attendance-options">
+        <button type="button" class="choice-btn ${att === true ? 'selected' : ''}" data-val="true">  <span>🎉</span> <strong>${tr('Je viens avec joie !', '¡Asistiré con gusto!')}</strong></button>
+        <button type="button" class="choice-btn ${att === 'maybe' ? 'selected' : ''}" data-val="maybe"><span>🤔</span> <strong>${tr('Je viens peut-être', 'Tal vez asista')}</strong></button>
+        <button type="button" class="choice-btn ${att === false ? 'selected' : ''}" data-val="false"><span>💌</span> <strong>${tr('Je ne peux pas venir', 'No podré asistir')}</strong></button>
+      </div>`;
 
-  const companionBlock = att === true ? `
-    <div id="companions-section" style="margin-top:16px;">
-      <label class="companion-toggle">
-        <input type="checkbox" id="guest-has-companions" ${hasCompanions ? 'checked' : ''}>
-        ${tr('Je viens accompagné(e)', 'Vengo acompañado/a')}
-      </label>
+    const declineMessage = att === false ? `
+      <div style="margin-top: 15px; margin-bottom: 15px; padding: 15px; background: #fdfaf5; border: 1.5px solid #e7dcc4; border-radius: 8px; text-align: center; color: var(--forest);">
+        <strong>${tr('Nous en sommes tristes, mais merci pour ta réponse !', 'Estamos tristes, pero ¡gracias por tu respuesta!')}</strong>
+      </div>` : '';
 
-      <div id="companion-count-block" class="${hasCompanions ? '' : 'hidden'}" style="margin-top:12px;">
-        <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
-          ${tr('Nombre d\'accompagnants *', 'Número de acompañantes *')}
+    const companionBlock = (att === true || att === 'maybe') ? `
+      <div id="companions-section" style="margin-top:16px;">
+        <label style="display:block; font-size:14px; color:var(--text-muted); margin-bottom:8px; font-weight:500;">
+          ${tr('Je viens accompagné(e) :', 'Vengo acompañado/a:')}
         </label>
-        <select id="guest-companions-count" class="compact-input">
-          <option value="">-- ${tr('Choisir', 'Elegir')} --</option>
-          ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
-        </select>
-
-        <div id="companions-list" style="margin-top:8px;">
-          ${companions.map((c, idx) => `
-            <div class="companion-card">
-              <p class="companion-card-title">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
-              <input type="text" class="compact-input companion-firstname" data-index="${idx}" value="${this.esc(c.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}">
-              <input type="text" class="compact-input companion-lastname"  data-index="${idx}" value="${this.esc(c.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}">
-              <input type="tel"  class="compact-input companion-phone"     data-index="${idx}" value="${this.esc(c.phone)}"     placeholder="${tr('Téléphone (optionnel)', 'Teléfono (opcional)')}">
-            </div>`).join('')}
+        <div class="attendance-options" style="flex-direction: row; gap: 10px;">
+          <button type="button" class="choice-btn ${hasCompanions === true ? 'selected' : ''}" data-has-companions="true" style="text-align:center; justify-content:center;"><strong>${tr('Oui', 'Sí')}</strong></button>
+          <button type="button" class="choice-btn ${hasCompanions === false ? 'selected' : ''}" data-has-companions="false" style="text-align:center; justify-content:center;"><strong>${tr('Non', 'No')}</strong></button>
         </div>
-      </div>
-    </div>` : '';
 
-  return `
-    <div class="form-step ${v ? 'active' : ''}" id="step-1">
-      <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}" required>
-      <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}" required>
-      <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="${tr('Téléphone portable *', 'Teléfono móvil *')}" required>
+        <div id="companion-count-block" class="${hasCompanions === true ? '' : 'hidden'}" style="margin-top:16px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">
+            ${tr('Nombre d\'accompagnants *', 'Número de acompañantes *')}
+          </label>
+          <select id="guest-companions-count" class="compact-input">
+            <option value="">-- ${tr('Choisir', 'Elegir')} --</option>
+            ${[1,2,3,4,5].map(n => `<option value="${n}" ${companions.length === n ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
 
-      ${attendanceBlock}
-      ${companionBlock}
+          <div id="companions-list" style="margin-top:8px;">
+            ${companions.map((c, idx) => `
+              <div class="companion-card">
+                <p class="companion-card-title">${tr('Accompagnant', 'Acompañante')} ${idx + 1}</p>
+                <input type="text" class="compact-input companion-firstname" data-index="${idx}" value="${this.esc(c.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}">
+                <input type="text" class="compact-input companion-lastname"  data-index="${idx}" value="${this.esc(c.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}">
+                <input type="tel"  class="compact-input companion-phone"     data-index="${idx}" value="${this.esc(c.phone)}"     placeholder="${tr('Téléphone (optionnel)', 'Teléfono (opcional)')}">
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>` : '';
 
-      <div class="form-actions">
-        <button type="button" class="btn btn--primary next-btn" style="width:100%;">${tr('Suivant', 'Siguiente')}</button>
-      </div>
-    </div>`;
-},
+    return `
+      <div class="form-step ${v ? 'active' : ''}" id="step-1">
+        <input type="text" id="guest-firstname" class="compact-input" value="${this.esc(this.guestData.firstName)}" placeholder="${tr('Prénom *', 'Nombre *')}" required>
+        <input type="text" id="guest-lastname"  class="compact-input" value="${this.esc(this.guestData.lastName)}"  placeholder="${tr('Nom *', 'Apellido *')}" required>
+        <input type="tel"  id="guest-phone"     class="compact-input" value="${this.esc(this.guestData.phone)}"     placeholder="${tr('Téléphone portable *', 'Teléfono móvil *')}" required>
+
+        ${attendanceBlock}
+        ${declineMessage}
+        ${companionBlock}
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--primary next-btn" style="width:100%;">${att === false ? tr('Confirmer ma réponse ✓', 'Confirmar mi respuesta ✓') : tr('Suivant', 'Siguiente')}</button>
+        </div>
+      </div>`;
+  },
 
   renderStep2() {
     const v = this.currentStep === 2;
@@ -513,23 +515,18 @@ renderStep1() {
       });
     });
 
-    // 1° Changer de réponse (ré-affiche les 3 choix)
-    const changeAnswerBtn = this.container.querySelector('#change-answer-btn');
-    if (changeAnswerBtn) {
-      changeAnswerBtn.addEventListener('click', () => {
-        this.guestData.attending = null;
+    // 1° Boutons "Je viens accompagné(e) : Oui / Non"
+    this.container.querySelectorAll('[data-has-companions]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const val = e.currentTarget.dataset.hasCompanions === 'true';
+        this.guestData.hasCompanions = val;
+        if (!val) {
+          this.guestData.companions = [];
+        }
+        this.saveCurrentStepData();
         this.render();
       });
-    }
-
-    // 1° Case "Je viens accompagné(e)"
-    const hasCompanionsCb = this.container.querySelector('#guest-has-companions');
-    if (hasCompanionsCb) {
-      hasCompanionsCb.addEventListener('change', e => {
-        if (!e.target.checked) this.guestData.companions = [];
-        this.render();
-      });
-    }
+    });
 
     // Nombre d'accompagnants
     const compSelect = this.container.querySelector('#guest-companions-count');
@@ -588,8 +585,7 @@ renderStep1() {
       this.guestData.lastName  = (document.getElementById('guest-lastname')?.value  || '').trim();
       this.guestData.phone     = (document.getElementById('guest-phone')?.value     || '').trim();
 
-      const hasCompanionsChecked = document.getElementById('guest-has-companions')?.checked;
-      if (!hasCompanionsChecked) {
+      if (!this.guestData.hasCompanions) {
         this.guestData.companions = [];
       } else {
         this.container.querySelectorAll('.companion-firstname').forEach(inp => {
@@ -662,12 +658,14 @@ renderStep1() {
       if (this.guestData.attending === null) {
         Animations.showToast('Veuillez indiquer votre présence', 'error'); return false;
       }
-      if (this.guestData.attending === true) {
-        const hasCompanionsChecked = this.container.querySelector('#guest-has-companions')?.checked;
-        if (hasCompanionsChecked && this.guestData.companions.length === 0) {
+      if (this.guestData.attending === true || this.guestData.attending === 'maybe') {
+        if (this.guestData.hasCompanions === null) {
+          Animations.showToast('Veuillez indiquer si vous venez accompagné(e)', 'error'); return false;
+        }
+        if (this.guestData.hasCompanions && this.guestData.companions.length === 0) {
           Animations.showToast("Veuillez indiquer le nombre d'accompagnants", 'error'); return false;
         }
-        if (!this.guestData.companions.every(c => c.firstName.trim() && c.lastName.trim())) {
+        if (this.guestData.hasCompanions && !this.guestData.companions.every(c => c.firstName.trim() && c.lastName.trim())) {
           Animations.showToast('Veuillez renseigner le prénom et le nom de chaque accompagnant', 'error'); return false;
         }
       }
