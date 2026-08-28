@@ -417,7 +417,7 @@ renderStep4() {
       </div>`;
   },
   
-  renderStep5() {
+renderStep5() {
     const v = this.currentStep === 5;
     const tData = this.guestData.transport || {};
     const isCar = tData.mode === 'car';
@@ -627,5 +627,24 @@ renderStep6() {
       </div>`;
   }
 }
+
+attachEvents() {
+  },
+
+saveCurrentStepData() {
+  },
+
+validateStep() {
+  },
+
+handleNext() {
+  },
+
+handlePrev() {
+  },
+
+async submitForm() {
+  }
+};
 
 export default RSVP;
