@@ -626,3 +626,4 @@ renderStep6() {
         </div>
       </div>`;
   }
+}
