@@ -7,7 +7,7 @@ const tr = (fr, es) => (window.I18n && window.I18n.currentLang === 'es') ? es : 
 const RSVP = {
   container: null,
   currentStep: 1,
-  totalSteps: 6,
+  totalSteps: 5,
   guestData: {
     id: null,
     firstName: '',
@@ -193,13 +193,13 @@ const RSVP = {
   },
 
   renderProgressBar() {
+    if (this.currentStep > this.totalSteps) return ''; // écran de remerciement : pas de stepper
     const labels = [
       tr('Réponse', 'Respuesta'), 
       tr('Régime alimentaire', 'Régimen'), 
 	  tr('Buffet gourmand', 'Bufé goloso'),
       tr('Brunch du lendemain', 'Brunch'),      
-      tr('Transport et Covoiturage', 'Transporte'), 
-      tr('Récapitulatif', 'Resumen')
+      tr('Transport et Covoiturage', 'Transporte')
     ];
     let html = '<div class="step-indicator">';
     for (let i = 1; i <= this.totalSteps; i++) {
@@ -572,72 +572,17 @@ renderStep5() {
   
 renderStep6() {
     const v = this.currentStep === 6;
-    const g = this.guestData;
-    const t = g.transport || {};
-
-    const dietLabel = code => ({
-      vegetarian: tr('Végétarien', 'Vegetariano'),
-      vegan: tr('Végan', 'Vegano'),
-      'no-alcohol': tr('Sans alcool', 'Sin alcohol'),
-      allergy: tr('Allergie/Intolérance', 'Alergia/Intolerancia')
-    }[code] || code);
-
-    const dietSummary = (diet, allergyDetails) => {
-      const d = diet || [];
-      if (!d.length) return tr('Aucune restriction', 'Sin restricciones');
-      let s = d.map(dietLabel).join(', ');
-      if (d.includes('allergy') && allergyDetails) s += ` — ${this.esc(allergyDetails)}`;
-      return s;
-    };
-
-    const dietHtml = `
-      <div class="recap-row"><span>${tr('Vous', 'Usted')}</span><span>${dietSummary(g.diet, g.allergyDetails)}</span></div>
-      ${(g.companions || []).map((c, i) => `<div class="recap-row"><span>${this.esc(this.companionLabel(c, i))}</span><span>${dietSummary(c.diet, c.allergyDetails)}</span></div>`).join('')}
-    `;
-
-    const dessertSummary = g.dessert?.participate === true
-      ? tr('Oui, dessert prévu', 'Sí, postre previsto')
-      : g.dessert?.participate === false
-        ? tr('Non', 'No')
-        : tr('Non renseigné', 'No especificado');
-
-    let carpoolSummary = tr('Non renseigné', 'No especificado');
-    if (t.mode === 'car') {
-      carpoolSummary = t.carpoolRole === 'offer' ? tr('Oui, je propose des places', 'Sí, ofrezco plazas') : tr('Non', 'No');
-    } else if (t.mode) {
-      carpoolSummary = t.carpoolRole === 'need' ? tr('Oui, besoin de covoiturage', 'Sí, necesito transporte') : tr('Non', 'No');
-    }
-
     return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-6">
-        <p style="text-align:center;font-size:14px;color:#666;margin-bottom:1.2rem;">
-          ${tr('Vérifiez que tout est correct avant de confirmer votre réponse.', 'Compruebe que todo sea correcto antes de confirmar su respuesta.')}
+      <div class="form-step ${v ? 'active' : ''}" id="step-6" style="text-align:center;padding:10px 0 4px;">
+        <div style="font-size:42px;margin-bottom:12px;">💌</div>
+        <h3 style="font-size:22px;color:var(--forest, #2D5A3D);margin:0 0 10px;">${tr('Merci pour ta réponse !', '¡Gracias por tu respuesta!')}</h3>
+        <p style="font-size:15px;color:#666;margin-bottom:2rem;">
+          ${tr('Ta réponse a bien été transmise aux mariés.', 'Tu respuesta ha sido enviada correctamente a los novios.')}
         </p>
-
-        <!-- Régime alimentaire -->
-        ${(g.attending === true || g.attending === 'maybe') ? `
-        <div class="recap-section">
-          <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
-          ${dietHtml}
-        </div>` : ''}
-
-        <!-- Dessert -->
-        ${g.attending === true ? `
-        <div class="recap-section">
-          <h4>🍰 ${tr('Dessert', 'Postre')}</h4>
-          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${dessertSummary}</span></div>
-        </div>` : ''}
-
-        <!-- Covoiturage -->
-        ${g.attending === true ? `
-        <div class="recap-section">
-          <h4>🚗 ${tr('Covoiturage', 'Transporte compartido')}</h4>
-          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${carpoolSummary}</span></div>
-        </div>` : ''}
-
-        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 1.5rem;">
-          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 180px;">${tr('Confirmer ma réponse', 'Confirmar mi respuesta')}</button>
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:320px;margin:0 auto;">
+          <button type="button" class="btn btn--primary" id="goto-hebergements-btn">🛌 ${tr('Trouver un logement', 'Encontrar alojamiento')}</button>
+          <button type="button" class="btn btn--secondary" id="goto-infos-btn">ℹ️ ${tr('Voir les informations pratiques', 'Ver información práctica')}</button>
+          <button type="button" class="btn btn--secondary" id="close-app-btn">✕ ${tr('Quitter l\'application', 'Salir de la aplicación')}</button>
         </div>
       </div>`;
   },
@@ -743,6 +688,24 @@ renderStep6() {
         if (timeInput) timeInput.classList.toggle('hidden', e.target.value !== 'ter');
         if (farOpts) farOpts.classList.toggle('hidden', e.target.value !== 'far');
       });
+    });
+
+    // Écran de remerciement (étape 6)
+    const gotoHebergements = this.container.querySelector('#goto-hebergements-btn');
+    if (gotoHebergements) gotoHebergements.addEventListener('click', () => Router.navigate('#/hebergements'));
+
+    const gotoInfos = this.container.querySelector('#goto-infos-btn');
+    if (gotoInfos) gotoInfos.addEventListener('click', () => Router.navigate('#/infos'));
+
+    const closeAppBtn = this.container.querySelector('#close-app-btn');
+    if (closeAppBtn) closeAppBtn.addEventListener('click', () => {
+      window.close();
+      // Les navigateurs bloquent la fermeture d'un onglet qui n'a pas été ouvert par un script.
+      setTimeout(() => {
+        if (!window.closed) {
+          Animations.showToast(tr('Vous pouvez fermer cet onglet à présent.', 'Ya puedes cerrar esta pestaña.'), 'success');
+        }
+      }, 300);
     });
   },
 
@@ -888,8 +851,8 @@ renderStep6() {
         if (existing && existing.id !== this.guestData.id) this.guestData = { ...this.guestData, ...existing };
       }
       
-      // Adaptation des sauts d'étapes (Le récapitulatif est l'étape 6)
-      if (this.currentStep === 2 && this.guestData.attending !== true) { this.currentStep = 6; this.render(); return; }
+      // Les invités "peut-être" s'arrêtent après le régime alimentaire et sont envoyés directement
+      if (this.currentStep === 2 && this.guestData.attending !== true) { this.submitForm(); return; }
 
       if (this.currentStep < this.totalSteps) {
         this.currentStep++;
@@ -902,20 +865,17 @@ renderStep6() {
 
   handlePrev() {
     this.saveCurrentStepData();
-    // Adaptation des sauts d'étapes
-    if (this.currentStep === 6 && this.guestData.attending !== true) { this.currentStep = 2; this.render(); return; }
-    
-    if (this.currentStep > 1) {
+    if (this.currentStep > 1 && this.currentStep <= this.totalSteps) {
       this.currentStep--;
       this.render();
     }
   },
 
   async submitForm() {
-    const submitBtn = document.getElementById('final-submit-btn');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Envoi en cours...";
+    const activeNextBtn = this.container.querySelector('.form-step.active .next-btn');
+    if (activeNextBtn) {
+      activeNextBtn.disabled = true;
+      activeNextBtn.textContent = tr('Envoi en cours...', 'Enviando...');
     }
 
     let savedGuest;
@@ -945,14 +905,13 @@ renderStep6() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(this.guestData)
       });
-      Animations.showToast("Réponse transmise aux mariés !", "success");
     } catch (error) {
       console.error("[RSVP] Erreur envoi Google :", error);
       Animations.showToast("Erreur d'envoi vers la base centrale.", "error");
     }
 
-    this.currentStep = 1;
-    Router.navigate('#/mes-reponses');
+    this.currentStep = 6;
+    this.render();
   }
 };
 
