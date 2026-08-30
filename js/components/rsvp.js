@@ -247,17 +247,19 @@ const RSVP = {
 
     const companionBlock = (att === true || att === 'maybe') ? `
       <div id="companions-section" style="margin-top:16px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
           <label style="font-size:16px; color:var(--text-dark); font-weight:600; margin:0;">
             ${tr('Je viens accompagné(e) :', 'Vengo acompañado/a:')}
           </label>
-          <div class="attendance-options" style="display: flex; gap: 8px; flex-direction: row; margin:0;">
+          <div class="attendance-options" style="display: flex; gap: 8px; flex-direction: row; margin:0; width:auto;">
             <button type="button" class="choice-btn ${hasCompanions === true ? 'selected' : ''}" data-has-companions="true" style="padding: 8px 20px; width: auto; min-width: 60px; text-align:center; justify-content:center;"><strong>${tr('Oui', 'Sí')}</strong></button>
+            <button type="button" class="choice-btn ${hasCompanions === 'maybe' ? 'selected' : ''}" data-has-companions="maybe" style="padding: 8px 20px; width: auto; min-width: 60px; text-align:center; justify-content:center;"><strong>${tr('Peut-être', 'Tal vez')}</strong></button>
             <button type="button" class="choice-btn ${hasCompanions === false ? 'selected' : ''}" data-has-companions="false" style="padding: 8px 20px; width: auto; min-width: 60px; text-align:center; justify-content:center;"><strong>${tr('Non', 'No')}</strong></button>
           </div>
         </div>
 
-        <div id="companion-count-block" class="${hasCompanions === true ? '' : 'hidden'}" style="margin-top:16px;">
+        <div id="companion-count-block" class="${(hasCompanions === true || hasCompanions === 'maybe') ? '' : 'hidden'}" style="margin-top:16px;">
+          ${hasCompanions === 'maybe' ? `<p style="font-size:13px;color:#9b8660;font-style:italic;margin:0 0 10px;">${tr('Ces accompagnants seront notés "peut-être" dans votre réponse.', 'Estos acompañantes se marcarán como "tal vez" en tu respuesta.')}</p>` : ''}
           <div id="companions-list">
             ${companions.map((c, idx) => `
               <div class="companion-card">
@@ -270,7 +272,7 @@ const RSVP = {
                 <input type="tel"  class="compact-input companion-phone"     data-index="${idx}" value="${this.esc(c.phone)}"     placeholder="${tr('Téléphone (optionnel)', 'Teléfono (opcional)')}">
               </div>`).join('')}
           </div>
-          <div style="text-align: center; margin-top: 10px;">
+          <div style="text-align: left; margin-top: 10px;">
             <button type="button" class="btn btn--secondary" id="add-companion-btn" style="padding: 8px 16px; font-size: 14px;">+ ${tr('Ajouter une personne', 'Añadir una persona')}</button>
           </div>
         </div>
@@ -340,32 +342,13 @@ const RSVP = {
 
   renderStep3() {
     const v = this.currentStep === 3;
-    const b = this.guestData.brunch;
-    return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-3">
-        <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
-          ${tr('Pour faire durer le plaisir, nous vous convions à un brunch le <strong>dimanche 9 mai</strong>, de 9h30 à 13h30 au Domaine de la Scie du May.', 'Para prolongar el placer, os invitamos a un brunch el <strong>domingo 9 de mayo</strong>, de 9:30 a 13:30 en la Finca de la Scie du May.')}
-        </p>
-        <div class="attendance-options">
-          <button type="button" class="choice-btn ${b === true  ? 'selected' : ''}" data-brunch="true"> <span>☕</span> <strong>${tr('Oui, avec plaisir !', '¡Sí, con gusto!')}</strong></button>
-          <button type="button" class="choice-btn ${b === false ? 'selected' : ''}" data-brunch="false"><span>🙏</span> <strong>${tr('Non, merci !', '¡No, gracias!')}</strong></button>
-        </div>
-        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2.5rem;">
-          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
-        </div>
-      </div>`;
-  },
-
-renderStep4() {
-    const v = this.currentStep === 4;
     const d = this.guestData.dessert || {};
     
     // Par défaut, on considère que c'est une surprise si l'utilisateur n'a pas encore répondu "false"
     const isSurprise = d.isSurprise !== false;
 
     return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-4">
+      <div class="form-step ${v ? 'active' : ''}" id="step-3">
         <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
           ${tr('Nous vous proposons, si vous le souhaitez et si le pouvez, de participer à créer un buffet gourmand, en apportant votre meilleur dessert !', 'Les proponemos, si lo desean y pueden por supuesto, participar en crear un festín de golosinas, ¡trayendo su mejor postre!')}
         </p>
@@ -416,6 +399,25 @@ renderStep4() {
         </div>
       </div>`;
   },
+
+renderStep4() {
+    const v = this.currentStep === 4;
+    const b = this.guestData.brunch;
+    return `
+      <div class="form-step ${v ? 'active' : ''}" id="step-4">
+        <p style="text-align:center;font-size:16px;font-weight:500;color:var(--text-dark);line-height:1.6;margin-bottom:2rem;">
+          ${tr('Pour faire durer le plaisir, nous vous convions à un brunch le <strong>dimanche 9 mai</strong>, de 9h30 à 13h30 au Domaine de la Scie du May.', 'Para prolongar el placer, os invitamos a un brunch el <strong>domingo 9 de mayo</strong>, de 9:30 a 13:30 en la Finca de la Scie du May.')}
+        </p>
+        <div class="attendance-options">
+          <button type="button" class="choice-btn ${b === true  ? 'selected' : ''}" data-brunch="true"> <span>☕</span> <strong>${tr('Oui, avec plaisir !', '¡Sí, con gusto!')}</strong></button>
+          <button type="button" class="choice-btn ${b === false ? 'selected' : ''}" data-brunch="false"><span>🙏</span> <strong>${tr('Non, merci !', '¡No, gracias!')}</strong></button>
+        </div>
+        <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 2.5rem;">
+          <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
+          <button type="button" class="btn btn--primary next-btn" style="min-width: 140px;">${tr('Suivant', 'Siguiente')}</button>
+        </div>
+      </div>`;
+  },
   
 renderStep5() {
     const v = this.currentStep === 5;
@@ -443,8 +445,8 @@ renderStep5() {
 
         <div id="car-section" class="${isCar ? '' : 'hidden'}">
           <div class="attendance-options">
-            <button type="button" class="choice-btn ${tData.carpoolRole === 'offer' ? 'selected' : ''}" data-role="offer">🙌 ${tr('Je peux proposer des places', 'Puedo ofrecer plazas')}</button>
             <button type="button" class="choice-btn ${tData.carpoolRole === 'none' ? 'selected' : ''}" data-role="none"> 👍 ${tr('Je n\'ai pas de place supplémentaire', 'No tengo plazas adicionales')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'offer' ? 'selected' : ''}" data-role="offer">🙌 ${tr('Je peux proposer des places', 'Puedo ofrecer plazas')}</button>
           </div>
           
           <div id="offer-section" class="${tData.carpoolRole === 'offer' ? '' : 'hidden'}" style="margin-top:16px;">
@@ -477,14 +479,17 @@ renderStep5() {
 
         <div id="other-section" class="${!isCar ? '' : 'hidden'}">
           <div class="attendance-options">
-            <button type="button" class="choice-btn ${tData.carpoolRole === 'need' ? 'selected' : ''}" data-need="need">🙋 ${tr('J\'ai besoin d\'un covoiturage', 'Necesito transporte')}</button>
             <button type="button" class="choice-btn ${tData.carpoolRole === 'none' ? 'selected' : ''}" data-need="none">👌 ${tr('Je me débrouille', 'Me organizo solo')}</button>
+            <button type="button" class="choice-btn ${tData.carpoolRole === 'need' ? 'selected' : ''}" data-need="need">🙋 ${tr('J\'ai besoin d\'un covoiturage', 'Necesito transporte')}</button>
           </div>
           <div id="need-section" class="${tData.carpoolRole === 'need' ? '' : 'hidden'}" style="margin-top:14px;">
             <label style="font-weight:600;margin-bottom:14px;display:block;">${tr('Pour quel(s) trajet(s) avez-vous besoin d\'aide ?', '¿Para qué trayecto(s) necesitas ayuda?')}</label>
             
             <style>
-              .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
+              .switch-row { display: flex; justify-content: flex-start; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 14px; }
+              .switch-row > span:first-child { flex: none; }
+              .switch-status { font-size: 12px; font-weight: 600; color: #9b9b9b; min-width: 28px; }
+              .switch-status.on { color: #4CAF50; }
               .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
               .switch input { opacity: 0; width: 0; height: 0; }
               .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
@@ -496,6 +501,7 @@ renderStep5() {
             <!-- Trajet 1 : Église -->
             <div class="switch-row">
               <span>${tr('Aller à l\'église de Malleval', 'Ir a la iglesia de Malleval')}</span>
+              <span class="switch-status ${n.includes('church') ? 'on' : ''}">${n.includes('church') ? tr('Oui', 'Sí') : tr('Non', 'No')}</span>
               <label class="switch">
                 <input type="checkbox" class="p-need-cb" value="church" ${n.includes('church') ? 'checked' : ''}>
                 <span class="slider"></span>
@@ -514,6 +520,7 @@ renderStep5() {
             <!-- Trajet 2 : Église -> Réception (ON par défaut si non défini) -->
             <div class="switch-row">
               <span>${tr('De l\'église à la Scie du May', 'De la iglesia a la Scie du May')}</span>
+              <span class="switch-status ${((n.length === 0 && tData.carpoolRole === 'need') || n.includes('church-venue')) ? 'on' : ''}">${((n.length === 0 && tData.carpoolRole === 'need') || n.includes('church-venue')) ? tr('Oui', 'Sí') : tr('Non', 'No')}</span>
               <label class="switch">
                 <input type="checkbox" class="p-need-cb" value="church-venue" ${(n.length === 0 && tData.carpoolRole === 'need') || n.includes('church-venue') ? 'checked' : ''}>
                 <span class="slider"></span>
@@ -523,6 +530,7 @@ renderStep5() {
             <!-- Trajet 3 : Couchage -->
             <div class="switch-row">
               <span>${tr('Aller au lieu de couchage (samedi soir)', 'Ir al alojamiento (sábado por la noche)')}</span>
+              <span class="switch-status ${n.includes('night') ? 'on' : ''}">${n.includes('night') ? tr('Oui', 'Sí') : tr('Non', 'No')}</span>
               <label class="switch">
                 <input type="checkbox" class="p-need-cb" value="night" ${n.includes('night') ? 'checked' : ''}>
                 <span class="slider"></span>
@@ -539,6 +547,7 @@ renderStep5() {
             <!-- Trajet 4 : Brunch -->
             <div class="switch-row">
               <span>${tr('Venir au brunch le dimanche', 'Asistir al brunch el domingo')}</span>
+              <span class="switch-status ${n.includes('brunch') ? 'on' : ''}">${n.includes('brunch') ? tr('Oui', 'Sí') : tr('Non', 'No')}</span>
               <label class="switch">
                 <input type="checkbox" class="p-need-cb" value="brunch" ${n.includes('brunch') ? 'checked' : ''}>
                 <span class="slider"></span>
@@ -581,52 +590,29 @@ renderStep6() {
       return s;
     };
 
-    const attLabel = g.attending === true ? tr('Je viens avec joie !', '¡Asistiré con gusto!')
-      : g.attending === 'maybe' ? tr('Je viens peut-être', 'Tal vez asista')
-      : tr('Je ne peux pas venir', 'No podré asistir');
-
-    let transportSummary = tr('Non renseigné', 'No especificado');
-    if (t.mode === 'car') {
-      transportSummary = t.carpoolRole === 'offer'
-        ? tr(`Je propose ${t.seatsAvailable || 1} place(s) depuis ${t.city || '—'}`, `Ofrezco ${t.seatsAvailable || 1} plaza(s) desde ${t.city || '—'}`)
-        : tr('En voiture — pas de place supplémentaire', 'En coche — sin plazas adicionales');
-    } else if (t.mode) {
-      transportSummary = t.carpoolRole === 'need'
-        ? tr('Covoiturage demandé', 'Transporte compartido solicitado')
-        : tr('Je me débrouille par mes propres moyens', 'Me organizo por mi cuenta');
-    }
-
-    const companionsHtml = (g.companions || []).length
-      ? (g.companions || []).map((c, i) => `
-          <div class="recap-row"><span>${this.esc(this.companionLabel(c, i))}</span><span>${c.phone ? '📞 ' + this.esc(c.phone) : '—'}</span></div>
-        `).join('')
-      : `<p class="recap-empty">${tr('Aucun accompagnant', 'Sin acompañantes')}</p>`;
-
     const dietHtml = `
       <div class="recap-row"><span>${tr('Vous', 'Usted')}</span><span>${dietSummary(g.diet, g.allergyDetails)}</span></div>
       ${(g.companions || []).map((c, i) => `<div class="recap-row"><span>${this.esc(this.companionLabel(c, i))}</span><span>${dietSummary(c.diet, c.allergyDetails)}</span></div>`).join('')}
     `;
 
+    const dessertSummary = g.dessert?.participate === true
+      ? tr('Oui, dessert prévu', 'Sí, postre previsto')
+      : g.dessert?.participate === false
+        ? tr('Non', 'No')
+        : tr('Non renseigné', 'No especificado');
+
+    let carpoolSummary = tr('Non renseigné', 'No especificado');
+    if (t.mode === 'car') {
+      carpoolSummary = t.carpoolRole === 'offer' ? tr('Oui, je propose des places', 'Sí, ofrezco plazas') : tr('Non', 'No');
+    } else if (t.mode) {
+      carpoolSummary = t.carpoolRole === 'need' ? tr('Oui, besoin de covoiturage', 'Sí, necesito transporte') : tr('Non', 'No');
+    }
+
     return `
-      <div class="form-step ${v ? 'active' : ''}" id="step-5">
+      <div class="form-step ${v ? 'active' : ''}" id="step-6">
         <p style="text-align:center;font-size:14px;color:#666;margin-bottom:1.2rem;">
           ${tr('Vérifiez que tout est correct avant de confirmer votre réponse.', 'Compruebe que todo sea correcto antes de confirmar su respuesta.')}
         </p>
-
-        <!-- Vos informations -->
-        <div class="recap-section">
-          <h4>👤 ${tr('Vos informations', 'Sus datos')}</h4>
-          <div class="recap-row"><span>${tr('Nom', 'Nombre')}</span><span>${this.esc(g.firstName)} ${this.esc(g.lastName)}</span></div>
-          <div class="recap-row"><span>${tr('Téléphone', 'Teléfono')}</span><span>${this.esc(g.phone)}</span></div>
-          <div class="recap-row"><span>${tr('Présence', 'Asistencia')}</span><span>${attLabel}</span></div>
-        </div>
-
-        <!-- Accompagnants -->
-        ${g.attending === true ? `
-        <div class="recap-section">
-          <h4>👥 ${tr('Accompagnants', 'Acompañantes')}</h4>
-          ${companionsHtml}
-        </div>` : ''}
 
         <!-- Régime alimentaire -->
         ${(g.attending === true || g.attending === 'maybe') ? `
@@ -634,56 +620,24 @@ renderStep6() {
           <h4>🍽️ ${tr('Régime alimentaire', 'Régimen alimentario')}</h4>
           ${dietHtml}
         </div>` : ''}
-		
-        <!-- Buffet gourmand -->
+
+        <!-- Dessert -->
         ${g.attending === true ? `
         <div class="recap-section">
-          <h4>🍰 ${tr('Buffet gourmand', 'Bufé goloso')}</h4>
-          <div class="recap-row">
-            <span>${tr('Réponse', 'Respuesta')}</span>
-            <span>${g.dessert?.participate === true ? tr('Oui, je participe', 'Sí, participo') : g.dessert?.participate === false ? tr('Non, difficile pour moi', 'No, es difícil') : '—'}</span>
-          </div>
-          ${g.dessert?.participate === true ? (
-            g.dessert?.isSurprise === true || g.dessert?.isSurprise === 'true' ? `
-              <div class="recap-row">
-                <span>${tr('Dessert', 'Postre')}</span>
-                <span>${tr('Surprise, je répondrai plus tard !', '¡Sorpresa, responderé más tarde!')}</span>
-              </div>
-            ` : `
-              <div class="recap-row">
-                <span>${tr('Dessert', 'Postre')}</span>
-                <span>${this.esc(g.dessert.type) || '—'} (${this.esc(g.dessert.portions) || '?'} parts)</span>
-              </div>
-              <div class="recap-row">
-                <span>${tr('Au frais', 'En frío')}</span>
-                <span>${g.dessert.fridge === 'yes' ? tr('Oui', 'Sí') : g.dessert.fridge === 'no' ? tr('Non', 'No') : tr('Surprise', 'Sorpresa')}</span>
-              </div>
-            `
-          ) : ''}
+          <h4>🍰 ${tr('Dessert', 'Postre')}</h4>
+          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${dessertSummary}</span></div>
         </div>` : ''}
 
-        <!-- Brunch du dimanche -->
-        ${(g.attending === true || g.attending === 'maybe') ? `
-        <div class="recap-section">
-          <h4>☕ ${tr('Brunch du dimanche', 'Brunch del domingo')}</h4>
-          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${g.brunch === true ? tr('Oui, avec plaisir !', '¡Sí, con gusto!') : g.brunch === false ? tr('Non, merci', 'No, gracias') : '—'}</span></div>
-        </div>` : ''}
-
-        <!-- Transport -->
+        <!-- Covoiturage -->
         ${g.attending === true ? `
         <div class="recap-section">
-          <h4>🚗 ${tr('Transport', 'Transporte')}</h4>
-          <div class="recap-row"><span>${tr('Résumé', 'Resumen')}</span><span>${transportSummary}</span></div>
+          <h4>🚗 ${tr('Covoiturage', 'Transporte compartido')}</h4>
+          <div class="recap-row"><span>${tr('Réponse', 'Respuesta')}</span><span>${carpoolSummary}</span></div>
         </div>` : ''}
-
-        <p style="font-size:13px;color:#777;text-align:center;font-style:italic;margin-top:14px;">
-          ${tr('Besoin d\'un hébergement ?', '¿Necesita alojamiento?')}
-          <a href="#/hebergements" style="color:#9b8660;">${tr('Voir la liste des hébergements →', 'Ver la lista de alojamientos →')}</a>
-        </p>
 
         <div class="form-actions" style="justify-content: center; gap: 20px; margin-top: 1.5rem;">
           <button type="button" class="btn btn--secondary prev-btn" style="min-width: 140px;">${tr('Précédent', 'Anterior')}</button>
-          <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 140px;">${tr('Confirmer ✓', 'Confirmar ✓')}</button>
+          <button type="button" class="btn btn--primary next-btn" id="final-submit-btn" style="min-width: 180px;">${tr('Confirmer ma réponse', 'Confirmar mi respuesta')}</button>
         </div>
       </div>`;
   },
@@ -706,13 +660,13 @@ renderStep6() {
           this.guestData.dessert.participate = d.dessert === 'true';
         }
 
-        // Choix "Je viens accompagné(e) : Oui / Non"
+        // Choix "Je viens accompagné(e) : Oui / Peut-être / Non"
         if (d.hasCompanions !== undefined) {
-          this.guestData.hasCompanions = d.hasCompanions === 'true';
-          if (this.guestData.hasCompanions && this.guestData.companions.length === 0) {
+          this.guestData.hasCompanions = d.hasCompanions === 'true' ? true : d.hasCompanions === 'maybe' ? 'maybe' : false;
+          if ((this.guestData.hasCompanions === true || this.guestData.hasCompanions === 'maybe') && this.guestData.companions.length === 0) {
             this.guestData.companions.push({ firstName: '', lastName: '', phone: '', diet: [], allergyDetails: '' });
           }
-          if (!this.guestData.hasCompanions) {
+          if (this.guestData.hasCompanions === false) {
             this.guestData.companions = [];
           }
         }
@@ -766,6 +720,11 @@ renderStep6() {
 
     this.container.querySelectorAll('.p-need-cb').forEach(cb => {
       cb.addEventListener('change', (e) => {
+        const statusEl = e.target.closest('.switch-row')?.querySelector('.switch-status');
+        if (statusEl) {
+          statusEl.textContent = e.target.checked ? tr('Oui', 'Sí') : tr('Non', 'No');
+          statusEl.classList.toggle('on', e.target.checked);
+        }
         if (e.target.value === 'church') {
           const churchOpts = this.container.querySelector('#church-options');
           if (churchOpts) churchOpts.classList.toggle('hidden', !e.target.checked);
@@ -822,17 +781,6 @@ renderStep6() {
     
 	// AJOUT : Sauvegarde des champs du Buffet Gourmand (Étape 3)
     if (this.currentStep === 3) {
-      if (this.guestData.dessert && this.guestData.dessert.participate === true) {
-        const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
-        this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
-        
-        this.guestData.dessert.type = (document.getElementById('d-type')?.value || '').trim();
-        this.guestData.dessert.portions = (document.getElementById('d-portions')?.value || '').trim();
-        this.guestData.dessert.fridge = this.container.querySelector('input[name="d-fridge"]:checked')?.value || null;
-      }
-    }
-	
-	if (this.currentStep === 4) {
       if (this.guestData.dessert && this.guestData.dessert.participate === true) {
         const surpriseRadio = this.container.querySelector('input[name="d-isSurprise"]:checked');
         this.guestData.dessert.isSurprise = surpriseRadio ? surpriseRadio.value === 'true' : true;
@@ -909,12 +857,12 @@ renderStep6() {
       if (this.guestData.attending === null) { Animations.showToast("Veuillez indiquer votre présence", "error"); return false; }
       if (this.guestData.attending === true && !this.guestData.companions.every(c => c.name.trim())) { Animations.showToast("Veuillez renseigner les noms", "error"); return false; }
     }
-    if (this.currentStep === 2 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
+    if (this.currentStep === 4 && (this.guestData.attending === true || this.guestData.attending === 'maybe') && this.guestData.brunch === null) {
       Animations.showToast("Veuillez indiquer pour le brunch", "error"); return false;
     }
     
     // AJOUT : Vérification du dessert si l'utilisateur dit "Je sais ce que je vais apporter"
-    if (this.currentStep === 4 && this.guestData.dessert?.participate === true && this.guestData.dessert?.isSurprise === false) {
+    if (this.currentStep === 3 && this.guestData.dessert?.participate === true && this.guestData.dessert?.isSurprise === false) {
       if (!this.guestData.dessert.type || !this.guestData.dessert.portions) { 
         Animations.showToast("Veuillez préciser le type de dessert et le nombre de parts", "error"); return false; 
       }

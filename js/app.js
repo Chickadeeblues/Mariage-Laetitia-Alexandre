@@ -48,9 +48,9 @@ const ROUTES = {
 // ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('╔══════════════════════════════════════════╗');
-  console.log('║  💍 Mariage Laetitia & Alexandre         ║');
-  console.log('║  📅 8 mai 2027                           ║');
-  console.log('║  📍 Domaine de la Scie du May            ║');
+  console.log('║  Mariage Laetitia & Alexandre         ║');
+  console.log('║  8 mai 2027                           ║');
+  console.log('║  Domaine de la Scie du May            ║');
   console.log('╚══════════════════════════════════════════╝');
   await Store.init();
   
