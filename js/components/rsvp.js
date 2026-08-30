@@ -693,7 +693,7 @@ renderStep6() {
     this.container.querySelectorAll('.prev-btn').forEach(btn => btn.addEventListener('click', () => this.handlePrev()));
 
     // AJOUT : [data-dessert] dans la liste des boutons écoutés
-    this.container.querySelectorAll('[data-val], [data-brunch], [data-acc], [data-dessert]').forEach(btn => {
+    this.container.querySelectorAll('[data-val], [data-brunch], [data-acc], [data-dessert], [data-has-companions]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const d = e.currentTarget.dataset;
         if (d.val) this.guestData.attending = d.val === 'true' ? true : d.val === 'false' ? false : 'maybe';
@@ -704,6 +704,17 @@ renderStep6() {
         if (d.dessert) {
           this.guestData.dessert = this.guestData.dessert || {};
           this.guestData.dessert.participate = d.dessert === 'true';
+        }
+
+        // Choix "Je viens accompagné(e) : Oui / Non"
+        if (d.hasCompanions !== undefined) {
+          this.guestData.hasCompanions = d.hasCompanions === 'true';
+          if (this.guestData.hasCompanions && this.guestData.companions.length === 0) {
+            this.guestData.companions.push({ firstName: '', lastName: '', phone: '', diet: [], allergyDetails: '' });
+          }
+          if (!this.guestData.hasCompanions) {
+            this.guestData.companions = [];
+          }
         }
         
         this.saveCurrentStepData();
