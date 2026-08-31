@@ -18,7 +18,7 @@
 
   /* Text */
   --text-dark: #2C2C2C;
-  --text-muted: #6B6B6B;
+  --text-muted: #555555;
 
   /* Typography */
   --font-playfair: 'Playfair Display', Georgia, serif; /* Exclusif L&A et Prénoms */
@@ -53,7 +53,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 16px;
+  font-size: 17px; /* Augmentation globale de la taille de texte de base */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -104,30 +104,31 @@ input, select, textarea, button {
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--text-dark);
 }
 
 h1 {
-  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-size: clamp(2.5rem, 6vw, 4.8rem);
   letter-spacing: -0.02em;
 }
 
 h2 {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.9rem, 4vw, 3rem);
   letter-spacing: -0.01em;
 }
 
 h3 {
-  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
 }
 
 h4 {
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
 }
 
 p {
-  margin-bottom: 0.5em;
+  margin-bottom: 0.6em;
+  font-size: 1.05rem;
 }
 
 /* ===================== CONTAINER ===================== */
@@ -152,7 +153,7 @@ p {
 
 .nav__logo {
   font-family: var(--font-playfair);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--sage);
   letter-spacing: 0.01em;
@@ -176,13 +177,13 @@ p {
 .nav__links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
  
 .nav__link {
   position: relative;
-  padding: 8px 12px;
-  font-size: 0.88rem;
+  padding: 8px 14px;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-dark);
   font-family: var(--font-body);
@@ -193,7 +194,7 @@ p {
 .nav__link::after {
   content: '';
   position: absolute;
-  bottom: 2px; left: 12px; right: 12px;
+  bottom: 2px; left: 14px; right: 14px;
   height: 2px;
   background: var(--gold);
   border-radius: 1px;
@@ -209,10 +210,10 @@ p {
 .nav__link.active::after { transform: scaleX(1); }
  
 .nav__admin-link {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 400;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.6;
   padding: 6px 10px;
   transition: opacity 0.2s, color 0.2s;
 }
@@ -237,18 +238,16 @@ p {
   z-index: 200;
 }
  
-/* Desktop : hover */
 @media (min-width: 769px) {
   .nav__dropdown:hover .nav__dropdown-menu { display: block; }
 }
  
-/* Mobile : classe .open */
 .nav__dropdown.open .nav__dropdown-menu { display: block; }
  
 .nav__dropdown-item {
   display: block;
   padding: 10px 18px;
-  font-size: 14px;
+  font-size: 0.95rem;
   color: #444;
   font-family: var(--font-body);
   text-decoration: none;
@@ -257,8 +256,8 @@ p {
 .nav__dropdown-item:hover { background: #fdfaf5; color: var(--forest); }
  
 .nav__caret {
-  font-size: 10px;
-  margin-left: 3px;
+  font-size: 11px;
+  margin-left: 4px;
   display: inline-block;
   transition: transform 0.2s;
 }
@@ -298,14 +297,13 @@ p {
   .nav__hamburger { display: flex; }
  
   .nav__links {
-    /* Menu fermé : caché */
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: #FAF8F5; /* OPAQUE — pas de backdrop-filter */
+    background: #FAF8F5;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     z-index: 1005;
     opacity: 0;
     visibility: hidden;
@@ -322,7 +320,7 @@ p {
   }
  
   .nav__link {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-family: var(--font-display);
     padding: 12px 24px;
     width: 100%;
@@ -331,11 +329,10 @@ p {
  
   .nav__admin-link {
     margin-top: 12px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     opacity: 0.6;
   }
  
-  /* Dropdown dans le menu mobile : en liste statique */
   .nav__dropdown {
     width: 100%;
     text-align: center;
@@ -352,14 +349,13 @@ p {
     box-shadow: none;
     background: rgba(45, 90, 61, 0.05);
     border-radius: 8px;
-    padding: 4px 0;
+    padding: 6px 0;
     margin: 4px 0 8px;
-    /* Toujours visible sur mobile quand le menu est ouvert */
     display: block;
   }
  
   .nav__dropdown-item {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-family: var(--font-display);
     padding: 10px 16px;
     text-align: center;
@@ -385,24 +381,7 @@ p {
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
-  min-height: calc(100vh - var(--nav-height)) !important;
-  padding-top: 30px !important;
-  padding-bottom: 40px !important;
-  margin-top: var(--nav-height) !important;
-  
-  /* CORRECTION : On utilise var(--cream) au lieu de --cream-light pour fusionner avec le reste du site */
-  background-color: var(--cream) !important; 
-  overflow-y: auto !important;
-}
-/* ===================== HERO (HOME) ===================== */
-#page-home.page.active {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
   min-height: 100vh !important;
-  
-  /* PROTECTION ANTI-CHEVAUCHEMENT : 72px de menu + 30px de respiration */
   padding-top: calc(72px + 30px) !important; 
   padding-bottom: 40px !important;
   margin-top: 0 !important;
@@ -426,8 +405,8 @@ p {
 
 .hero__prelude {
   font-family: var(--font-body);
-  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
-  font-weight: 300;
+  font-size: clamp(0.88rem, 1.8vw, 1.05rem);
+  font-weight: 400;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.20em;
@@ -437,7 +416,6 @@ p {
 
 .hero__title { margin: 0; font-weight: 400; }
 
-/* PRÉNOMS & BALAYAGE DORÉ */
 .hero__names {
   display: flex !important;
   flex-direction: column !important;
@@ -445,7 +423,7 @@ p {
   justify-content: center !important;
   line-height: 1.1 !important;
   font-family: var(--font-playfair);
-  font-size: clamp(2.2rem, 7vw, 4rem) !important;
+  font-size: clamp(2.4rem, 7vw, 4.2rem) !important;
   font-weight: 400 !important;
   letter-spacing: 0.03em;
   
@@ -457,7 +435,6 @@ p {
   animation: shimmerText 6s ease-in-out infinite;
 }
 
-/* CORRECTION : On ajoute .hero-ampersand-stacked pour vaincre le JavaScript ! */
 .hero__names .hero__ampersand,
 .hero__names .hero-ampersand-stacked,
 span.hero__ampersand,
@@ -466,7 +443,7 @@ span.hero-ampersand-stacked,
   display: inline-block !important;
   font-family: var(--font-display) !important;
   font-style: italic !important;
-  font-size: clamp(1.1rem, 3vw, 1.8rem) !important; /* Strictement plus petit que les prénoms */
+  font-size: clamp(1.2rem, 3vw, 2rem) !important;
   font-weight: 400 !important;
   color: var(--gold-light) !important;
   
@@ -479,27 +456,25 @@ span.hero-ampersand-stacked,
   line-height: 1 !important;
 }
 
-/* Style du RSVP aligné sur les boutons (280px) */
 .hero__rsvp {
   font-family: var(--font-body) !important;
-  font-size: 0.85rem !important; /* Taille de base lisible */
-  color: var(--text-muted) !important; /* Même couleur que le prélude */
+  font-size: 0.95rem !important;
+  color: var(--text-muted) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important; /* Espacement réduit pour la lisibilité */
+  letter-spacing: 0.05em !important;
   margin: 20px auto 15px auto !important;
   text-align: center !important;
   width: 100% !important;
-  max-width: 280px !important; /* Aligné sur les boutons */
+  max-width: 280px !important;
   line-height: 1.4 !important;
 }
 
-/* Mise en gras sélective de la date */
 .hero__rsvp b, .hero__rsvp strong {
-  font-weight: 500 !important; /* Très léger gras */
+  font-weight: 600 !important;
 }
 
 .hero__body-split {
-  margin: 8px auto 0 !important;
+  margin: 12px auto 0 !important;
   gap: 12px !important;
   width: 100%;
   display: flex !important;
@@ -509,7 +484,7 @@ span.hero-ampersand-stacked,
 
 .hero__details {
   font-family: var(--font-body);
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-size: clamp(1rem, 2vw, 1.2rem);
   color: var(--text-dark);
   line-height: 1.5;
   margin: 0 !important;
@@ -517,7 +492,7 @@ span.hero-ampersand-stacked,
 
 .hero__date {
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-size: clamp(1.3rem, 2.5vw, 1.7rem);
   font-weight: 400;
   color: var(--text-dark);
   letter-spacing: 0.08em;
@@ -527,13 +502,12 @@ span.hero-ampersand-stacked,
 .hero__date-icon {
   display: inline-block;
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   vertical-align: middle;
   margin: 0 10px;
   opacity: 0.9;
 }
 
-/* EMPILEMENT ET ALIGNEMENT DES 3 BOUTONS */
 .hero__actions,
 .hero__actions > div {
   display: flex !important;
@@ -564,7 +538,7 @@ span.hero-ampersand-stacked,
   background: transparent !important;
   color: var(--forest) !important;
   border: 1.5px solid var(--sage-light) !important;
-  font-size: 0.82rem !important;
+  font-size: 0.9rem !important;
 }
 
 .hero__actions .btn--outline:hover {
@@ -575,38 +549,6 @@ span.hero-ampersand-stacked,
   box-shadow: 0 4px 12px rgba(156, 175, 136, 0.15) !important;
 }
 
-.hero__date {
-  font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
-  font-weight: 400;
-  color: var(--text-dark);
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
-}
-
-.hero__date-icon {
-  display: inline-block;
-  color: var(--gold);
-  font-size: 0.75rem;
-  vertical-align: middle;
-  margin: 0 10px;
-  opacity: 0.9;
-}
-
-.hero__body-split {
-  margin: 12px auto 0 !important; /* Légèrement réduit pour compacter l'ensemble */
-  gap: 12px !important; /* Gaps harmonisés */
-}
-
-.hero__details {
-  font-family: var(--font-body);
-  font-size: clamp(0.95rem, 2vw, 1.1rem); /* Fluide et lisible sur tous les écrans */
-  color: var(--text-dark);
-  line-height: 1.5;
-  margin: 0 !important;
-}
-
-
 /* ===================== DESIGN SYSTEM DES BOUTONS ===================== */
 .btn, .btn--secondary {
   display: inline-flex;
@@ -615,8 +557,8 @@ span.hero-ampersand-stacked,
   gap: 8px;
   padding: 14px 32px;
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 600; /* Un peu plus d'épaisseur pour le raffinement */
+  font-size: 0.95rem;
+  font-weight: 600;
   border-radius: var(--radius-sm);
   border: 1.5px solid transparent;
   cursor: pointer;
@@ -627,7 +569,7 @@ span.hero-ampersand-stacked,
     transform var(--transition),
     box-shadow var(--transition);
   letter-spacing: 0.06em;
-  text-transform: uppercase; /* Rendu "faire-part chic" haut de gamme */
+  text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
 }
@@ -636,7 +578,6 @@ span.hero-ampersand-stacked,
   transform: scale(0.98) !important;
 }
 
-/* 1. Déclinaison VERT (Vert sapin forêt profond) */
 .btn--primary {
   background: var(--forest);
   color: var(--white) !important;
@@ -645,13 +586,12 @@ span.hero-ampersand-stacked,
 }
 
 .btn--primary:hover {
-  background: #20412c; /* Légèrement plus sombre */
+  background: #20412c;
   border-color: #20412c;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(45, 90, 61, 0.25);
 }
 
-/* 2. Déclinaison SAUGE (Vert sauge doux signature) */
 .btn--secondary, .btn--sage {
   background: var(--sage) !important;
   color: var(--white) !important;
@@ -666,7 +606,6 @@ span.hero-ampersand-stacked,
   box-shadow: 0 6px 20px rgba(122, 139, 105, 0.25);
 }
 
-/* 3. Déclinaison CRÈME (Épuré, lumineux et doux) */
 .btn--cream, .btn--outline {
   background: var(--cream-light) !important;
   color: var(--forest) !important;
@@ -682,7 +621,6 @@ span.hero-ampersand-stacked,
   box-shadow: 0 6px 16px rgba(156, 175, 136, 0.15);
 }
 
-/* 4. Déclinaison DORÉE (Prestigieux éclat d'or) */
 .btn--gold {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
   color: var(--text-dark) !important;
@@ -696,9 +634,8 @@ span.hero-ampersand-stacked,
   box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3);
 }
 
-/* --- Utilitaires conservés --- */
 .btn--full { width: 100%; }
-.btn--sm { padding: 8px 18px; font-size: 0.82rem; }
+.btn--sm { padding: 10px 20px; font-size: 0.88rem; }
 .btn--danger { background: #d94f4f; color: var(--white); border-color: #d94f4f; }
 .btn--danger:hover { background: #c03e3e; transform: translateY(-2px); }
 
@@ -720,7 +657,7 @@ span.hero-ampersand-stacked,
   transform: translate(-50%, -50%);
   background: var(--cream);
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   padding: 0 12px;
 }
 
@@ -745,7 +682,6 @@ span.hero-ampersand-stacked,
   background: linear-gradient(270deg, transparent, var(--gold));
 }
 
-
 /* ===================== SECTION HEADER ===================== */
 .section-header {
   text-align: center;
@@ -761,11 +697,9 @@ span.hero-ampersand-stacked,
   max-width: 600px;
   margin: 0 auto;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   line-height: 1.7;
 }
-
-
 
 /* ===================== CARDS ===================== */
 .card {
@@ -793,20 +727,19 @@ span.hero-ampersand-stacked,
   box-shadow: var(--shadow-md);
 }
 
-
 /* ===================== FORMS ===================== */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .form-group label {
   display: block;
   font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 0.88rem;
+  font-weight: 600;
+  font-size: 0.9rem;
   color: var(--forest);
-  margin-bottom: 6px;
-  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
 }
 
 .form-group input,
@@ -818,7 +751,7 @@ span.hero-ampersand-stacked,
   border-radius: var(--radius-sm);
   background: var(--white);
   color: var(--text-dark);
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.5;
   transition:
     border-color var(--transition),
@@ -856,14 +789,14 @@ span.hero-ampersand-stacked,
 
 .form-error {
   color: #d94f4f;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   margin-top: 6px;
   font-weight: 400;
 }
 
 .form-success {
   color: var(--forest);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   margin-top: 6px;
   font-weight: 500;
 }
@@ -888,15 +821,15 @@ span.hero-ampersand-stacked,
 }
 
 .step-dot {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   background: var(--cream);
   color: var(--text-muted);
   border: 2px solid #e0ddd8;
@@ -950,7 +883,7 @@ span.hero-ampersand-stacked,
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
 }
 
 .checkbox-label:hover,
@@ -979,17 +912,17 @@ span.hero-ampersand-stacked,
   background: rgba(156, 175, 136, 0.08);
 }
 
-
 /* ===================== BADGES ===================== */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 600;
   border-radius: 100px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -1033,7 +966,6 @@ span.hero-ampersand-stacked,
   color: #3366aa;
 }
 
-
 /* ===================== STAT CARDS ===================== */
 .stat-card {
   background: var(--white);
@@ -1055,8 +987,9 @@ span.hero-ampersand-stacked,
 
 .stat-card__number {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 600;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  font-weight: 700;
+  font-style: italic;
   line-height: 1;
   color: var(--forest);
 }
@@ -1075,13 +1008,12 @@ span.hero-ampersand-stacked,
 
 .stat-card__label {
   font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 400;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
-
 
 /* ===================== LEAFLET MAP ===================== */
 #map-container {
@@ -1101,13 +1033,13 @@ span.hero-ampersand-stacked,
 
 .leaflet-popup-content {
   margin: 12px 16px !important;
-  font-size: 0.88rem !important;
+  font-size: 0.95rem !important;
   line-height: 1.5 !important;
 }
 
 .leaflet-popup-content h4 {
   font-family: var(--font-display) !important;
-  font-size: 1.1rem !important;
+  font-size: 1.2rem !important;
   color: var(--forest) !important;
   margin-bottom: 4px !important;
 }
@@ -1122,7 +1054,6 @@ span.hero-ampersand-stacked,
   gap: 24px;
   margin-top: 32px;
 }
-
 
 /* ===================== COVOITURAGE ===================== */
 .carpool-list {
@@ -1163,13 +1094,13 @@ span.hero-ampersand-stacked,
 }
 
 .carpool-card__icon {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
 .carpool-card--offer .carpool-card__icon {
@@ -1184,8 +1115,8 @@ span.hero-ampersand-stacked,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.88rem;
-  color: var(--text-muted);
+  font-size: 0.95rem;
+  color: var(--text-dark);
 }
 
 .carpool-card__actions {
@@ -1193,7 +1124,6 @@ span.hero-ampersand-stacked,
   display: flex;
   gap: 8px;
 }
-
 
 /* ===================== ADMIN ===================== */
 .admin-login-wrapper {
@@ -1255,7 +1185,7 @@ span.hero-ampersand-stacked,
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
 }
 
 .admin-table thead {
@@ -1265,7 +1195,7 @@ span.hero-ampersand-stacked,
 .admin-table th {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
@@ -1297,7 +1227,6 @@ span.hero-ampersand-stacked,
   border-radius: var(--radius-md);
 }
 
-
 /* ===================== TOAST / NOTIFICATIONS ===================== */
 #toast-container {
   position: fixed;
@@ -1316,7 +1245,7 @@ span.hero-ampersand-stacked,
   padding: 14px 24px;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 500;
   pointer-events: auto;
   display: flex;
@@ -1355,15 +1284,10 @@ span.hero-ampersand-stacked,
   animation: slideOutRight 0.3s ease forwards;
 }
 
-
 /* ===================== ANIMATIONS ===================== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
@@ -1411,48 +1335,29 @@ span.hero-ampersand-stacked,
 }
 
 @keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.04);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
 @keyframes shimmerText {
-  0% {
-    background-position: 200% center;
-  }
-  100% {
-    background-position: -200% center;
-  }
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 
 @keyframes toastTimer {
-  from {
-    width: 100%;
-  }
-  to {
-    width: 0%;
-  }
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* Scroll animations */
 .animate-on-scroll {
   opacity: 0;
   transform: translateY(24px);
@@ -1466,23 +1371,11 @@ span.hero-ampersand-stacked,
   transform: translateY(0);
 }
 
-.animate-on-scroll:nth-child(2) {
-  transition-delay: 0.1s;
-}
+.animate-on-scroll:nth-child(2) { transition-delay: 0.1s; }
+.animate-on-scroll:nth-child(3) { transition-delay: 0.2s; }
+.animate-on-scroll:nth-child(4) { transition-delay: 0.3s; }
+.animate-on-scroll:nth-child(5) { transition-delay: 0.4s; }
 
-.animate-on-scroll:nth-child(3) {
-  transition-delay: 0.2s;
-}
-
-.animate-on-scroll:nth-child(4) {
-  transition-delay: 0.3s;
-}
-
-.animate-on-scroll:nth-child(5) {
-  transition-delay: 0.4s;
-}
-
-/* Loading shimmer */
 .loading-shimmer {
   background: linear-gradient(90deg,
     var(--cream) 25%,
@@ -1494,7 +1387,6 @@ span.hero-ampersand-stacked,
   border-radius: var(--radius-sm);
 }
 
-/* Spinner */
 .spinner {
   width: 32px;
   height: 32px;
@@ -1504,7 +1396,6 @@ span.hero-ampersand-stacked,
   animation: spin 0.7s linear infinite;
   margin: 40px auto;
 }
-
 
 /* ===================== SCROLLBAR ===================== */
 ::-webkit-scrollbar {
@@ -1526,7 +1417,6 @@ span.hero-ampersand-stacked,
   background: var(--forest);
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--sage) var(--cream);
@@ -1535,7 +1425,7 @@ span.hero-ampersand-stacked,
 /* ── Labels formulaires ── */
 .form-group label {
   font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1545,7 +1435,7 @@ span.hero-ampersand-stacked,
 /* ── Cubes info ── */
 .info-card__title {
   font-family: var(--font-display);
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 400;
   font-style: italic;
   color: var(--forest);
@@ -1553,7 +1443,7 @@ span.hero-ampersand-stacked,
  
 .info-card__desc {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 0.88rem;
   font-weight: 300;
   color: var(--text-muted);
 }
@@ -1565,54 +1455,26 @@ span.hero-ampersand-stacked,
   color: var(--forest);
 }
  
-/* Ornement sous les titres de section */
 .section-header .ornament {
   margin: 12px auto 20px;
 }
- 
-/* ── Cards & stat ── */
-.stat-card__number {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-style: italic;
-}
- 
-.stat-card__label {
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
- 
-/* ── Badges ── */
-.badge {
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 
 /* GESTION FORMAT TELEPHONE - PETIT ECRAN */
-
 @media (max-width: 480px) {
-  /* On agrandit légèrement les éléments du Hero pour le mobile */
   .hero__prelude {
-    font-size: 0.9rem !important; /* Un peu plus grand que 0.8rem */
+    font-size: 0.95rem !important;
     letter-spacing: 0.15em !important;
   }
 
   .hero__names {
-    font-size: clamp(2.5rem, 10vw, 3rem) !important; /* Plus imposant sur petit écran */
+    font-size: clamp(2.5rem, 10vw, 3rem) !important;
   }
 
   .hero__rsvp {
-    font-size: 0.9rem !important; /* Plus lisible sur téléphone */
+    font-size: 0.95rem !important;
     padding: 0 15px !important;
   }
   
-  /* On redonne un peu de souffle vertical */
   #page-home.page.active {
     padding-top: 100px !important;
   }
