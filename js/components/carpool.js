@@ -181,13 +181,13 @@ const Carpool = {
       <!-- En-tête : Boutons à gauche, Tableau récapitulatif à droite -->
       <div class="carpool-top-layout" style="display: flex; justify-content: space-between; align-items: stretch; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;">
         
-        <!-- Partie Gauche : Boutons de sélection -->
-        <div class="carpool-left-panel" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-width: 250px;">
-          <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request">
-            Demander un covoiturage
+      <!-- Partie Gauche : Boutons de sélection -->
+        <div class="carpool-left-panel" style="display: flex; flex-direction: row; gap: 0.5rem; flex: 2; min-width: 250px;">
+          <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request" style="flex: 1; padding: 0.75rem 0.5rem;">
+            Demander
           </button>
-          <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer">
-            Proposer un covoiturage
+          <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer" style="flex: 1; padding: 0.75rem 0.5rem;">
+            Proposer
           </button>
         </div>
 
@@ -287,13 +287,6 @@ const Carpool = {
           </div>
         </div>
       </div>
-
-      <!-- Appel à l'action -->
-      <div class="carpool-cta">
-        <button class="btn btn-primary" id="carpool-cta-btn">
-          Proposer ou chercher un covoiturage
-        </button>
-      </div>
     `;
 
     this._attachListeners();
@@ -316,7 +309,8 @@ const Carpool = {
           <div class="carpool-card-info">
             <h4 class="carpool-card-name">${driver.name}</h4>
             <p class="carpool-card-route">
-              Depuis <strong>${driver.city}</strong> Le <strong>${formattedDate}${timeStr}</strong>
+              Depuis <strong>${passenger.city}</strong><br/>
+              Le <strong>${formattedDate}</strong>
             </p>
           </div>
           <div class="carpool-seats-badge-container">

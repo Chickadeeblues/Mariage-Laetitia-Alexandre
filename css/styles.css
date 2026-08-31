@@ -1488,3 +1488,31 @@ span.hero-ampersand-stacked,
 .revealed .blur-effect {
   filter: blur(0px);
 }
+
+.column-count {
+        background: var(--sage);
+        color: #fff;
+        font-size: 0.95rem; /* Légèrement agrandi */
+        font-weight: 800; /* Plus gras */
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        box-shadow: 1px 2px 5px rgba(0,0,0,0.25); /* Ombre ajoutée */
+      }
+
+      /* ... un peu plus bas ... */
+
+      .carpool-card-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start; /* Ancre le contenu (et le badge) en haut plutôt qu'au centre */
+        gap: 1rem;
+      }
+      
+      /* ... un peu plus bas ... */
+      
+      .carpool-card-route {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.4; /* Ajouté pour aérer les deux lignes */
+      }
