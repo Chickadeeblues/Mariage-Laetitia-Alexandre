@@ -180,7 +180,7 @@ const Carpool = {
     this._elements.container.innerHTML = `
       <!-- Tableau récapitulatif : boutons Demander/Proposer désormais rendus par _renderTopBarActions() dans #htg-carpool-actions -->
       <div class="carpool-top-layout" style="margin-bottom: 2rem;">
-        <div class="carpool-stats" style="width: 100%; height: 68px; box-sizing: border-box;">
+        <div class="carpool-stats" style="width: 100%; height: 78px; box-sizing: border-box;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -595,7 +595,7 @@ const Carpool = {
         gap: 3rem;
         flex-wrap: nowrap;
         margin-bottom: 2rem;
-        padding: 8px 1.5rem;
+        padding: 12px 1.5rem;
         background: linear-gradient(135deg, rgba(45, 90, 61, 0.04), rgba(156, 175, 136, 0.08));
         border-radius: var(--radius-lg);
         border: 1px solid rgba(156, 175, 136, 0.15);
