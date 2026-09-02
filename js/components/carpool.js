@@ -180,7 +180,7 @@ const Carpool = {
     this._elements.container.innerHTML = `
       <!-- Tableau récapitulatif : boutons Demander/Proposer désormais rendus par _renderTopBarActions() dans #htg-carpool-actions -->
       <div class="carpool-top-layout" style="margin-bottom: 2rem;">
-        <div class="carpool-stats" style="width: 100%; height: 78px; box-sizing: border-box;">
+        <div class="carpool-stats" style="width: 100%; height: 82px; box-sizing: border-box;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -208,6 +208,7 @@ const Carpool = {
         <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
           
           <!-- Jour de départ : pop-up calendrier natif, limité à mai 2027 -->
+		  <label>Date et heure</label>
           <div class="form-group" style="flex: 1; min-width: 180px;">
             <input type="text" id="carpool-day" class="form-control" placeholder="Date" min="2027-05-01" max="2027-05-31" style="text-align: center;" onfocus="(this.type='date')" onblur="(this.value === '' ? this.type='text' : this.type='date')">
           </div>
