@@ -179,8 +179,8 @@ const Carpool = {
 
     this._elements.container.innerHTML = `
       <!-- Tableau récapitulatif : boutons Demander/Proposer désormais rendus par _renderTopBarActions() dans #htg-carpool-actions -->
-      <div class="carpool-top-layout" style="display: flex; justify-content: center; margin-bottom: 2rem;">
-        <div class="carpool-stats" style="max-width: 480px; width: 100%;">
+      <div class="carpool-top-layout" style="margin-bottom: 2rem;">
+        <div class="carpool-stats" style="width: 100%; min-height: 68px; box-sizing: border-box;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -196,38 +196,32 @@ const Carpool = {
       <!-- Formulaire global : Toute la largeur de la page -->
       <div id="carpool-right-panel" class="carpool-right-panel" style="display: none; background: var(--white); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid rgba(156, 175, 136, 0.2); box-shadow: var(--shadow-sm); margin-bottom: 2.5rem;">
         
-        <!-- Ville de départ ou Case à cocher Gare -->
+        <!-- Ville de départ, puis Gare TER en dessous -->
         <div class="form-group" style="margin-bottom: 1.25rem;">
           <label>Ville de départ</label>
-          <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
-            <input type="text" id="carpool-city" class="form-control" placeholder="Ex: Lyon..." style="flex: 2; min-width: 200px;" />
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; color: var(--forest); flex: 1; min-width: 220px;">
-              <input type="checkbox" id="carpool-station-checkbox" /> Gare TER Péage-de-Roussillon
-            </label>
-          </div>
+          <input type="text" id="carpool-city" class="form-control" placeholder="Ex: Lyon..." style="width: 100%; box-sizing: border-box; margin-bottom: 0.6rem;" />
+          <label id="carpool-station-row" style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; color: var(--forest);">
+            <input type="checkbox" id="carpool-station-checkbox" /> Gare TER Péage-de-Roussillon
+          </label>
         </div>
 
         <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
           
-          <!-- Jour de départ (Indicateur intégré) -->
+          <!-- Jour de départ : pop-up calendrier natif, limité à mai 2027 -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
-            <select id="carpool-day" class="form-control carpool-placeholder-select" style="text-align: center; text-align-last: center;">
-              <option value="2027-05-06">6 mai 2027 (jeudi)</option>
-              <option value="2027-05-07">7 mai 2027 (vendredi)</option>
-              <option value="2027-05-08">8 mai 2027 (samedi)</option>
-            </select>
+            <input type="text" id="carpool-day" class="form-control" placeholder="Date" min="2027-05-01" max="2027-05-31" style="text-align: center;" onfocus="(this.type='date')" onblur="(this.value === '' ? this.type='text' : this.type='date')">
           </div>
 
-          <!-- Heure de départ (Indicateur intégré + Déclencheur d'horloge) -->
+          <!-- Heure de départ : pop-up horloge natif (format 24h France) -->
           <div class="form-group" style="flex: 1; min-width: 180px;">
-            <input type="text" id="carpool-time" class="form-control" placeholder="Heure de départ" style="text-align: center;" />
+            <input type="text" id="carpool-time" class="form-control" placeholder="Heure de départ" style="text-align: center;" onfocus="(this.type='time')" onblur="(this.value === '' ? this.type='text' : this.type='time')">
           </div>
 
-          <!-- Places (Indicateur intégré dans le champ nombre avec boutons - et +) -->
-          <div class="form-group" style="flex: 1; min-width: 180px;">
-            <div class="carpool-stepper" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          <!-- Places : ancré à gauche, sans flèches natives, cadre réduit, valeur pleine par défaut -->
+          <div class="form-group" style="flex: 0 0 auto; min-width: 140px;">
+            <div class="carpool-stepper" style="display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;">
               <button type="button" id="btn-seats-minus" class="btn-stepper">-</button>
-              <input type="number" id="carpool-seats" class="form-control" min="1" placeholder="1 place" style="text-align: center; width: 90px;" />
+              <input type="number" id="carpool-seats" class="form-control carpool-seats-input" min="1" value="1" style="text-align: center; width: 50px; padding: 0.5rem;" />
               <button type="button" id="btn-seats-plus" class="btn-stepper">+</button>
             </div>
           </div>
@@ -396,7 +390,19 @@ const Carpool = {
       selectedMode = mode;
       if (btnRequest) btnRequest.classList.toggle('active', mode === 'request');
       if (btnOffer) btnOffer.classList.toggle('active', mode === 'offer');
-      if (rightPanel) rightPanel.style.display = 'block';
+      if (rightPanel) {
+        rightPanel.style.display = 'block';
+        rightPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      // La case "Gare TER" n'a de sens que pour une demande de covoiturage (mode passager)
+      const stationRow = document.getElementById('carpool-station-row');
+      if (stationRow) {
+        stationRow.style.display = mode === 'offer' ? 'none' : 'flex';
+        if (mode === 'offer') {
+          const cb = document.getElementById('carpool-station-checkbox');
+          if (cb && cb.checked) cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
       if (btnValidate) {
         btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
       }
@@ -800,6 +806,18 @@ const Carpool = {
       }
       .btn-stepper:hover {
         background: #D3DCD0;
+      }
+      /* Supprime les flèches natives du champ nombre "Places" */
+      .carpool-seats-input::-webkit-outer-spin-button,
+      .carpool-seats-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .carpool-seats-input {
+        -moz-appearance: textfield;
+        appearance: textfield;
+        color: var(--text-dark);
+        font-weight: 600;
       }
 
       @media (max-width: 768px) {

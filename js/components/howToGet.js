@@ -130,18 +130,16 @@ const HowToGet = {
       <style>
         /* Barre supérieure unifiée pour les 4 boutons */
         .htg-top-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: stretch;
+          gap: 32px;
           margin-bottom: 24px;
-          flex-wrap: wrap;
         }
 
         .htg-transport-selector, .htg-carpool-actions-slot {
           display: flex;
           gap: 12px;
-          flex: 1;
         }
 
         /* Boutons unifiés Voiture / Train / Covoiturage */
@@ -375,7 +373,7 @@ const HowToGet = {
         /* Responsive Mobile */
         @media (max-width: 992px) {
           .htg-top-bar {
-            flex-direction: column;
+            grid-template-columns: 1fr;
           }
           .htg-transport-selector, .htg-carpool-actions-slot {
             width: 100%;
