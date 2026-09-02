@@ -180,7 +180,7 @@ const Carpool = {
     this._elements.container.innerHTML = `
       <!-- Tableau récapitulatif : boutons Demander/Proposer désormais rendus par _renderTopBarActions() dans #htg-carpool-actions -->
       <div class="carpool-top-layout" style="margin-bottom: 2rem;">
-        <div class="carpool-stats" style="width: 100%; min-height: 68px; box-sizing: border-box;">
+        <div class="carpool-stats" style="width: 100%; height: 68px; box-sizing: border-box;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -301,29 +301,25 @@ const Carpool = {
     const timeStr = driver.departureTime ? ` à ${driver.departureTime}` : '';
     return `
       <div class="card carpool-card carpool-card--driver">
-        <div class="carpool-card-main">
-          <div class="carpool-card-info">
-            <h4 class="carpool-card-name">${driver.name}</h4>
-            <p class="carpool-card-route">
-              Depuis <strong>${passenger.city}</strong><br/>
-              Le <strong>${formattedDate}</strong>
-            </p>
-          </div>
+        <div class="carpool-card-info">
+          <h4 class="carpool-card-name">${driver.name}</h4>
+          <p class="carpool-card-route">Depuis <strong>${driver.city}</strong></p>
+          <p class="carpool-card-route">Le <strong>${formattedDate}${timeStr}</strong></p>
+        </div>
+        <div class="carpool-card-footer-row">
           <div class="carpool-seats-badge-container">
             <span class="carpool-seats-circle" title="Places disponibles">${driver.seatsAvailable}</span>
             <span class="carpool-seats-label">dispo.</span>
           </div>
-        </div>
-        ${driver.contact ? `
-          <div class="carpool-card-footer">
+          ${driver.contact ? `
             <div class="carpool-card-contact-wrapper">
               <button class="btn-reveal-contact" data-phone="${driver.contact}">Contacter</button>
               <span class="revealed-contact" style="display:none;">
                 <a href="tel:${driver.contact}" class="carpool-contact-link">${driver.contact}</a>
               </span>
             </div>
-          </div>
-        ` : ''}
+          ` : ''}
+        </div>
       </div>
     `;
   },
@@ -335,28 +331,25 @@ const Carpool = {
     const formattedDate = this._formatDate(passenger.departureDay);
     return `
       <div class="card carpool-card carpool-card--passenger">
-        <div class="carpool-card-main">
-          <div class="carpool-card-info">
-            <h4 class="carpool-card-name">${passenger.name}</h4>
-            <p class="carpool-card-route">
-              Depuis <strong>${passenger.city}</strong> Le <strong>${formattedDate}</strong>
-            </p>
-          </div>
+        <div class="carpool-card-info">
+          <h4 class="carpool-card-name">${passenger.name}</h4>
+          <p class="carpool-card-route">Depuis <strong>${passenger.city}</strong></p>
+          <p class="carpool-card-route">Le <strong>${formattedDate}</strong></p>
+        </div>
+        <div class="carpool-card-footer-row">
           <div class="carpool-seats-badge-container">
             <span class="carpool-seats-circle passenger" title="Places nécessaires">${passenger.seatsNeeded}</span>
             <span class="carpool-seats-label">requise${passenger.seatsNeeded > 1 ? 's' : ''}</span>
           </div>
-        </div>
-        ${passenger.contact ? `
-          <div class="carpool-card-footer">
+          ${passenger.contact ? `
             <div class="carpool-card-contact-wrapper">
               <button class="btn-reveal-contact" data-phone="${passenger.contact}">Contacter</button>
               <span class="revealed-contact" style="display:none;">
                 <a href="tel:${passenger.contact}" class="carpool-contact-link">${passenger.contact}</a>
               </span>
             </div>
-          </div>
-        ` : ''}
+          ` : ''}
+        </div>
       </div>
     `;
   },
@@ -600,9 +593,9 @@ const Carpool = {
         align-items: center;
         justify-content: center;
         gap: 3rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         margin-bottom: 2rem;
-        padding: 1.5rem;
+        padding: 8px 1.5rem;
         background: linear-gradient(135deg, rgba(45, 90, 61, 0.04), rgba(156, 175, 136, 0.08));
         border-radius: var(--radius-lg);
         border: 1px solid rgba(156, 175, 136, 0.15);
@@ -612,20 +605,20 @@ const Carpool = {
       }
       .carpool-stat-number {
         display: block;
-        font-size: 2.2rem;
+        font-size: 1.4rem;
         font-weight: 700;
         color: var(--forest);
-        line-height: 1;
+        line-height: 1.2;
       }
       .carpool-stat-label {
-        font-size: 0.85rem;
+        font-size: 0.65rem;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
       .carpool-stat-divider {
         width: 1px;
-        height: 40px;
+        height: 32px;
         background: rgba(156, 175, 136, 0.3);
       }
 
@@ -674,23 +667,17 @@ const Carpool = {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
       }
-      .carpool-card-main {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-      }
       .carpool-card-info {
-        flex: 1;
+        margin-bottom: 0.75rem;
       }
       .carpool-card-name {
-        margin: 0 0 0.25rem 0;
+        margin: 0 0 0.35rem 0;
         font-size: 1.05rem;
         font-weight: 600;
         color: var(--forest);
       }
       .carpool-card-route {
-        margin: 0;
+        margin: 0 0 0.2rem 0;
         font-size: 0.9rem;
         color: var(--text-muted);
       }
@@ -698,13 +685,28 @@ const Carpool = {
         color: var(--text-dark);
       }
 
-      /* Badge rond pour les places */
+      /* Rangée basse : places ancrées à gauche, contact ancré à droite */
+      .carpool-card-footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed rgba(156, 175, 136, 0.25);
+      }
+
+      /* Badge places : icône + libellé côte à côte, ancré à gauche */
       .carpool-seats-badge-container {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        min-width: 60px;
+        gap: 0.5rem;
+      }
+      .carpool-seats-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 500;
       }
       .carpool-seats-circle {
         display: flex;
@@ -723,20 +725,8 @@ const Carpool = {
         background-color: var(--gold);
         box-shadow: 0 2px 6px rgba(201, 168, 76, 0.2);
       }
-      .carpool-seats-label {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        margin-top: 4px;
-        text-transform: uppercase;
-        font-weight: 500;
-      }
       
       /* Révélation de contact */
-      .carpool-card-footer {
-        margin-top: 1rem;
-        padding-top: 0.75rem;
-        border-top: 1px dashed rgba(156, 175, 136, 0.25);
-      }
       .btn-reveal-contact {
         background: none;
         border: 1px solid var(--sage);
@@ -826,6 +816,9 @@ const Carpool = {
         }
         .carpool-stats {
           gap: 1.5rem;
+          height: auto !important;
+          flex-wrap: wrap;
+          padding: 12px 1.5rem;
         }
         .carpool-stat-divider {
           display: none;
