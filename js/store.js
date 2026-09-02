@@ -494,10 +494,11 @@ const Store = {
         allergies.push({ name, details: allergyDetails });
     };
 
-    confirmed.forEach(g => {
-      countDiets(g.diet, `${g.firstName} ${g.lastName}`, g.allergyDetails);
-      (g.companions || []).forEach(c => countDiets(c.diet, `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Accompagnant', c.allergyDetails));
-    });
+    [...confirmed, ...guests.filter(g => g.attending === 'maybe')].forEach(g => {
+  const suffix = g.attending === 'maybe' ? ' (peut-être)' : '';
+  countDiets(g.diet, `${g.firstName} ${g.lastName}${suffix}`, g.allergyDetails);
+  (g.companions || []).forEach(c => countDiets(c.diet, (`${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Accompagnant') + suffix, c.allergyDetails));
+});
 
     const offers   = carpools.filter(c => c.type === 'offer');
     const requests = carpools.filter(c => c.type === 'request');

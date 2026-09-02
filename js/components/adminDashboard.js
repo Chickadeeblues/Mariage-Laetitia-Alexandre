@@ -805,12 +805,10 @@ toggleTask(id) {
     }
 
     // ── Rangée 2 : Régimes alimentaires (Sans fond blanc derrière, couleurs distinctes) ──
-    if (dietsContainer) {
-      const allergiesCount = stats.diets.allergies?.length || 0;
-      const allergiesTooltip = allergiesCount > 0 
-        ? stats.diets.allergies.map(a => `${a.name}: ${a.details}`).join(' | ') 
-        : 'Aucune allergie';
-
+        if (dietsContainer) {
+      const allergies = stats.diets.allergies || [];
+      const allergiesCount = allergies.length;
+ 
       dietsContainer.innerHTML = `
         <div class="card" style="${dietCardStyle}">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#3B7A57;">${stats.diets.vegetarian || 0}</div>
@@ -824,14 +822,90 @@ toggleTask(id) {
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:#4A779D;">${stats.diets.noAlcohol || 0}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Sans alcool</div>
         </div>
-        <div class="card" style="${dietCardStyle}" title="${allergiesTooltip}">
+        <div class="card" id="allergy-card" style="${dietCardStyle} cursor:pointer; transition: box-shadow .15s, transform .15s;" title="Voir le détail">
           <div class="stat-card__number" style="font-size:28px; font-weight:700; color:var(--gold, #C9A84C);">${allergiesCount}</div>
           <div class="stat-card__label" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Allergies déclarées</div>
-          ${allergiesCount > 0 ? `<div style="font-size:10px; color:var(--gold); margin-top:2px; max-width:90%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${allergiesTooltip}</div>` : ''}
+          ${allergiesCount > 0 ? `<div style="font-size:10px; color:var(--gold); margin-top:2px;">👁️ Voir le détail</div>` : ''}
         </div>
       `;
+ 
+      const allergyCard = document.getElementById('allergy-card');
+      if (allergyCard) {
+        allergyCard.addEventListener('mouseenter', () => { allergyCard.style.boxShadow = '0 4px 14px rgba(0,0,0,0.10)'; allergyCard.style.transform = 'translateY(-2px)'; });
+        allergyCard.addEventListener('mouseleave', () => { allergyCard.style.boxShadow = ''; allergyCard.style.transform = ''; });
+        allergyCard.addEventListener('click', () => this._showAllergiesModal(allergies));
+      }
     }
   },
+
+  // ════════════════════════════════════════════════════════════
+  // _showAllergiesModal(allergies)
+  // Modale listant chaque personne ayant déclaré une allergie,
+  // avec le détail du type déclaré.
+  // ════════════════════════════════════════════════════════════
+  _showAllergiesModal(allergies) {
+    document.getElementById('admin-allergy-modal')?.remove();
+ 
+    if (!document.getElementById('admin-allergy-modal-styles')) {
+      document.head.insertAdjacentHTML('beforeend', `
+        <style id="admin-allergy-modal-styles">
+          #admin-allergy-modal {
+            position: fixed; inset: 0; background: rgba(44,44,44,0.45);
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+            padding: 20px; animation: allergyFadeIn .15s ease-out;
+          }
+          #admin-allergy-modal .modal-box {
+            background: #fff; border-radius: 16px; max-width: 440px; width: 100%;
+            max-height: 78vh; overflow-y: auto; padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); font-family: var(--font-body, sans-serif);
+          }
+          #admin-allergy-modal .modal-row {
+            display: flex; justify-content: space-between; gap: 16px;
+            padding: 10px 0; border-bottom: 1px solid #f0ece2;
+          }
+          #admin-allergy-modal .modal-row:last-child { border-bottom: none; }
+          #admin-allergy-modal .modal-close {
+            background: none; border: none; font-size: 22px; line-height: 1;
+            cursor: pointer; color: var(--text-muted, #6B6B6B);
+          }
+          @keyframes allergyFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        </style>
+      `);
+    }
+ 
+    const rows = allergies.length
+      ? allergies.map(a => `
+          <div class="modal-row">
+            <span style="font-weight:600; color:var(--text-dark, #2C2C2C);">${a.name}</span>
+            <span style="color:var(--text-muted, #6B6B6B); text-align:right;">${a.details || '—'}</span>
+          </div>`).join('')
+      : `<p style="color:var(--text-muted); text-align:center;">Aucune allergie déclarée.</p>`;
+ 
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="admin-allergy-modal">
+        <div class="modal-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-family:var(--font-display, serif); color:var(--forest, #2D5A3D); font-size:19px;">
+              ⚠️ Allergies déclarées (${allergies.length})
+            </h3>
+            <button class="modal-close" id="admin-allergy-modal-close">×</button>
+          </div>
+          <div>${rows}</div>
+        </div>
+      </div>
+    `);
+ 
+    const closeModal = () => document.getElementById('admin-allergy-modal')?.remove();
+    document.getElementById('admin-allergy-modal-close').addEventListener('click', closeModal);
+    document.getElementById('admin-allergy-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'admin-allergy-modal') closeModal();
+    });
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler); }
+    });
+  },
+
+
 
   // ════════════════════════════════════════════════
   // Liste des invités

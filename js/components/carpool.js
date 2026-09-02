@@ -178,21 +178,9 @@ const Carpool = {
     const totalSeatsNeeded = allPassengers.reduce((sum, p) => sum + p.seatsNeeded, 0);
 
     this._elements.container.innerHTML = `
-      <!-- En-tête : Boutons à gauche, Tableau récapitulatif à droite -->
-      <div class="carpool-top-layout" style="display: flex; justify-content: space-between; align-items: stretch; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;">
-        
-      <!-- Partie Gauche : Boutons de sélection -->
-        <div class="carpool-left-panel" style="display: flex; flex-direction: row; gap: 0.5rem; flex: 2; min-width: 250px;">
-          <button id="btn-mode-request" class="btn-carpool-mode" data-mode="request" style="flex: 1; padding: 0.75rem 0.5rem;">
-            Demander
-          </button>
-          <button id="btn-mode-offer" class="btn-carpool-mode" data-mode="offer" style="flex: 1; padding: 0.75rem 0.5rem;">
-            Proposer
-          </button>
-        </div>
-
-        <!-- Partie Droite : Tableau récapitulatif (largeur réduite) -->
-        <div class="carpool-stats" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+      <!-- Tableau récapitulatif : boutons Demander/Proposer désormais rendus par _renderTopBarActions() dans #htg-carpool-actions -->
+      <div class="carpool-top-layout" style="display: flex; justify-content: center; margin-bottom: 2rem;">
+        <div class="carpool-stats" style="max-width: 480px; width: 100%;">
           <div class="carpool-stat">
             <span class="carpool-stat-number">${totalSeatsAvailable}</span>
             <span class="carpool-stat-label">place${totalSeatsAvailable > 1 ? 's' : ''} disponible${totalSeatsAvailable > 1 ? 's' : ''}</span>
@@ -203,7 +191,6 @@ const Carpool = {
             <span class="carpool-stat-label">place${totalSeatsNeeded > 1 ? 's' : ''} demandée${totalSeatsNeeded > 1 ? 's' : ''}</span>
           </div>
         </div>
-
       </div>
 
       <!-- Formulaire global : Toute la largeur de la page -->
@@ -289,12 +276,27 @@ const Carpool = {
       </div>
     `;
 
+    this._renderTopBarActions();
     this._attachListeners();
     this._injectStyles();
 
     if (Animations && Animations.staggerChildren) {
       Animations.staggerChildren(this._elements.container, '.carpool-card', 60);
     }
+  },
+
+  /**
+   * Injecte les boutons "Demander" / "Proposer" dans le slot #htg-carpool-actions
+   * de la barre supérieure de howToGet.js, avec les mêmes classes que les boutons
+   * "En voiture" / "En train" pour un format identique, ancrés à droite du bloc.
+   */
+  _renderTopBarActions() {
+    const slot = document.getElementById('htg-carpool-actions');
+    if (!slot) return;
+    slot.innerHTML = `
+      <button id="btn-mode-request" class="btn-transport htg-btn-unified" data-mode="request">🙋 Demander un covoiturage</button>
+      <button id="btn-mode-offer" class="btn-transport htg-btn-unified" data-mode="offer">🚗 Proposer un covoiturage</button>
+    `;
   },
 
   /**
@@ -392,8 +394,8 @@ const Carpool = {
 
     const toggleMode = (mode) => {
       selectedMode = mode;
-      if (btnRequest) btnRequest.classList.toggle('is-active', mode === 'request');
-      if (btnOffer) btnOffer.classList.toggle('is-active', mode === 'offer');
+      if (btnRequest) btnRequest.classList.toggle('active', mode === 'request');
+      if (btnOffer) btnOffer.classList.toggle('active', mode === 'offer');
       if (rightPanel) rightPanel.style.display = 'block';
       if (btnValidate) {
         btnValidate.textContent = mode === 'request' ? 'Valider ma demande' : 'Valider ma proposition';
@@ -723,26 +725,6 @@ const Carpool = {
         font-weight: 500;
       }
       
-      .btn-carpool-mode {
-        padding: 1rem;
-        font-family: var(--font-body);
-        font-size: 1.1rem;
-        font-weight: 500;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--sage);
-        background-color: var(--cream);
-        color: var(--forest);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-      }
-
-      .btn-carpool-mode.is-active {
-        background-color: #D3DCD0;
-        border-color: var(--forest);
-        font-weight: 600;
-      }
-
       /* Révélation de contact */
       .carpool-card-footer {
         margin-top: 1rem;
@@ -835,5 +817,7 @@ const Carpool = {
     document.head.appendChild(style);
   },
 };
+
+export default Carpool;
 
 export default Carpool;
