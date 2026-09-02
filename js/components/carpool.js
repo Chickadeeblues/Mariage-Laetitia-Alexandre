@@ -819,5 +819,3 @@ const Carpool = {
 };
 
 export default Carpool;
-
-export default Carpool;
