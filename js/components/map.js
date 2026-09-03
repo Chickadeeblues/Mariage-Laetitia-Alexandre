@@ -1,6 +1,6 @@
 /**
  * Composant Map — Carte Leaflet & liste des hébergements réorganisée
- * Avec filtres par type, capacité et prix
+ * Avec filtres par type, capacité et prix + détails des chambres
  */
 
 import Store from '../store.js';
@@ -21,7 +21,7 @@ function distKm(lat1, lng1, lat2, lng2) {
 const MapComponent = {
   _map: null,
   _markersLayer: null,
-  _elements: { mapContainer: null, accommodationsList: null, filtersContainer: null },
+  _elements: { mapContainer: null, accommodationsList: null },
   _domainCoords: DOMAIN,
   _domainZoom: 12,
   _allAccommodations: [],
@@ -142,6 +142,10 @@ const MapComponent = {
     const name = (acc.name || '').toLowerCase();
     const desc = (acc.description || '').toLowerCase();
 
+    // Priorité Camping
+    if (icon === 'camping' || name.includes('camping') || name.includes('huttopia') || name.includes('lône') || name.includes('époque') || desc.includes('camping')) {
+      return 'Camping';
+    }
     if (icon === 'chambre' || name.includes('chambre') || name.includes('delphine') || desc.includes('chambre d\'hôte')) {
       return "Chambre d'hôtes";
     }
@@ -153,9 +157,6 @@ const MapComponent = {
     }
     if (name.includes('airbnb') || name.includes('rbnb')) {
       return 'RBnB';
-    }
-    if (icon === 'camping' || name.includes('camping') || name.includes('huttopia') || name.includes('lône') || name.includes('époque')) {
-      return 'Camping';
     }
     if (name.includes('domaine') || name.includes('scie')) {
       return 'Sur place';
@@ -173,14 +174,66 @@ const MapComponent = {
     return null;
   },
 
-  _getRoomsAndBeds(acc) {
+  _getRoomsDetails(acc) {
+    if (acc.roomDetails) return acc.roomDetails;
+
     const text = `${acc.description || ''} ${acc.capacity || ''}`;
-    const roomsMatch = text.match(/(\d+)\s*chambre/i);
-    const bedsMatch = text.match(/(\d+)\s*lit/i);
-    return {
-      rooms: acc.rooms || (roomsMatch ? parseInt(roomsMatch[1], 10) : null),
-      beds: acc.beds || (bedsMatch ? parseInt(bedsMatch[1], 10) : null),
-    };
+    const details = [];
+
+    // Recherche de motifs précis
+    const patterns = [
+      /(\d+)\s*chambre[s]?\s*-\s*(\d+)\s*lit[s]?\s*(double[s]?|simple[s]?|canapé[- ]lit[s]?)/gi,
+      /(\d+)\s*chambre[s]?\s*\(([^)]+)\)/gi,
+      /(\d+)\s*lit[s]?\s*(double[s]?|simple[s]?|canapé[- ]lit[s]?)/gi
+    ];
+
+    // Vérification directe dans la description si une structure avec / existe déjà
+    if (text.includes('/') && (text.includes('lit') || text.includes('chambre'))) {
+      const parts = text.split('/').map(p => p.trim()).filter(p => p.length > 0);
+      if (parts.length > 0) return parts.join(' / ');
+    }
+
+    // Extraction manuelle sinon
+    const roomMatches = [...text.matchAll(/(\d+)\s*chambre[s]?/gi)];
+    const doubleBedMatches = [...text.matchAll(/(\d+)\s*lit[s]?\s*double[s]?/gi)];
+    const singleBedMatches = [...text.matchAll(/(\d+)\s*lit[s]?\s*simple[s]?/gi)];
+    const sofaBedMatches = [...text.matchAll(/(\d+)\s*(canapé[- ]lit[s]?|clic-clac)/gi)];
+
+    if (roomMatches.length > 0 || doubleBedMatches.length > 0 || singleBedMatches.length > 0 || sofaBedMatches.length > 0) {
+      if (roomMatches.length > 0) {
+        const count = roomMatches[0][1];
+        let bedsInfo = [];
+        if (doubleBedMatches.length > 0) bedsInfo.push(`${doubleBedMatches[0][1]} lit double`);
+        if (singleBedMatches.length > 0) bedsInfo.push(`${singleBedMatches[0][1]} lit simple`);
+        if (sofaBedMatches.length > 0) bedsInfo.push(`${sofaBedMatches[0][1]} canapé-lit`);
+        
+        if (bedsInfo.length > 0) {
+          details.push(`${count} chambre${parseInt(count) > 1 ? 's' : ''} (${bedsInfo.join(', ')})`);
+        } else {
+          details.push(`${count} chambre${parseInt(count) > 1 ? 's' : ''}`);
+        }
+      } else {
+        if (doubleBedMatches.length > 0) details.push(`${doubleBedMatches[0][1]} lit(s) double(s)`);
+        if (singleBedMatches.length > 0) details.push(`${singleBedMatches[0][1]} lit(s) simple(s)`);
+        if (sofaBedMatches.length > 0) details.push(`${sofaBedMatches[0][1]} canapé-lit`);
+      }
+    }
+
+    return details.length > 0 ? details.join(' / ') : null;
+  },
+
+  _getAddress(acc) {
+    if (acc.address) return acc.address;
+    if (acc.city) return acc.city;
+    const name = (acc.name || '').toLowerCase();
+    if (name.includes('domaine') || name.includes('scie')) return 'Domaine de la Scie du May, Doizieux (42740)';
+    if (name.includes('delphine')) return 'Doizieux (42740)';
+    if (name.includes('roche du pilat')) return 'Doizieux (42740)';
+    if (name.includes('éclosion')) return 'Saint-Paul-en-Jarez (42740)';
+    if (name.includes('époque')) return 'Pélussin (42410)';
+    if (name.includes('lône')) return 'Saint-Pierre-de-Bœuf (42520)';
+    if (name.includes('huttopia')) return 'Condrieu (69420)';
+    return 'Doizieux & environs';
   },
 
   _addAccommodationMarker(acc) {
@@ -198,9 +251,10 @@ const MapComponent = {
 
     let popup = `<div class="map-popup"><h3>${acc.name}</h3>`;
     popup += `<div class="popup-row" style="font-weight:600;color:#2D5A3D;">${type}</div>`;
-    if (acc.distance) popup += `<div class="popup-row">À ${acc.distance} de La Scie du May</div>`;
+    const distText = acc._distKm < 0.5 ? 'Sur place' : `${Math.round(acc._distKm)} km`;
+    popup += `<div class="popup-row">Distance : ${distText} / ${this._getAddress(acc)}</div>`;
     if (acc.capacityNumber > 0) {
-      popup += `<div class="popup-row">Capacité : ${acc.capacityNumber} personnes</div>`;
+      popup += `<div class="popup-row">${acc.capacityNumber} personnes</div>`;
     }
     if (acc.description) popup += `<p style="font-size:12px;color:#666;margin:6px 0;">${acc.description}</p>`;
     if (acc.bookingUrl) popup += `<a href="${acc.bookingUrl}" target="_blank" class="popup-link">Voir le lieu →</a>`;
@@ -224,7 +278,6 @@ const MapComponent = {
         acc._capacity = acc.capacityNumber || 0;
       });
 
-      // Tri par distance GPS
       accommodations.sort((a, b) => a._distKm - b._distKm);
       this._allAccommodations = accommodations;
 
@@ -303,15 +356,12 @@ const MapComponent = {
 
   _applyFilters() {
     const filtered = this._allAccommodations.filter(acc => {
-      // Filtre Type
       if (this._filters.type !== 'all' && acc._type !== this._filters.type) {
         return false;
       }
-      // Filtre Capacité
       if (this._filters.minCapacity > 0 && acc._capacity > 0 && acc._capacity < this._filters.minCapacity) {
         return false;
       }
-      // Filtre Prix
       if (this._filters.maxPrice !== Infinity) {
         if (acc._price !== null && acc._price > this._filters.maxPrice) {
           return false;
@@ -344,15 +394,10 @@ const MapComponent = {
     let html = '<div class="acc-list">';
 
     accommodations.forEach((acc, idx) => {
-      const distLabel = acc._distKm < 0.5 ? 'Sur place' : `À ${Math.round(acc._distKm)} km de La Scie du May`;
+      const distValue = acc._distKm < 0.5 ? 'Sur place' : `${Math.round(acc._distKm)} km`;
+      const distanceDisplay = `Distance : ${distValue} / ${this._getAddress(acc)}`;
       const capacityDisplay = acc._capacity > 0 ? `${acc._capacity} personnes` : 'Capacité non précisée';
-      const roomsBeds = this._getRoomsAndBeds(acc);
-
-      let roomBedsText = [];
-      if (roomsBeds.rooms) roomBedsText.push(`${roomsBeds.rooms} chambre${roomsBeds.rooms > 1 ? 's' : ''}`);
-      if (roomsBeds.beds) roomBedsText.push(`${roomsBeds.beds} lit${roomsBeds.beds > 1 ? 's' : ''}`);
-      const roomBedsDisplay = roomBedsText.join(' · ');
-
+      const roomsDetailsDisplay = this._getRoomsDetails(acc);
       const priceDisplay = acc._price !== null ? `${acc._price} € / nuit` : 'Prix non renseigné';
 
       html += `
@@ -361,13 +406,13 @@ const MapComponent = {
             <div class="acc-card__header-info">
               <span class="acc-card__type">${acc._type}</span>
               <h3 class="acc-card__title">${acc.name}</h3>
+              <div class="acc-card__capacity-tag">${capacityDisplay}</div>
             </div>
-            <div class="acc-card__capacity-tag">${capacityDisplay}</div>
           </div>
 
           <div class="acc-card__details">
-            <div class="acc-card__dist">${distLabel}</div>
-            ${roomBedsDisplay ? `<div class="acc-card__rooms">${roomBedsDisplay}</div>` : ''}
+            <div class="acc-card__dist">${distanceDisplay}</div>
+            ${roomsDetailsDisplay ? `<div class="acc-card__rooms">${roomsDetailsDisplay}</div>` : ''}
             <div class="acc-card__price">${priceDisplay}</div>
             ${acc.description ? `<p class="acc-card__desc">${acc.description}</p>` : ''}
           </div>
@@ -426,17 +471,19 @@ const MapComponent = {
 
       /* Structure Carte */
       .acc-card__top { display:flex;justify-content:space-between;align-items:flex-start;gap:12px; }
-      .acc-card__header-info { display:flex;flex-direction:column;gap:2px; }
-      .acc-card__type { font-size:12px;font-weight:600;color:#9CAF88;text-transform:uppercase;letter-spacing:0.5px; }
-      .acc-card__title { margin:0;font-size:1.1rem;font-weight:600;color:#2D5A3D;font-family:var(--font-body); }
+      .acc-card__header-info { display:flex;flex-direction:column;gap:4px;align-items:flex-start; }
       
-      /* Badge capacité mis en avant */
-      .acc-card__capacity-tag { background:#2D5A3D;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(45,90,61,0.2); }
+      /* Type de logement plus gros */
+      .acc-card__type { font-size:15px;font-weight:700;color:#9CAF88;text-transform:uppercase;letter-spacing:0.5px; }
+      .acc-card__title { margin:2px 0 4px;font-size:1.2rem;font-weight:600;color:#2D5A3D;font-family:var(--font-body); }
+      
+      /* Badge capacité ancré sous le nom */
+      .acc-card__capacity-tag { background:#2D5A3D;color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(45,90,61,0.15);margin-top:2px; }
 
       /* Détails */
       .acc-card__details { display:flex;flex-direction:column;gap:4px; }
-      .acc-card__dist { font-size:13px;font-weight:500;color:#555; }
-      .acc-card__rooms { font-size:13px;color:#666; }
+      .acc-card__dist { font-size:13px;font-weight:500;color:#444; }
+      .acc-card__rooms { font-size:13px;color:#2D5A3D;font-weight:500; }
       .acc-card__price { font-size:14px;font-weight:600;color:#C9A84C;margin-top:2px; }
       .acc-card__desc { font-size:13px;color:#6B6B6B;line-height:1.4;margin:6px 0 0; }
 
@@ -448,8 +495,6 @@ const MapComponent = {
 
       @media(max-width:600px) {
         .acc-filter-bar { flex-direction:column;gap:12px; }
-        .acc-card__top { flex-direction:column;align-items:flex-start;gap:6px; }
-        .acc-card__capacity-tag { align-self:flex-start; }
       }
     `;
     document.head.appendChild(s);
