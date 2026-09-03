@@ -144,20 +144,23 @@ function carpoolToApp(c) {
   };
 }
 
-function accToApp(a) {
-  if (!a) return null;
+function accToApp(dbAcc) {
+  if (!dbAcc) return null;
+  
   return {
-    id:             a.id,
-    name:           a.name,
-    lat:            a.lat,
-    lng:            a.lng,
-    capacity:       a.capacity,
-    capacityNumber: a.capacity_number || 0,
-    description:    a.description,
-    distance:       a.distance,
-    bookingUrl:     a.booking_url,
-    icon:           a.icon,
-    createdAt:      a.created_at
+    id: dbAcc.id,
+    name: dbAcc.name || '',
+    type: dbAcc.type || 'Gîte',
+    address: dbAcc.address || '',
+    distanceKm: dbAcc.distance_km ?? dbAcc.distanceKm ?? null,
+    pricePerNight: dbAcc.price_per_night ?? dbAcc.pricePerNight ?? dbAcc.price ?? null,
+    bedsDetail: dbAcc.beds_detail ?? dbAcc.bedsDetail || '',
+    capacityNumber: dbAcc.capacity_number ?? dbAcc.capacityNumber ?? dbAcc.capacity ?? 0,
+    bookingUrl: dbAcc.booking_url ?? dbAcc.bookingUrl || '',
+    description: dbAcc.description || '',
+    lat: dbAcc.lat,
+    lng: dbAcc.lng,
+    icon: dbAcc.icon || ''
   };
 }
 
