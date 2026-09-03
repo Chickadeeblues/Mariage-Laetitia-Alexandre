@@ -156,7 +156,7 @@ function accToApp(dbAcc) {
     pricePerNight: dbAcc.price_per_night ?? dbAcc.pricePerNight ?? dbAcc.price ?? null,
     bedsDetail: dbAcc.beds_detail || dbAcc.bedsDetail || '',
     capacityNumber: dbAcc.capacity_number ?? dbAcc.capacityNumber ?? dbAcc.capacity ?? 0,
-    bookingUrl: dbAcc.booking_url ?? dbAcc.bookingUrl || '',
+    bookingUrl: dbAcc.booking_url || dbAcc.bookingUrl || '',
     description: dbAcc.description || '',
     lat: dbAcc.lat,
     lng: dbAcc.lng,
