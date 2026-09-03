@@ -1,6 +1,6 @@
 /**
- * Composant Map — Carte Leaflet & liste des hébergements
- * Avec disponibilités en temps réel et gare TER
+ * Composant Map — Carte Leaflet & liste des hébergements réorganisée
+ * Avec filtres par type, capacité et prix
  */
 
 import Store from '../store.js';
@@ -21,12 +21,18 @@ function distKm(lat1, lng1, lat2, lng2) {
 const MapComponent = {
   _map: null,
   _markersLayer: null,
-  _elements: { mapContainer: null, accommodationsList: null },
+  _elements: { mapContainer: null, accommodationsList: null, filtersContainer: null },
   _domainCoords: DOMAIN,
   _domainZoom: 12,
+  _allAccommodations: [],
+  _filters: {
+    type: 'all',
+    minCapacity: 0,
+    maxPrice: Infinity,
+  },
 
   async init() {
-    this._elements.mapContainer      = document.getElementById('map-container');
+    this._elements.mapContainer = document.getElementById('map-container');
     this._elements.accommodationsList = document.getElementById('accommodations-list');
     if (!this._elements.mapContainer) return;
     
@@ -53,7 +59,7 @@ const MapComponent = {
     this._initMap();
     await this._loadAccommodations();
     Store.on('accommodations-changed', () => this._loadAccommodations());
-    Store.on('guests-changed',         () => this._loadAccommodations());
+    Store.on('guests-changed', () => this._loadAccommodations());
   },
 
   destroy() {
@@ -130,39 +136,74 @@ const MapComponent = {
       .addTo(this._map);
   },
 
-  _getEmoji(acc) {
-    const n = (acc.name || '').toLowerCase();
-    if (n.includes('domaine') || n.includes('scie')) return '🏰';
-    if (n.includes('hôtel') || n.includes('hotel') || n.includes('éclosion')) return '🏨';
-    if (n.includes('chambre') || n.includes('delphine')) return '🛏️';
-    if (n.includes('camping') || n.includes('huttopia') || n.includes('lône') || n.includes('époque')) return '⛺';
-    return '🏡';
+  _getType(acc) {
+    if (acc.type) return acc.type;
+    const icon = (acc.icon || '').toLowerCase();
+    const name = (acc.name || '').toLowerCase();
+    const desc = (acc.description || '').toLowerCase();
+
+    if (icon === 'chambre' || name.includes('chambre') || name.includes('delphine') || desc.includes('chambre d\'hôte')) {
+      return "Chambre d'hôtes";
+    }
+    if (icon === 'gite' || name.includes('gîte') || name.includes('gite') || name.includes('roche du pilat')) {
+      return 'Gîte';
+    }
+    if (icon === 'hotel' || name.includes('hôtel') || name.includes('hotel') || name.includes('éclosion')) {
+      return 'Hôtel';
+    }
+    if (name.includes('airbnb') || name.includes('rbnb')) {
+      return 'RBnB';
+    }
+    if (icon === 'camping' || name.includes('camping') || name.includes('huttopia') || name.includes('lône') || name.includes('époque')) {
+      return 'Camping';
+    }
+    if (name.includes('domaine') || name.includes('scie')) {
+      return 'Sur place';
+    }
+    return 'Hébergement';
+  },
+
+  _getPrice(acc) {
+    if (acc.pricePerNight !== undefined) return acc.pricePerNight;
+    if (acc.price !== undefined) return acc.price;
+    const text = `${acc.description || ''} ${acc.capacity || ''}`;
+    const match = text.match(/(\d+)\s*€/);
+    if (match) return parseInt(match[1], 10);
+    if (acc.name && acc.name.includes('Domaine')) return 20;
+    return null;
+  },
+
+  _getRoomsAndBeds(acc) {
+    const text = `${acc.description || ''} ${acc.capacity || ''}`;
+    const roomsMatch = text.match(/(\d+)\s*chambre/i);
+    const bedsMatch = text.match(/(\d+)\s*lit/i);
+    return {
+      rooms: acc.rooms || (roomsMatch ? parseInt(roomsMatch[1], 10) : null),
+      beds: acc.beds || (bedsMatch ? parseInt(bedsMatch[1], 10) : null),
+    };
   },
 
   _addAccommodationMarker(acc) {
     if (!this._map || !acc.lat || !acc.lng) return;
 
-    // Ne pas superposer le marqueur hébergement sur le domaine
     const isDomain = Math.abs(acc.lat - DOMAIN[0]) < 0.001 && Math.abs(acc.lng - DOMAIN[1]) < 0.001;
     if (isDomain) return;
 
-    const emoji = this._getEmoji(acc);
+    const type = this._getType(acc);
     const icon = L.divIcon({
       className: '',
-      html: `<div class="marker-acc"><span class="marker-icon">${emoji}</span></div>`,
+      html: `<div class="marker-acc"><span class="marker-icon">🏡</span></div>`,
       iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -40],
     });
 
-    let popup = `<div class="map-popup"><h3>${emoji} ${acc.name}</h3>`;
-    if (acc.distance)       popup += `<div class="popup-row">📏 À ${acc.distance} du domaine</div>`;
-    if (acc.capacityNumber > 0 && acc.spotsLeft !== undefined) {
-      const color = acc.spotsLeft === 0 ? '#c0392b' : acc.spotsLeft <= 2 ? '#e67e22' : '#27ae60';
-      popup += `<div class="popup-row" style="color:${color};font-weight:600;">
-        🛏️ ${acc.spotsLeft} place${acc.spotsLeft > 1 ? 's' : ''} restante${acc.spotsLeft > 1 ? 's' : ''} / ${acc.capacityNumber}
-      </div>`;
+    let popup = `<div class="map-popup"><h3>${acc.name}</h3>`;
+    popup += `<div class="popup-row" style="font-weight:600;color:#2D5A3D;">${type}</div>`;
+    if (acc.distance) popup += `<div class="popup-row">À ${acc.distance} de La Scie du May</div>`;
+    if (acc.capacityNumber > 0) {
+      popup += `<div class="popup-row">Capacité : ${acc.capacityNumber} personnes</div>`;
     }
-    if (acc.description)    popup += `<p style="font-size:12px;color:#666;margin:6px 0;">${acc.description}</p>`;
-    if (acc.bookingUrl)     popup += `<a href="${acc.bookingUrl}" target="_blank" class="popup-link">Réserver →</a>`;
+    if (acc.description) popup += `<p style="font-size:12px;color:#666;margin:6px 0;">${acc.description}</p>`;
+    if (acc.bookingUrl) popup += `<a href="${acc.bookingUrl}" target="_blank" class="popup-link">Voir le lieu →</a>`;
     popup += '</div>';
 
     const marker = L.marker([acc.lat, acc.lng], { icon });
@@ -175,19 +216,116 @@ const MapComponent = {
       const result = await Store.getAccommodationsWithAvailability();
       const accommodations = Array.isArray(result) ? result : [];
 
-      // Trier par distance GPS depuis le domaine
-      accommodations.sort((a, b) => {
-        const da = distKm(DOMAIN[0], DOMAIN[1], a.lat || 0, a.lng || 0);
-        const db = distKm(DOMAIN[0], DOMAIN[1], b.lat || 0, b.lng || 0);
-        return da - db;
+      accommodations.forEach(acc => {
+        const dist = distKm(DOMAIN[0], DOMAIN[1], acc.lat || 0, acc.lng || 0);
+        acc._distKm = dist;
+        acc._type = this._getType(acc);
+        acc._price = this._getPrice(acc);
+        acc._capacity = acc.capacityNumber || 0;
       });
 
-      if (this._markersLayer) this._markersLayer.clearLayers();
-      accommodations.forEach(acc => this._addAccommodationMarker(acc));
-      this._renderList(accommodations);
+      // Tri par distance GPS
+      accommodations.sort((a, b) => a._distKm - b._distKm);
+      this._allAccommodations = accommodations;
+
+      this._renderFilterBar();
+      this._applyFilters();
     } catch (e) {
       console.error('[Map] Erreur chargement hébergements :', e);
     }
+  },
+
+  _renderFilterBar() {
+    if (!this._elements.accommodationsList) return;
+
+    let filterBar = document.getElementById('acc-filter-bar');
+    if (!filterBar) {
+      filterBar = document.createElement('div');
+      filterBar.id = 'acc-filter-bar';
+      filterBar.className = 'acc-filter-bar';
+      this._elements.accommodationsList.parentNode.insertBefore(filterBar, this._elements.accommodationsList);
+    }
+
+    filterBar.innerHTML = `
+      <div class="filter-group">
+        <label for="filter-type">Type de logement</label>
+        <select id="filter-type" class="filter-select">
+          <option value="all">Tous les types</option>
+          <option value="Chambre d'hôtes">Chambre d'hôtes</option>
+          <option value="Gîte">Gîte</option>
+          <option value="Hôtel">Hôtel</option>
+          <option value="RBnB">RBnB</option>
+          <option value="Camping">Camping</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-capacity">Nombre de places min.</label>
+        <select id="filter-capacity" class="filter-select">
+          <option value="0">Toutes capacités</option>
+          <option value="2">2+ personnes</option>
+          <option value="4">4+ personnes</option>
+          <option value="6">6+ personnes</option>
+          <option value="10">10+ personnes</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-price">Prix max / nuit</label>
+        <select id="filter-price" class="filter-select">
+          <option value="Infinity">Tous les prix</option>
+          <option value="30">Jusqu'à 30 €</option>
+          <option value="60">Jusqu'à 60 €</option>
+          <option value="100">Jusqu'à 100 €</option>
+          <option value="150">Jusqu'à 150 €</option>
+        </select>
+      </div>
+    `;
+
+    document.getElementById('filter-type').value = this._filters.type;
+    document.getElementById('filter-capacity').value = this._filters.minCapacity;
+    document.getElementById('filter-price').value = this._filters.maxPrice;
+
+    document.getElementById('filter-type').addEventListener('change', (e) => {
+      this._filters.type = e.target.value;
+      this._applyFilters();
+    });
+    document.getElementById('filter-capacity').addEventListener('change', (e) => {
+      this._filters.minCapacity = parseInt(e.target.value, 10) || 0;
+      this._applyFilters();
+    });
+    document.getElementById('filter-price').addEventListener('change', (e) => {
+      const val = e.target.value;
+      this._filters.maxPrice = val === 'Infinity' ? Infinity : parseInt(val, 10);
+      this._applyFilters();
+    });
+  },
+
+  _applyFilters() {
+    const filtered = this._allAccommodations.filter(acc => {
+      // Filtre Type
+      if (this._filters.type !== 'all' && acc._type !== this._filters.type) {
+        return false;
+      }
+      // Filtre Capacité
+      if (this._filters.minCapacity > 0 && acc._capacity > 0 && acc._capacity < this._filters.minCapacity) {
+        return false;
+      }
+      // Filtre Prix
+      if (this._filters.maxPrice !== Infinity) {
+        if (acc._price !== null && acc._price > this._filters.maxPrice) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (this._markersLayer) {
+      this._markersLayer.clearLayers();
+      filtered.forEach(acc => this._addAccommodationMarker(acc));
+    }
+
+    this._renderList(filtered);
   },
 
   _renderList(accommodations) {
@@ -197,8 +335,8 @@ const MapComponent = {
       this._elements.accommodationsList.innerHTML = `
         <div style="text-align:center;padding:3rem 1rem;">
           <span style="font-size:3rem;display:block;margin-bottom:1rem;">🏡</span>
-          <h3 style="color:#5c4e35;">Hébergements à venir</h3>
-          <p style="color:#888;">Les suggestions seront bientôt disponibles.</p>
+          <h3 style="color:#5c4e35;">Aucun hébergement trouvé</h3>
+          <p style="color:#888;">Essayez de modifier vos filtres de recherche.</p>
         </div>`;
       return;
     }
@@ -206,50 +344,50 @@ const MapComponent = {
     let html = '<div class="acc-list">';
 
     accommodations.forEach((acc, idx) => {
-      const emoji = this._getEmoji(acc);
-      const dist = distKm(DOMAIN[0], DOMAIN[1], acc.lat || 0, acc.lng || 0);
-      const distLabel = dist < 0.5 ? 'Sur place' : `~${Math.round(dist)} km`;
+      const distLabel = acc._distKm < 0.5 ? 'Sur place' : `À ${Math.round(acc._distKm)} km de La Scie du May`;
+      const capacityDisplay = acc._capacity > 0 ? `${acc._capacity} personnes` : 'Capacité non précisée';
+      const roomsBeds = this._getRoomsAndBeds(acc);
 
-      // Badge disponibilité
-      let availBadge = '';
-      if (acc.capacityNumber > 0 && acc.spotsLeft !== undefined) {
-        if (acc.spotsLeft === 0) {
-          availBadge = `<span class="acc-badge acc-badge--full">Complet</span>`;
-        } else {
-          const color = acc.spotsLeft <= 2 ? 'orange' : 'green';
-          availBadge = `<span class="acc-badge acc-badge--${color}">${acc.spotsLeft} place${acc.spotsLeft > 1 ? 's' : ''} restante${acc.spotsLeft > 1 ? 's' : ''}</span>`;
-        }
-      } else if (acc.capacityNumber === 0 && acc.name.includes('Domaine')) {
-        availBadge = `<span class="acc-badge acc-badge--contact">Contacter les mariés</span>`;
-      } else if (acc.bookingUrl) {
-        availBadge = `<span class="acc-badge acc-badge--link">Voir disponibilités</span>`;
-      }
+      let roomBedsText = [];
+      if (roomsBeds.rooms) roomBedsText.push(`${roomsBeds.rooms} chambre${roomsBeds.rooms > 1 ? 's' : ''}`);
+      if (roomsBeds.beds) roomBedsText.push(`${roomsBeds.beds} lit${roomsBeds.beds > 1 ? 's' : ''}`);
+      const roomBedsDisplay = roomBedsText.join(' · ');
+
+      const priceDisplay = acc._price !== null ? `${acc._price} € / nuit` : 'Prix non renseigné';
 
       html += `
         <div class="acc-card" data-id="${acc.id}" data-lat="${acc.lat}" data-lng="${acc.lng}" style="animation-delay:${idx * 60}ms">
-          <div class="acc-card__head">
-            <span class="acc-emoji">${emoji}</span>
-            <div class="acc-card__title-group">
-              <h3 class="acc-name">${acc.name}</h3>
-              <span class="acc-dist">📏 ${distLabel}</span>
+          <div class="acc-card__top">
+            <div class="acc-card__header-info">
+              <span class="acc-card__type">${acc._type}</span>
+              <h3 class="acc-card__title">${acc.name}</h3>
             </div>
-            ${availBadge}
+            <div class="acc-card__capacity-tag">${capacityDisplay}</div>
           </div>
-          ${acc.description ? `<p class="acc-desc">${acc.description}</p>` : ''}
-          ${acc.bookingUrl && !acc.name.includes('Domaine')
-            ? `<a href="${acc.bookingUrl}" target="_blank" rel="noopener" class="acc-link">Réserver / Voir →</a>`
-            : acc.name.includes('Domaine')
-            ? `<p class="acc-contact">📞 Réservation via les mariés uniquement — 20€/pers/nuit</p>`
-            : ''}
+
+          <div class="acc-card__details">
+            <div class="acc-card__dist">${distLabel}</div>
+            ${roomBedsDisplay ? `<div class="acc-card__rooms">${roomBedsDisplay}</div>` : ''}
+            <div class="acc-card__price">${priceDisplay}</div>
+            ${acc.description ? `<p class="acc-card__desc">${acc.description}</p>` : ''}
+          </div>
+
+          <div class="acc-card__footer">
+            ${acc.bookingUrl
+              ? `<a href="${acc.bookingUrl}" target="_blank" rel="noopener" class="acc-btn-voir">Voir le lieu</a>`
+              : acc.name.includes('Domaine')
+              ? `<span class="acc-card__contact-note">Réservation via les mariés</span>`
+              : ''}
+          </div>
         </div>`;
     });
 
     html += '</div>';
     this._elements.accommodationsList.innerHTML = html;
 
-    // Clic sur une carte → centre la map
     this._elements.accommodationsList.querySelectorAll('.acc-card').forEach(card => {
-      card.addEventListener('click', () => {
+      card.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' || e.target.classList.contains('acc-btn-voir')) return;
         const lat = parseFloat(card.dataset.lat);
         const lng = parseFloat(card.dataset.lng);
         if (lat && lng && this._map) this._map.flyTo([lat, lng], 15, { duration: 0.8 });
@@ -273,32 +411,45 @@ const MapComponent = {
       .map-popup { font-family:'Outfit',sans-serif;min-width:200px; }
       .map-popup h3 { color:#2D5A3D;font-size:1rem;margin:0 0 6px;font-weight:600; }
       .popup-row { font-size:13px;color:#555;margin-bottom:3px; }
-      .popup-link { display:inline-block;margin-top:8px;padding:4px 14px;background:#9b8660;color:#fff;text-decoration:none;border-radius:20px;font-size:13px; }
+      .popup-link { display:inline-block;margin-top:8px;padding:4px 14px;background:#2D5A3D;color:#fff;text-decoration:none;border-radius:20px;font-size:13px; }
+
+      /* Barre de filtres */
+      .acc-filter-bar { display:flex;gap:16px;flex-wrap:wrap;background:#FAF8F5;border:1px solid #E8E0D0;border-radius:12px;padding:16px;margin:20px 0 10px; }
+      .filter-group { flex:1;min-width:180px;display:flex;flex-direction:column;gap:6px; }
+      .filter-group label { font-size:12px;font-weight:600;color:#2D5A3D;text-transform:uppercase;letter-spacing:0.5px; }
+      .filter-select { font-family:'Outfit',sans-serif;padding:8px 12px;border:1px solid #C9A84C;border-radius:8px;background:#fff;color:#2C2C2C;font-size:14px;outline:none; }
 
       /* Liste hébergements */
-      .acc-list { display:flex;flex-direction:column;gap:14px;margin-top:24px; }
-      .acc-card { background:#fff;border:1.5px solid #e8e0d0;border-radius:12px;padding:16px 18px;cursor:pointer;transition:box-shadow .2s,transform .2s; }
-      .acc-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px); }
-      .acc-card__head { display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
-      .acc-emoji { font-size:1.8rem;flex-shrink:0; }
-      .acc-card__title-group { flex:1;min-width:0; }
-      .acc-name { margin:0;font-size:1rem;font-weight:600;color:#2D5A3D; }
-      .acc-dist { font-size:12px;color:#aaa; }
-      .acc-desc { font-size:13px;color:#666;line-height:1.5;margin:10px 0 6px; }
-      .acc-link { display:inline-block;margin-top:8px;font-size:13px;color:#9b8660;font-weight:500;text-decoration:underline; }
-      .acc-contact { font-size:13px;color:#7a6135;margin-top:8px;font-style:italic; }
+      .acc-list { display:flex;flex-direction:column;gap:16px;margin-top:16px; }
+      .acc-card { background:#fff;border:1.5px solid #E8E0D0;border-radius:12px;padding:18px;cursor:pointer;transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:12px;position:relative; }
+      .acc-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px); }
 
-      /* Badges disponibilité */
-      .acc-badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;margin-left:auto; }
-      .acc-badge--green   { background:#eafaf1;color:#1e8449; }
-      .acc-badge--orange  { background:#fef9e7;color:#b7770d; }
-      .acc-badge--full    { background:#fdecea;color:#c0392b; }
-      .acc-badge--contact { background:#fdf8ee;color:#7a6135; }
-      .acc-badge--link    { background:#f0f4f8;color:#2874a6; }
+      /* Structure Carte */
+      .acc-card__top { display:flex;justify-content:space-between;align-items:flex-start;gap:12px; }
+      .acc-card__header-info { display:flex;flex-direction:column;gap:2px; }
+      .acc-card__type { font-size:12px;font-weight:600;color:#9CAF88;text-transform:uppercase;letter-spacing:0.5px; }
+      .acc-card__title { margin:0;font-size:1.1rem;font-weight:600;color:#2D5A3D;font-family:var(--font-body); }
+      
+      /* Badge capacité mis en avant */
+      .acc-card__capacity-tag { background:#2D5A3D;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(45,90,61,0.2); }
+
+      /* Détails */
+      .acc-card__details { display:flex;flex-direction:column;gap:4px; }
+      .acc-card__dist { font-size:13px;font-weight:500;color:#555; }
+      .acc-card__rooms { font-size:13px;color:#666; }
+      .acc-card__price { font-size:14px;font-weight:600;color:#C9A84C;margin-top:2px; }
+      .acc-card__desc { font-size:13px;color:#6B6B6B;line-height:1.4;margin:6px 0 0; }
+
+      /* Footer & Bouton */
+      .acc-card__footer { display:flex;justify-content:flex-end;align-items:center;margin-top:4px; }
+      .acc-btn-voir { display:inline-block;padding:8px 18px;background:#2D5A3D;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500;transition:background .2s; }
+      .acc-btn-voir:hover { background:#1e3d29; }
+      .acc-card__contact-note { font-size:12px;color:#7a6135;font-style:italic; }
 
       @media(max-width:600px) {
-        .acc-card__head { gap:8px; }
-        .acc-badge { margin-left:0;margin-top:6px; }
+        .acc-filter-bar { flex-direction:column;gap:12px; }
+        .acc-card__top { flex-direction:column;align-items:flex-start;gap:6px; }
+        .acc-card__capacity-tag { align-self:flex-start; }
       }
     `;
     document.head.appendChild(s);
