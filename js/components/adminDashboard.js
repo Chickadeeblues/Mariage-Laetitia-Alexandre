@@ -3633,7 +3633,7 @@ async _deleteMoodboardItem(id) {
 
     // Reset button
     document.getElementById('acc-reset-btn')?.addEventListener('click', async () => {
-      if (confirm('Voulez-vous vraiment réinitialiser toutes les attributions d\\'hébergement ?')) {
+      if (confirm("Voulez-vous vraiment réinitialiser toutes les attributions d'hébergement ?")) {
         await this._saveAccommodationDb({});
         this.renderAccommodationPlan(await Store.getGuests());
       }
