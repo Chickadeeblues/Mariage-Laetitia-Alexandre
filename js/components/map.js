@@ -308,18 +308,29 @@ const MapComponent = {
       .filter-group label { font-size:12px;font-weight:600;color:#2D5A3D;text-transform:uppercase;letter-spacing:0.5px; }
       .filter-select { font-family:'Outfit',sans-serif;padding:8px 12px;border:1px solid #C9A84C;border-radius:8px;background:#fff;color:#2C2C2C;font-size:14px;outline:none; }
 
-      .acc-list { display:flex;flex-direction:column;gap:16px;margin-top:16px; }
-      .acc-card { background:#fff;border:1.5px solid #E8E0D0;border-radius:12px;padding:18px;cursor:pointer;transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:12px; }
+      /* Grille 1 colonne sur mobile / 2 colonnes sur grand écran */
+      .acc-list { 
+        display: grid; 
+        grid-template-columns: 1fr; 
+        gap: 16px; 
+        margin-top: 16px; 
+      }
+
+      @media (min-width: 768px) {
+        .acc-list {
+          grid-template-columns: repeat(2, 1fr); /* 2 cartes par ligne (50% de largeur chacune) */
+        }
+      }
+
+      .acc-card { background:#fff;border:1.5px solid #E8E0D0;border-radius:12px;padding:18px;cursor:pointer;transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;justify-content:space-between;gap:12px; }
       .acc-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px); }
 
       .acc-card__top { display:flex;justify-content:space-between;align-items:flex-start;gap:12px; }
       .acc-card__header-info { display:flex;flex-direction:column;gap:4px;align-items:flex-start; }
       
-      /* Type de logement plus gros */
       .acc-card__type { font-size:15px;font-weight:700;color:#9CAF88;text-transform:uppercase;letter-spacing:0.5px; }
       .acc-card__title { margin:2px 0 4px;font-size:1.2rem;font-weight:600;color:#2D5A3D; }
       
-      /* Nombre de personnes ancré sous le nom */
       .acc-card__capacity-tag { background:#2D5A3D;color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-top:2px; }
 
       .acc-card__details { display:flex;flex-direction:column;gap:4px; }
@@ -328,7 +339,7 @@ const MapComponent = {
       .acc-card__price { font-size:14px;font-weight:600;color:#C9A84C;margin-top:2px; }
       .acc-card__desc { font-size:13px;color:#6B6B6B;line-height:1.4;margin:6px 0 0; }
 
-      .acc-card__footer { display:flex;justify-content:flex-end;align-items:center;margin-top:4px; }
+      .acc-card__footer { display:flex;justify-content:flex-end;align-items:center;margin-top:auto;padding-top:8px; }
       .acc-btn-voir { display:inline-block;padding:8px 18px;background:#2D5A3D;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500; }
       .acc-card__contact-note { font-size:12px;color:#7a6135;font-style:italic; }
 

@@ -277,6 +277,7 @@ async renderDashboard() {
       this.renderGuestsList(guests),
 	  this.renderTeam(guests),
 	  this.renderSeatingPlan(guests),
+	  this.renderAccommodationPlan(guests),
 	  this.renderMoodboard(),
       this.renderMass(guests),
       this.renderContentPublication()
@@ -992,7 +993,6 @@ async renderGuestsList(guests) {
               <th style="padding:10px; text-align:center;">Brunch</th>
               <th style="padding:10px; text-align:center;">Régime</th>
               <th style="padding:10px;">Transport</th>
-              <th style="padding:10px;">Hébergement</th>
               <th style="padding:10px; width: 50px;">Actions</th>
             </tr>
           </thead>
@@ -1016,7 +1016,6 @@ async renderGuestsList(guests) {
 
       const isBrunch = g.brunch === true || g.brunch === 'true' || g.brunch === 'oui' || g.brunch === 1;
       const brunchText = isBrunch ? 'Oui' : 'Non';
-      const accommodation = g.accommodationName || g.accommodation_name || g.accommodation || '—';
       const formattedPhone = formatPhone(g.phone);
 
       html += `
@@ -1055,7 +1054,6 @@ async renderGuestsList(guests) {
           <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
           <td style="padding:10px; text-align:center;">${getDietBadges(g)}</td>
           <td style="padding:10px;">${transportText}</td>
-          <td style="padding:10px;"><strong>${accommodation}</strong></td>
           <td style="padding:10px; text-align:center;">
             <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier">✏️</button>
           </td>
@@ -1066,6 +1064,19 @@ async renderGuestsList(guests) {
       if (g.companions && g.companions.length > 0) {
         g.companions.forEach((comp, cIdx) => {
           const isLast = cIdx === g.companions.length - 1;
+          const compAttending = comp.attending !== undefined ? comp.attending : g.attending;
+          const compBrunch = comp.brunch !== undefined ? comp.brunch : isBrunch;
+          const isCompBrunch = compBrunch === true || compBrunch === 'true' || compBrunch === 'oui' || compBrunch === 1;
+          const compTag = comp.tag || currentTag;
+          
+          let compTransportText = '—';
+          if (comp.transport?.mode) {
+            const modes = { car: 'Voiture', train: 'Train', other: 'Autre' };
+            compTransportText = modes[comp.transport.mode] || comp.transport.mode;
+          }
+          if (comp.transport?.carpoolRole === 'offer') compTransportText += `<br><span class="badge" style="background:var(--sage); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Propose covoiturage</span>`;
+          else if (comp.transport?.carpoolRole === 'need') compTransportText += `<br><span class="badge" style="background:var(--gold); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; display:inline-block; margin-top:2px;">Demande covoiturage</span>`;
+          
           html += `
             <tr style="background:${bg}; border-bottom:${isLast ? '1px solid #eee' : 'none'};">
               <td style="padding:10px 10px 10px 40px; position:relative;">
@@ -1073,15 +1084,14 @@ async renderGuestsList(guests) {
                 <strong>${comp.name}</strong>
               </td>
               <td style="padding:10px;">
-                ${currentTag ? buildTagBadge(currentTag) : '<span class="text-muted">—</span>'}
+                ${compTag ? buildTagBadge(compTag) : '<span class="text-muted">—</span>'}
               </td>
-              <td style="padding:10px; text-align:center;">${badgeFor(g.attending)}</td>
-              <td style="padding:10px; text-align:center;">${isBrunch ? badgeFor(true) : badgeFor(false)}</td>
+              <td style="padding:10px; text-align:center;">${badgeFor(compAttending)}</td>
+              <td style="padding:10px; text-align:center;">${isCompBrunch ? badgeFor(true) : badgeFor(false)}</td>
               <td style="padding:10px; text-align:center;">${getDietBadges(comp)}</td>
-              <td style="padding:10px;"><span class="text-muted">—</span></td>
-              <td style="padding:10px;"><strong>${accommodation}</strong></td>
+              <td style="padding:10px;">${compTransportText}</td>
               <td style="padding:10px; text-align:center;">
-                <button class="btn btn--outline edit-guest-btn" data-id="${g.id}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier (via invité principal)">✏️</button>
+                <button class="btn btn--outline edit-comp-btn" data-parent-id="${g.id}" data-comp-index="${cIdx}" style="padding:2px 8px; font-size:14px; color:var(--gold); border-color:var(--gold); cursor:pointer;" title="Modifier l'accompagnant">✏️</button>
               </td>
             </tr>
           `;
@@ -1148,6 +1158,18 @@ async renderGuestsList(guests) {
         const guest = guests.find(g => g.id === id);
         if (guest) {
           this.openEditModal(guest);
+        }
+      });
+    });
+
+    // --- Édition d'un accompagnant ---
+    container.querySelectorAll('.edit-comp-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const parentId = e.currentTarget.dataset.parentId;
+        const compIndex = parseInt(e.currentTarget.dataset.compIndex, 10);
+        const guest = guests.find(g => g.id === parentId);
+        if (guest) {
+          this.openCompanionEditModal(guest, compIndex);
         }
       });
     });
@@ -1766,6 +1788,225 @@ async renderGuestsList(guests) {
           await Store.saveGuest(updatedGuest);
         }
         Animations.showToast("Modifications enregistrées", "success");
+        closeModal();
+        this.renderDashboard();
+      } catch (err) {
+        console.error(err);
+        Animations.showToast("Erreur lors de la sauvegarde", "error");
+      }
+    });
+  },
+
+  openCompanionEditModal(guest, companionIndex) {
+    const existingModal = document.getElementById('admin-edit-comp-modal');
+    if (existingModal) existingModal.remove();
+
+    const comp = guest.companions[companionIndex];
+    if (!comp) return;
+
+    const compName = comp.name || '';
+    const nameParts = compName.trim().split(' ');
+    const compFirstName = nameParts[0] || '';
+    const compLastName = nameParts.slice(1).join(' ') || '';
+
+    const isBrunch = comp.brunch === true || comp.brunch === 'true' || comp.brunch === 'oui' || comp.brunch === 1;
+    const currentMode = comp.transport?.mode || '';
+    const currentCarpool = comp.transport?.carpoolRole || 'none';
+    const allergiesText = comp.allergies || comp.allergyDetails || comp.allergy_details || '';
+    const currentTag = comp.tag || guest.tag || '';
+
+    const modalHtml = `
+      <div id="admin-edit-comp-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div style="background:var(--cream, #FAF8F5); border-radius:var(--radius-lg, 20px); width:95%; max-width:550px; max-height:85vh; overflow-y:auto; padding:24px; box-shadow:0 15px 35px rgba(0,0,0,0.25); border:1px solid var(--gold);">
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gold-light); padding-bottom:12px; margin-bottom:16px;">
+            <h3 style="margin:0; font-family:var(--font-display); color:var(--forest); font-size:22px;">
+              ✏️ Modifier l'accompagnant
+            </h3>
+            <button type="button" id="edit-comp-close-x" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);">×</button>
+          </div>
+
+          <form id="admin-edit-comp-form" style="display:flex; flex-direction:column; gap:16px; text-align:left;">
+            
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">👤 Identité</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Prénom</label>
+                  <input type="text" id="edit-comp-firstname" value="${compFirstName}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Nom</label>
+                  <input type="text" id="edit-comp-lastname" value="${compLastName}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Téléphone</label>
+                <input type="text" id="edit-comp-phone" value="${comp.phone || ''}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              </div>
+            </fieldset>
+
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">💒 Présence</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Mariage (8 mai)</label>
+                  <select id="edit-comp-attending" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="true" ${comp.attending === true || comp.attending === 'true' ? 'selected' : ''}>✓ Oui (Confirmé)</option>
+                    <option value="false" ${comp.attending === false || comp.attending === 'false' ? 'selected' : ''}>✗ Non (Décliné)</option>
+                    <option value="maybe" ${comp.attending === 'maybe' ? 'selected' : ''}>? Peut-être</option>
+                    <option value="null" ${comp.attending == null ? 'selected' : ''}>En attente</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Brunch (9 mai)</label>
+                  <select id="edit-comp-brunch" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="true" ${isBrunch ? 'selected' : ''}>☕ Oui</option>
+                    <option value="false" ${!isBrunch ? 'selected' : ''}>🙏 Non</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">🥗 Régimes alimentaires</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Végétarien</label>
+                  <select id="edit-comp-vege" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!comp.vegetarian ? 'selected' : ''}>Non</option>
+                    <option value="true" ${comp.vegetarian ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Végan</label>
+                  <select id="edit-comp-vegan" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!comp.vegan ? 'selected' : ''}>Non</option>
+                    <option value="true" ${comp.vegan ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Sans alcool</label>
+                  <select id="edit-comp-noalc" style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="false" ${!comp.noAlcohol ? 'selected' : ''}>Non</option>
+                    <option value="true" ${comp.noAlcohol ? 'selected' : ''}>Oui</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Détails allergies</label>
+                <input type="text" id="edit-comp-allergies" value="${allergiesText}" placeholder="Ex: Gluten, fruits à coque..." style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
+              </div>
+            </fieldset>
+
+            <fieldset style="border:1px solid #ddd; border-radius:8px; padding:12px; margin:0;">
+              <legend style="font-weight:600; color:var(--forest); padding:0 6px;">🚗 Transport & Étiquette</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Mode de transport</label>
+                  <select id="edit-comp-transport" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="" ${!currentMode ? 'selected' : ''}>— Non renseigné —</option>
+                    <option value="car" ${currentMode === 'car' ? 'selected' : ''}>🚗 Voiture</option>
+                    <option value="train" ${currentMode === 'train' ? 'selected' : ''}>🚆 Train</option>
+                    <option value="other" ${currentMode === 'other' ? 'selected' : ''}>✈️ Autre</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:12px; color:var(--text-muted);">Covoiturage</label>
+                  <select id="edit-comp-carpool" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="none" ${currentCarpool === 'none' ? 'selected' : ''}>Aucun</option>
+                    <option value="offer" ${currentCarpool === 'offer' ? 'selected' : ''}>🟢 Propose des places</option>
+                    <option value="need" ${currentCarpool === 'need' ? 'selected' : ''}>🟡 Cherche des places</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-muted);">Groupe / Tag</label>
+                <select id="edit-comp-tag" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                  <option value="" ${!currentTag ? 'selected' : ''}>— Aucun —</option>
+                  <option value="Mariée" ${currentTag === 'Mariée' ? 'selected' : ''}>Mariée</option>
+                  <option value="Marié" ${currentTag === 'Marié' ? 'selected' : ''}>Marié</option>
+                  <option value="Prêtre" ${currentTag === 'Prêtre' ? 'selected' : ''}>Prêtre</option>
+                  <option value="Famille Mariée" ${currentTag === 'Famille Mariée' ? 'selected' : ''}>Famille Mariée</option>
+                  <option value="Famille Marié" ${currentTag === 'Famille Marié' ? 'selected' : ''}>Famille Marié</option>
+                  <option value="Ami(e) Mariée" ${currentTag === 'Ami(e) Mariée' ? 'selected' : ''}>Ami(e) Mariée</option>
+                  <option value="Ami(e) Marié" ${currentTag === 'Ami(e) Marié' ? 'selected' : ''}>Ami(e) Marié</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <button type="button" id="delete-comp-btn-modal" class="btn btn--outline" style="padding:10px 18px; color:red; border-color:red; font-weight:600;">Supprimer</button>
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="edit-comp-cancel-btn" class="btn btn--outline" style="padding:10px 18px;">Annuler</button>
+                <button type="submit" class="btn btn--primary" style="padding:10px 18px; background:var(--forest); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">Enregistrer tout</button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('admin-edit-comp-modal');
+    const cancelBtn = document.getElementById('edit-comp-cancel-btn');
+    const closeX = document.getElementById('edit-comp-close-x');
+    const form = document.getElementById('admin-edit-comp-form');
+
+    const closeModal = () => modal.remove();
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById('delete-comp-btn-modal').addEventListener('click', async () => {
+      if (confirm("Supprimer définitivement cet accompagnant ?")) {
+        guest.companions.splice(companionIndex, 1);
+        await Store.updateGuest(guest.id, { companions: guest.companions });
+        if (typeof Animations !== 'undefined' && Animations.showToast) Animations.showToast("Accompagnant supprimé", "success");
+        closeModal();
+        this.renderDashboard();
+      }
+    });
+
+    // Soumission du formulaire
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const attVal = document.getElementById('edit-comp-attending').value;
+      const newAttending = attVal === 'true' ? true : attVal === 'false' ? false : attVal === 'maybe' ? 'maybe' : null;
+
+      const firstName = document.getElementById('edit-comp-firstname').value.trim();
+      const lastName = document.getElementById('edit-comp-lastname').value.trim();
+      const newName = `${firstName} ${lastName}`.trim();
+
+      const updatedComp = {
+        ...comp,
+        name: newName,
+        phone: document.getElementById('edit-comp-phone').value.trim(),
+        attending: newAttending,
+        brunch: document.getElementById('edit-comp-brunch').value === 'true',
+        vegetarian: document.getElementById('edit-comp-vege').value === 'true',
+        vegan: document.getElementById('edit-comp-vegan').value === 'true',
+        noAlcohol: document.getElementById('edit-comp-noalc').value === 'true',
+        allergyDetails: document.getElementById('edit-comp-allergies').value.trim(),
+        allergy_details: document.getElementById('edit-comp-allergies').value.trim(),
+        tag: document.getElementById('edit-comp-tag').value,
+        transport: {
+          ...(comp.transport || {}),
+          mode: document.getElementById('edit-comp-transport').value || undefined,
+          carpoolRole: document.getElementById('edit-comp-carpool').value
+        }
+      };
+
+      guest.companions[companionIndex] = updatedComp;
+
+      try {
+        if (typeof Store.updateGuest === 'function') {
+          await Store.updateGuest(guest.id, { companions: guest.companions });
+        }
+        Animations.showToast("Accompagnant mis à jour", "success");
         closeModal();
         this.renderDashboard();
       } catch (err) {
@@ -2730,6 +2971,40 @@ async _deleteMoodboardItem(id) {
     } catch (e) { console.error('Erreur sauvegarde Supabase seating:', e); }
   },
 
+  async _loadAccommodationDb() {
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/wedding_seating?id=eq.accommodation&select=data`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) return rows[0].data;
+      }
+    } catch (e) { console.warn('Secours localStorage pour hébergement'); }
+    const local = localStorage.getItem('wedding_accommodation_plan');
+    return local ? JSON.parse(local) : {};
+  },
+
+  async _saveAccommodationDb(data) {
+    localStorage.setItem('wedding_accommodation_plan', JSON.stringify(data));
+    const SUPABASE_URL = 'https://upaxcudmifqwiglodywf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYXhjdWRtaWZxd2lnbG9keXdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTA0MzQsImV4cCI6MjA5ODQ4NjQzNH0.cBIYvtf0gPy1y1DT9_HtkOkTTZqta1g3x1XZjDi2oxs';
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/wedding_seating`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({ id: 'accommodation', data })
+      });
+    } catch (e) { console.error('Erreur sauvegarde Supabase accommodation:', e); }
+  },
+
   async renderSeatingPlan(guests) {
     const container = document.getElementById('admin-seating-plan');
     if (!container) return;
@@ -3037,6 +3312,332 @@ async _deleteMoodboardItem(id) {
         }
       }
     };
+  },
+
+  async renderAccommodationPlan(guests) {
+    const container = document.getElementById('admin-hebergement-scie');
+    if (!container) return;
+
+    // Load saved assignments
+    const accommodationData = await this._loadAccommodationDb();
+
+    // Extract all confirmed guests + companions
+    const allPeople = [];
+    guests.forEach(g => {
+      const isConfirmed = g.attending === true || g.attending === 'true' || g.attending === 'oui' || g.attending === 1;
+      if (!isConfirmed) return;
+      const formatName = (first, last) => {
+        const f = (first || '').trim();
+        const l = (last || '').trim();
+        const initial = l ? ` ${l.charAt(0).toUpperCase()}.` : '';
+        return `${f}${initial}` || 'Invité';
+      };
+      allPeople.push({ id: String(g.id), name: formatName(g.firstName, g.lastName) });
+      if (Array.isArray(g.companions)) {
+        g.companions.forEach((comp, idx) => {
+          const compId = `${g.id}__c__${idx}`;
+          const parts = (comp.name || '').trim().split(' ');
+          allPeople.push({ id: compId, name: formatName(parts[0], parts.slice(1).join(' ')) });
+        });
+      }
+    });
+
+    // Define the gîtes structure
+    const gites = [
+      {
+        name: 'Gîte Gaby',
+        color: '#9CAF88', // sauge
+        colorLight: '#E8F0E6',
+        rooms: [
+          { name: 'Chambre 1', beds: [{ type: 'double', label: 'Lit double', slots: 2, id: 'gaby-ch1-double' }] },
+          { name: 'Chambre 2', beds: [{ type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch2-lit1' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch2-lit2' }] },
+          { name: 'Chambre 3', beds: [{ type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch3-lit1' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch3-lit2' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch3-lit3' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'gaby-ch3-lit4' }] },
+          { name: 'Salon', beds: [{ type: 'canape', label: 'Canapé-lit', slots: 2, id: 'gaby-salon-canape' }] }
+        ]
+      },
+      {
+        name: 'Gîte Odile',
+        color: '#C9A84C', // or
+        colorLight: '#FDF9EE',
+        rooms: [
+          { name: 'Salon', beds: [{ type: 'canape', label: 'Canapé convertible', slots: 2, id: 'odile-salon-canape' }] },
+          { name: 'Chambre 1', beds: [{ type: 'simple', label: 'Lit simple', slots: 1, id: 'odile-ch1-lit1' }, { type: 'double', label: 'Lit double', slots: 2, id: 'odile-ch1-double' }] },
+          { name: 'Chambre 2', beds: [{ type: 'double', label: 'Lit double', slots: 2, id: 'odile-ch2-double' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'odile-ch2-lit1' }, { type: 'simple', label: 'Lit simple', slots: 1, id: 'odile-ch2-lit2' }, { type: 'canape', label: 'Canapé-lit', slots: 2, id: 'odile-ch2-canape' }] }
+        ]
+      }
+    ];
+
+    // Compute assigned person IDs
+    const assignedIds = new Set(Object.values(accommodationData).filter(Boolean));
+    const unassigned = allPeople.filter(p => !assignedIds.has(p.id));
+
+    // Lookup person by id
+    const personById = {};
+    allPeople.forEach(p => { personById[p.id] = p; });
+
+    // CSS
+    const css = `
+      <style>
+        .acc-wrapper { margin-top: 4px; font-family: var(--font-body); }
+        .acc-gite { margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 1.5px solid #e0e0e0; }
+        .acc-gite-header { padding: 10px 16px; font-weight: 700; font-size: 16px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .acc-gite-body { padding: 12px; display: grid; gap: 12px; }
+        @media (min-width: 900px) { .acc-gite-body { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+        .acc-room {
+          background: #FAFBFC;
+          border: 1.5px dashed #ccc;
+          border-radius: 10px;
+          padding: 10px;
+        }
+        .acc-room-name { font-weight: 700; font-size: 13px; color: var(--forest, #2D5A3D); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .acc-room-name::before { content: '🚪'; font-size: 14px; }
+        .acc-beds { display: flex; flex-direction: column; gap: 8px; }
+        .acc-bed {
+          border-radius: 8px;
+          padding: 6px 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .acc-bed--simple { background: #F0F4F1; border: 1px solid #D5E0D0; }
+        .acc-bed--double { background: #F0F4F1; border: 1px solid #D5E0D0; }
+        .acc-bed--canape { background: #FEF3E2; border: 1px solid #E8D5A3; }
+        .acc-bed-label { font-size: 11px; font-weight: 600; color: var(--text-muted, #6B6B6B); display: flex; align-items: center; gap: 4px; }
+        .acc-bed--simple .acc-bed-label::before { content: '🛏️'; font-size: 12px; }
+        .acc-bed--double .acc-bed-label::before { content: '🛏️'; font-size: 12px; }
+        .acc-bed--canape .acc-bed-label::before { content: '🛋️'; font-size: 12px; }
+        .acc-bed-slots {
+          display: flex;
+          gap: 4px;
+        }
+        .acc-slot {
+          flex: 1;
+          height: 30px;
+          border: 1px dashed #ccc;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          transition: all 0.2s;
+          overflow: hidden;
+        }
+        .acc-slot.drag-over {
+          background: #e8f0e6;
+          border-color: var(--forest);
+          transform: scale(1.03);
+        }
+        .acc-chip {
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: grab;
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          text-align: center;
+          box-sizing: border-box;
+          transition: opacity 0.2s;
+        }
+        .acc-slot .acc-chip {
+          background: var(--sage, #9CAF88);
+          color: #fff;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .acc-bed--canape .acc-slot .acc-chip {
+          background: #C9A84C;
+          color: #fff;
+        }
+        .acc-chip:active { cursor: grabbing; }
+        .acc-chip.dragging { opacity: 0.4; }
+        .acc-unassigned-pool {
+          background: var(--cream, #FAF8F5);
+          border: 1px solid var(--gold, #C9A84C);
+          border-radius: 10px;
+          padding: 10px 14px;
+          min-height: 50px;
+          margin-top: 16px;
+        }
+        .acc-unassigned-pool.drag-over {
+          background: #fff8eb;
+          border-style: dashed;
+        }
+        .acc-unassigned-title {
+          font-weight: 700;
+          color: var(--text-dark);
+          margin-bottom: 8px;
+          font-size: 13px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .acc-unassigned-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .acc-unassigned-chips .acc-chip {
+          width: auto;
+          background: #fff;
+          color: var(--forest, #2D5A3D);
+          border: 1px solid var(--forest, #2D5A3D);
+          padding: 4px 10px;
+        }
+        .acc-capacity-badge {
+          font-size: 11px;
+          font-weight: 500;
+          background: rgba(255,255,255,0.3);
+          padding: 2px 8px;
+          border-radius: 10px;
+        }
+      </style>
+    `;
+
+    // Build HTML
+    let html = `${css}<div class="acc-wrapper">`;
+
+    gites.forEach(gite => {
+      // Count total slots in this gîte
+      let giteCapacity = 0;
+      gite.rooms.forEach(room => room.beds.forEach(bed => { giteCapacity += bed.slots; }));
+      let giteFilled = 0;
+
+      let giteRoomsHtml = '';
+      gite.rooms.forEach(room => {
+        let bedsHtml = '';
+        room.beds.forEach(bed => {
+          let slotsHtml = '';
+          for (let s = 0; s < bed.slots; s++) {
+            const slotId = `${bed.id}-${s}`;
+            const personId = accommodationData[slotId];
+            const person = personId ? personById[personId] : null;
+            if (person) giteFilled++;
+            slotsHtml += `
+              <div class="acc-slot" data-slot-id="${slotId}">
+                ${person ? `<div class="acc-chip" draggable="true" data-person-id="${person.id}" title="${person.name}">${person.name}</div>` : ''}
+              </div>`;
+          }
+          const bedClass = bed.type === 'canape' ? 'acc-bed--canape' : bed.type === 'double' ? 'acc-bed--double' : 'acc-bed--simple';
+          bedsHtml += `
+            <div class="acc-bed ${bedClass}">
+              <div class="acc-bed-label">${bed.label}</div>
+              <div class="acc-bed-slots">${slotsHtml}</div>
+            </div>`;
+        });
+        giteRoomsHtml += `
+          <div class="acc-room">
+            <div class="acc-room-name">${room.name}</div>
+            <div class="acc-beds">${bedsHtml}</div>
+          </div>`;
+      });
+
+      html += `
+        <div class="acc-gite">
+          <div class="acc-gite-header" style="background:${gite.color};">
+            <span>${gite.name}</span>
+            <span class="acc-capacity-badge">${giteFilled}/${giteCapacity} occupé${giteFilled > 1 ? 's' : ''}</span>
+          </div>
+          <div class="acc-gite-body" style="background:${gite.colorLight};">
+            ${giteRoomsHtml}
+          </div>
+        </div>`;
+    });
+
+    // Unassigned pool
+    const totalAssigned = Object.values(accommodationData).filter(Boolean).length;
+    html += `
+      <div class="acc-unassigned-pool">
+        <div class="acc-unassigned-title">
+          <span>👥 Invités à héberger (${unassigned.length})</span>
+          <button class="btn btn--outline btn--sm" id="acc-reset-btn" style="font-size:11px; padding:2px 8px;">Réinitialiser</button>
+        </div>
+        <div class="acc-unassigned-chips">
+          ${unassigned.length > 0
+            ? unassigned.map(p => `<div class="acc-chip" draggable="true" data-person-id="${p.id}" title="${p.name}">${p.name}</div>`).join('')
+            : `<span class="text-muted" style="font-size:12px; font-style:italic;">Tous les invités confirmés ont été hébergés ! 🎉</span>`}
+        </div>
+      </div>
+    </div>`;
+
+    container.innerHTML = html;
+    this._bindAccommodationHandlers(allPeople, accommodationData);
+  },
+
+  _bindAccommodationHandlers(allPeople, accommodationData) {
+    const container = document.getElementById('admin-hebergement-scie');
+    if (!container) return;
+
+    // Drag start on all chips
+    container.querySelectorAll('.acc-chip[draggable]').forEach(chip => {
+      chip.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', chip.dataset.personId);
+        chip.classList.add('dragging');
+      });
+      chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+    });
+
+    // Drag over on slots
+    container.querySelectorAll('.acc-slot').forEach(slot => {
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        slot.classList.add('drag-over');
+      });
+      slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+      slot.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        slot.classList.remove('drag-over');
+        const personId = e.dataTransfer.getData('text/plain');
+        if (!personId) return;
+
+        const slotId = slot.dataset.slotId;
+        // Remove person from any previous slot
+        Object.keys(accommodationData).forEach(key => {
+          if (accommodationData[key] === personId) delete accommodationData[key];
+        });
+        // Check if slot is already occupied
+        const currentOccupant = accommodationData[slotId];
+        if (currentOccupant && currentOccupant !== personId) {
+          // Swap: remove old occupant (they go back to unassigned)
+          delete accommodationData[slotId];
+        }
+        accommodationData[slotId] = personId;
+        await this._saveAccommodationDb(accommodationData);
+        this.renderAccommodationPlan(await Store.getGuests());
+      });
+    });
+
+    // Drag over on unassigned pool
+    const pool = container.querySelector('.acc-unassigned-pool');
+    if (pool) {
+      pool.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        pool.classList.add('drag-over');
+      });
+      pool.addEventListener('dragleave', () => pool.classList.remove('drag-over'));
+      pool.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        pool.classList.remove('drag-over');
+        const personId = e.dataTransfer.getData('text/plain');
+        if (!personId) return;
+        // Remove from all slots
+        Object.keys(accommodationData).forEach(key => {
+          if (accommodationData[key] === personId) delete accommodationData[key];
+        });
+        await this._saveAccommodationDb(accommodationData);
+        this.renderAccommodationPlan(await Store.getGuests());
+      });
+    }
+
+    // Reset button
+    document.getElementById('acc-reset-btn')?.addEventListener('click', async () => {
+      if (confirm('Voulez-vous vraiment réinitialiser toutes les attributions d\\'hébergement ?')) {
+        await this._saveAccommodationDb({});
+        this.renderAccommodationPlan(await Store.getGuests());
+      }
+    });
   },
 
   // ════════════════════════════════════════════════════════════

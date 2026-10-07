@@ -44,6 +44,17 @@ Application web SPA (Single Page Application) sans framework, permettant aux inv
 
 ---
 
+### Séparation de l'Interface de Traduction (i18n) et de la Collecte des Données
+
+Le système de traduction est conçu pour découpler strictement l'interface utilisateur (front-end) de la collecte et du stockage des données (back-end).
+La traduction statique est pilotée par le composant `i18n.js`, qui parcourt le DOM pour cibler les éléments HTML dotés de l'attribut `data-i18n` afin de modifier dynamiquement leur contenu (`innerHTML`) ou leur attribut `placeholder`.
+
+**Consignes strictes pour la traduction dynamique (JS)** :
+1. **Helper de traduction** : Utiliser exclusivement la fonction `tr(fr, es)` (et non `t()`) pour les traductions dynamiques dans les composants afin d'éviter tout conflit de nommage avec des variables locales (comme `t` pour `transport`).
+2. **Préservation de l'état** : Lors de l'écoute de l'événement `language-changed`, si le composant doit se re-rendre (reconstruire le DOM), il est impératif d'appeler d'abord la méthode de sauvegarde des données en cours (ex: `this.saveCurrentStepData()`) avant `this.render()`. Le non-respect de cette règle entraîne la perte des données saisies par l'utilisateur lors du basculement de langue.
+
+En arrière-plan, la logique métier des formulaires reste intacte et transmet à Supabase des valeurs techniques universelles, garantissant un affichage cohérent et agnostique côté administrateur.
+
 ## 3. Navigation & Routes SPA
 
 ### Barre de navigation
@@ -126,6 +137,7 @@ Trois blocs :
 | `transport` | jsonb | Objet transport complet (voir §7) |
 | `accommodation_id` | uuid FK → accommodations | Hébergement choisi (nullable) |
 | `accommodation_name` | text | Nom libre si hors liste |
+| `tag` | text | Groupe (ex: Famille Mariée) |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
@@ -217,8 +229,10 @@ Accès protégé par mot de passe hashé en SHA-256 (session stockée dans `loca
 - **Grille de 4 cartes Régimes** (fond transparent, bordure neutre) : Végétariens, Végans, Sans alcool, Allergies déclarées (avec infobulle listant les détails au survol).
 
 ### 9.3 Onglet : Invités (`renderGuestsList`)
-- Tableau complet listant les invités et leurs accompagnants (hiérarchie visuelle distincte avec puce `+`).
-- Badges visuels pour la présence, le brunch, les régimes et le covoiturage.
+- **Tableau complet** listant les invités et leurs accompagnants.
+- **Groupes (Tags) & Tri** : Les invités sont regroupés selon des étiquettes (`Famille Mariée`, `Famille Marié`, `Ami(e) Mariée`, `Ami(e) Marié`, `Prêtre`) et triés alphabétiquement. Le bouton d'ajout de groupe ("➕" vert sapin) disparaît dès qu'un groupe est attribué (modifiable par clic sur le badge).
+- **Hiérarchie visuelle des accompagnants** : Un groupe d'invités partage la même couleur de fond uni (alternance entre blanc pur et crème clair). Les accompagnants sont marqués d'un élégant signe `+` doré devant leur prénom.
+- **Badges visuels** pour la présence, le brunch, les régimes et le covoiturage.
 - **Modale d'édition complète (`openEditModal`)** : Permet à l'administrateur de modifier l'intégralité de la fiche d'un invité (identité, présence, brunch, régimes individuels, transport et hébergement).
 
 ### 9.4 Onglet : Équipe prépa (`renderTeam`)
